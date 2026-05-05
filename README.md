@@ -2,6 +2,15 @@
 
 Este repositorio contiene el frontend para el sistema de Gestión de Prácticas DCI, construido con [React](https://react.dev/) y [Vite](https://vitejs.dev/).
 
+## Estado y Funcionalidades Actuales
+
+El proyecto actualmente cuenta con una base sólida de maquetación e integración de herramientas modernas:
+
+- **Arquitectura de Componentes**: La interfaz principal de autenticación (Login) se encuentra modularizada, dividiendo estructuralmente la cabecera (`Header`) y el pie de página (`Footer`) como componentes independientes e importables en futuras vistas.
+- **Tailwind CSS v4**: El proyecto ha sido configurado para utilizar las directivas modernas (`@theme`) de Tailwind 4, prescindiendo del clásico archivo de configuración para un desarrollo más ágil y limpio.
+- **Diseño Responsivo (Flexbox)**: Se refactorizaron los exportados estáticos de diseño (provenientes de Figma/Anima), descartando posiciones absolutas rígidas en favor de un layout fluido de pantalla completa que se adapta naturalmente al tamaño del navegador.
+- **Identidad Gráfica Institucional**: El aspecto visual y las proporciones se ajustaron para replicar la experiencia de usuario y apariencia oficial de la web de la **Facultad de Ingeniería y Ciencias (Universidad de La Frontera)**, incluyendo paletas de colores representativas, interacciones dinámicas en navegación e integración de logos institucionales y banners de acreditación.
+
 ## Requisitos Previos
 
 Asegúrate de tener instalados los siguientes requerimientos en tu sistema antes de inicializar el proyecto:
