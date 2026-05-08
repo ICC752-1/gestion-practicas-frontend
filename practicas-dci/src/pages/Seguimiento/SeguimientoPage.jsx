@@ -1,6 +1,7 @@
 import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
 import { motion } from "motion/react";
+import { useNavigate } from "react-router-dom";
 import { 
   UserCheck, 
   FileEdit, 
@@ -150,6 +151,12 @@ const TimelineItem = ({ step, index, isLast }) => {
 };
 
 export const SeguimientoPage = () => {
+  const navigate = useNavigate();
+
+  const handleVolver = () => {
+    navigate("/dashboard");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex flex-col">
       <UserHeader />
@@ -185,7 +192,10 @@ export const SeguimientoPage = () => {
 
         {/* Action Button */}
         <div className="flex justify-center mb-20">
-          <button className="bg-brand-medium text-white px-10 py-3 rounded-full font-bold hover:bg-opacity-90 transition-all transform hover:scale-105 active:scale-95 shadow-lg">
+          <button 
+            onClick={handleVolver}
+            className="bg-brand-medium text-white px-10 py-3 rounded-full font-bold hover:bg-opacity-90 transition-all transform hover:scale-105 active:scale-95 shadow-lg"
+          >
             Volver
           </button>
         </div>
