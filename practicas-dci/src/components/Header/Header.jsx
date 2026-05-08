@@ -1,10 +1,11 @@
 import universityLogo from "../../assets/university_logo.webp";
+import { Link } from "react-router-dom";
 
 export const Header = () => {
   const navItems = [
-    { label: "Preguntas Frecuentes", active: false },
-    { label: "Requisitos", active: false },
-    { label: "Iniciar Sesión", active: true },
+    { label: "Preguntas Frecuentes", to: "/faq", active: false },
+    { label: "Requisitos", to: "#", active: false },
+    { label: "Iniciar Sesión", to: "/login", active: true },
   ];
 
   return (
@@ -28,26 +29,26 @@ export const Header = () => {
       <nav aria-label="Principal" className="flex items-center gap-4">
         {navItems.map((item) =>
           item.active ? (
-            <a
+            <Link
               key={item.label}
-              href="#inicio-sesion"
+              to={item.to}
               aria-current="page"
               className="flex items-center justify-center px-4 py-1.5 bg-[#b13168] rounded-lg border-2 border-[#b13168] transition-opacity hover:opacity-90"
             >
               <span className="font-bold text-white text-base text-center whitespace-nowrap">
                 {item.label}
               </span>
-            </a>
+            </Link>
           ) : (
-            <a
+            <Link
               key={item.label}
-              href="#"
+              to={item.to}
               className="flex items-center justify-center px-4 py-1.5 bg-transparent rounded-lg border-2 border-[#b13168] transition-colors hover:bg-[#b13168] group"
             >
               <span className="font-bold text-[#b13168] text-base text-center whitespace-nowrap transition-colors group-hover:text-white">
                 {item.label}
               </span>
-            </a>
+            </Link>
           )
         )}
       </nav>

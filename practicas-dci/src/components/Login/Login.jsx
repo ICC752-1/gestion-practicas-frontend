@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ficaLogo from "../../assets/logo_fica.jpg";
 import { Header } from "../Header/Header";
 import { Footer } from "../Footer/Footer";
@@ -6,9 +7,18 @@ import { Footer } from "../Footer/Footer";
 export const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    
+    if (email.endsWith("@ufromail.cl")) {
+      navigate("/dashboard");
+    } else if (email === "coordinador@ufrontera.cl") {
+      navigate("/coordinador");
+    } else if (email.endsWith("@ufrontera.cl")) {
+      navigate("/supervisor");
+    }
   };
 
   return (
