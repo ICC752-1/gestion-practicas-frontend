@@ -1,6 +1,6 @@
 import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 
 const StatCard = ({ title, count }) => (
   <div className="bg-white rounded-2xl p-6 border-l-4 border-brand-medium shadow-sm hover:shadow-md transition-shadow">

@@ -1,6 +1,6 @@
 import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 
 export const CoordinatorDashboardPage = () => {
   return (
