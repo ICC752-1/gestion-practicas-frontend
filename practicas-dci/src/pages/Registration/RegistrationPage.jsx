@@ -1,30 +1,142 @@
+import { useState } from "react";
 import { UserHeader } from "../../components/Header/UserHeader";
 import { RegistrationStepper } from "../../components/Registration/RegistrationStepper";
 import { StudentInfoForm } from "../../components/Registration/StudentInfoForm";
+import { OrganizationInfoForm } from "../../components/Registration/OrganizationInfoForm";
+import { SupervisorInfoForm } from "../../components/Registration/SupervisorInfoForm";
+import { PracticeDetailsForm } from "../../components/Registration/PracticeDetailsForm";
+import { ActivitiesForm } from "../../components/Registration/ActivitiesForm";
+import { RegistrationSuccess } from "../../components/Registration/RegistrationSuccess";
 import { RegistrationInfoCard } from "../../components/Registration/RegistrationInfoCard";
 import { Footer } from "../../components/Footer/Footer";
+import { User, Building2, UserRound, ClipboardList, FileText } from "lucide-react";
 
 export const RegistrationPage = () => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState({});
+  const [isFinished, setIsFinished] = useState(false);
+
+  const handleNext = (stepData) => {
+    setFormData((prev) => ({ ...prev, ...stepData }));
+    if (currentStep === 5) {
+      setIsFinished(true);
+    } else {
+      setCurrentStep((prev) => prev + 1);
+    }
+    window.scrollTo(0, 0);
+  };
+
+  const handleBack = () => {
+    setCurrentStep((prev) => prev - 1);
+    window.scrollTo(0, 0);
+  };
+
+  const getStepConfig = () => {
+    switch (currentStep) {
+      case 1:
+        return {
+          title: "Información Personal",
+          description: "Complete sus datos personales y de contacto. Esta información será utilizada para comunicarnos con usted durante el periodo de práctica.",
+          icon: User,
+          checklist: [
+            "Verifique que su correo está actualizado",
+            "Use su correo institucional (@ufromail.cl)",
+            "Asegúrese de tener un número de contacto válido"
+          ],
+          form: <StudentInfoForm onNext={handleNext} initialData={formData} />
+        };
+      case 2:
+        return {
+          title: "Información de la Organización",
+          description: "Ingrese los datos de la organización donde realizará su práctica profesional y del supervisor que lo acompañará durante el proceso.",
+          icon: Building2,
+          checklist: [
+            "Verifique la dirección completa de la empresa",
+            "Asegúrese de tener el contacto del supervisor"
+          ],
+          form: <OrganizationInfoForm onNext={handleNext} onBack={handleBack} initialData={formData} />
+        };
+      case 3:
+        return {
+          title: "Información del supervisor/a",
+          description: "Especifique las fechas, horarios y actividades que realizará durante su práctica I o II",
+          icon: UserRound,
+          checklist: [
+            "El email del supervisor será el medio por donde se le contactará directamente"
+          ],
+          form: <SupervisorInfoForm onNext={handleNext} onBack={handleBack} initialData={formData} />
+        };
+      case 4:
+        return {
+          title: "Detalles de la Práctica",
+          description: "Especifique las fechas, horarios y actividades que realizará durante su práctica I o II",
+          icon: ClipboardList,
+          checklist: [
+            "Duración practica I : 176 horas",
+            "Duración practica II : 168 horas",
+            "Considere el formato 24 horas"
+          ],
+          form: <PracticeDetailsForm onNext={handleNext} onBack={handleBack} initialData={formData} />
+        };
+      case 5:
+        return {
+          title: "Actividades a Realizar y Beneficios de la organización",
+          description: "Complete la información de manera clara y precisa. Estos antecedentes serán utilizados para validar la práctica.",
+          icon: FileText,
+          checklist: [
+            "Marque solo beneficios confirmados",
+            "Ingrese $0 si no existe ayuda económica"
+          ],
+          form: <ActivitiesForm onNext={handleNext} onBack={handleBack} initialData={formData} />
+        };
+      default:
+        return {
+          title: "Información del Proceso",
+          description: "Complete los datos solicitados para continuar.",
+          icon: User,
+          checklist: [],
+          form: null
+        };
+    }
+  };
+
+  const stepConfig = getStepConfig();
+
   return (
     <div className="bg-[#f3f3f3] min-h-screen flex flex-col font-sans">
       <UserHeader />
       
       <main className="flex-grow container mx-auto px-4 py-8">
-        {/* Stepper Section */}
-        <RegistrationStepper currentStep={1} />
+        {!isFinished && (
+          <>
+            {/* Stepper Section */}
+            <RegistrationStepper currentStep={currentStep} />
 
-        {/* Content Section */}
-        <div className="flex flex-col items-center gap-12 mt-4 pb-16">
-          {/* Top: Info Card */}
-          <div className="w-full flex justify-center">
-            <RegistrationInfoCard />
-          </div>
+            {/* Content Section */}
+            <div className="flex flex-col items-center gap-12 mt-4 pb-16">
+              {/* Top: Info Card */}
+              <div className="w-full flex justify-center">
+                <RegistrationInfoCard 
+                  title={stepConfig.title}
+                  description={stepConfig.description}
+                  icon={stepConfig.icon}
+                  checklist={stepConfig.checklist}
+                />
+              </div>
 
-          {/* Bottom: Main Form */}
-          <div className="w-full flex justify-center">
-            <StudentInfoForm />
+              {/* Bottom: Main Form */}
+              <div className="w-full flex justify-center">
+                {stepConfig.form}
+              </div>
+            </div>
+          </>
+        )}
+
+        {isFinished && (
+          <div className="flex justify-center py-12">
+            <RegistrationSuccess />
           </div>
-        </div>
+        )}
       </main>
 
       <Footer />
@@ -33,3 +145,5 @@ export const RegistrationPage = () => {
 };
 
 export default RegistrationPage;
+
+
