@@ -47,7 +47,7 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.activities}
             onChange={handleChange}
             placeholder="Recuerde que las actividades..."
-            className="w-full h-40 p-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all resize-none"
+            className="w-full h-40 p-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all resize-none"
           />
         </div>
 
@@ -63,7 +63,7 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
                   value={benefit.id} 
                   checked={formData.benefits.includes(benefit.id)}
                   onChange={handleChange}
-                  className="w-6 h-6 accent-[#b13168]"
+                  className="w-6 h-6 accent-[#d22864]"
                 />
                 <span className="text-xl text-gray-700">{benefit.label}</span>
               </label>
@@ -80,7 +80,7 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.paymentAmount}
             onChange={handleChange}
             placeholder="$XYZ"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -89,13 +89,13 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
           <button 
             type="button"
             onClick={onBack}
-            className="flex-1 h-16 bg-[#b13168] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
           >
             Anterior
           </button>
           <button 
             type="submit"
-            className="flex-1 h-16 bg-[#b13168] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
           >
             Siguiente
           </button>

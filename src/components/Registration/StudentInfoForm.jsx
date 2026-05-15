@@ -34,7 +34,7 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
             value={formData.enrollment}
             onChange={handleChange}
             placeholder="123456789YY"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -57,7 +57,7 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
               name="careerName"
               value={formData.careerName}
               onChange={handleChange}
-              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all appearance-none"
+              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all appearance-none"
             >
               <option value="">Seleccione una opción</option>
               <option value="icci">Ingeniería Civil en Informática</option>
@@ -75,7 +75,7 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
             value={formData.fullName}
             onChange={handleChange}
             placeholder="Juan Perez"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -87,7 +87,7 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
               name="gender"
               value={formData.gender}
               onChange={handleChange}
-              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all appearance-none"
+              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all appearance-none"
             >
               <option value="">Seleccione una opción</option>
               <option value="male">Masculino</option>
@@ -102,7 +102,7 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
         {/* Button */}
         <button 
           type="submit"
-          className="w-full h-16 bg-[#b13168] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity mt-8 shadow-md cursor-pointer"
+          className="w-full h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity mt-8 shadow-md cursor-pointer"
         >
           Siguiente
         </button>

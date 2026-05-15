@@ -34,7 +34,7 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.supervisorName}
             onChange={handleChange}
             placeholder="Nombre supervisor/a"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -47,7 +47,7 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.supervisorProfession}
             onChange={handleChange}
             placeholder="Profesión supervisor/a"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -60,7 +60,7 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.supervisorPosition}
             onChange={handleChange}
             placeholder="Cargo supervisor/a"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -73,7 +73,7 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.supervisorDepartment}
             onChange={handleChange}
             placeholder="Departamento Supervisor/a"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -86,7 +86,7 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.supervisorEmail}
             onChange={handleChange}
             placeholder="Correo electrónico supervisor/a"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -99,7 +99,7 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.supervisorPhone}
             onChange={handleChange}
             placeholder="Número de teléfono supervisor/a"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -108,13 +108,13 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
           <button 
             type="button"
             onClick={onBack}
-            className="flex-1 h-16 bg-[#b13168] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
           >
             Anterior
           </button>
           <button 
             type="submit"
-            className="flex-1 h-16 bg-[#b13168] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
           >
             Siguiente
           </button>

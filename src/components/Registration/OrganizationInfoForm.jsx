@@ -33,7 +33,7 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.organizationName}
             onChange={handleChange}
             placeholder="Nombre Organización S.A"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -46,7 +46,7 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.sector}
             onChange={handleChange}
             placeholder="Rubro en que opera la empresa"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -59,7 +59,7 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.address}
             onChange={handleChange}
             placeholder="Av. Francisco Salazar 01145, Temuco..."
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -72,7 +72,7 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.phone}
             onChange={handleChange}
             placeholder="123456789"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -85,7 +85,7 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.website}
             onChange={handleChange}
             placeholder="https://fica.ufro.cl/"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -94,13 +94,13 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
           <button 
             type="button"
             onClick={onBack}
-            className="flex-1 h-16 bg-[#b13168] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
           >
             Anterior
           </button>
           <button 
             type="submit"
-            className="flex-1 h-16 bg-[#b13168] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
           >
             Siguiente
           </button>
