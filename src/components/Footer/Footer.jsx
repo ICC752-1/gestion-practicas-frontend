@@ -44,46 +44,67 @@ export const Footer = () => {
     },
   ];
 
-  return (
-    <footer className="w-full flex flex-col mt-auto text-white">
-      {/* Barra superior del Footer con íconos sociales */}
-      <div className="w-full bg-[#d81b60] py-2.5 flex justify-center items-center gap-4">
-        {socialIcons.map((icon) => (
-          <a key={icon.alt} href="#" aria-label={icon.alt} className="hover:opacity-80 transition-opacity">
-            {icon.icon}
-          </a>
-        ))}
-      </div>
+    return (
+        <footer className="w-full mt-auto text-white bg-[linear-gradient(90deg,#d22864_0%,#972fa4_100%)]">
+            <div className="max-w-7xl mx-auto px-10 py-12">
 
-      {/* Contenido Principal del Footer */}
-      <div className="w-full flex items-center justify-between px-[10%] py-6 min-h-[150px] bg-[linear-gradient(90deg,rgba(177,49,104,1)_0%,rgba(151,47,164,1)_100%)]">
-        {/* Lado Izquierdo: Información */}
-        <div className="flex flex-col items-start text-left z-10">
-          <h2 className="font-bold text-lg mb-1 whitespace-nowrap">FACULTAD DE INGENIERÍA Y CIENCIAS</h2>
-          <h3 className="font-bold text-base mb-4 whitespace-nowrap">Universidad de La Frontera</h3>
-          
-          <address className="not-italic flex flex-col items-start gap-0.5 font-light text-sm whitespace-nowrap">
-            <p>Av. Francisco Salazar 01145, Temuco-Chile</p>
-            <p>Casilla 54-D</p>
-            <p>Fono: (56) (45) 23224009</p>
-            <a href="mailto:secretaria.vincfica@ufrontera.cl" className="hover:underline">
-              email: secretaria.vincfica@ufrontera.cl
-            </a>
-          </address>
-        </div>
+                {/* Contenido principal */}
+                <div className="grid md:grid-cols-2 gap-10 items-center">
 
-        {/* Lado Derecho: Acreditación y Copyright */}
-        <div className="z-10 flex flex-col items-end gap-4">
-          <img
-            className="w-[300px] object-contain rounded-md shadow-md"
-            alt="Institución acreditada"
-            src={accreditationBanner}
-          />
-          <p className="font-normal text-xs opacity-90 text-right">
-            © 2026 Universidad de la Frontera - Sistema de Gestión de Prácticas FICA
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
+                    {/* COLUMNA IZQUIERDA */}
+                    <div className="flex flex-col">
+                        <h2 className="font-bold text-2xl leading-tight">
+                            FACULTAD DE INGENIERÍA Y CIENCIAS
+                        </h2>
+
+                        <h3 className="font-bold text-xl mb-6">
+                            Universidad de La Frontera
+                        </h3>
+
+                        <address className="not-italic text-base space-y-1 font-light">
+                            <p>Av. Francisco Salazar 01145, Temuco-Chile</p>
+                            <p>Casilla 54-D</p>
+                            <p>Fono: (56) (45) 23224009</p>
+                            <a
+                                href="mailto:secretaria.vincfica@ufrontera.cl"
+                                className="hover:underline"
+                            >
+                                email: secretaria.vincfica@ufrontera.cl
+                            </a>
+                        </address>
+
+                        {/* ÍCONOS REDES SOCIALES */}
+                        <div className="flex gap-4 mt-8">
+                            {socialIcons.map((icon) => (
+                                <a
+                                    key={icon.alt}
+                                    href="#"
+                                    aria-label={icon.alt}
+                                    className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-all"
+                                >
+                                    {icon.icon}
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* COLUMNA DERECHA */}
+                    <div className="flex justify-center md:justify-end">
+                        <img
+                            className="w-[430px] object-contain"
+                            alt="Institución acreditada"
+                            src={accreditationBanner}
+                        />
+                    </div>
+
+                </div>
+
+                {/* COPYRIGHT */}
+                <div className="mt-8 pt-5 border-t border-white/20 text-center text-base">
+                    © 2026 Universidad de la Frontera - Sistema de Gestión de Prácticas FICA
+                </div>
+
+            </div>
+        </footer>
+    );
 };
