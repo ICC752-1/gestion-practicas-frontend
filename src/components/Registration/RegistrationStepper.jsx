@@ -20,7 +20,7 @@ export const RegistrationStepper = ({ currentStep = 1 }) => {
                 className={`
                   w-16 h-16 rounded-full border-2 flex items-center justify-center transition-all duration-300
                   ${step.id <= currentStep 
-                    ? "border-[#b13168] bg-white text-[#b13168] shadow-md scale-110" 
+                    ? "border-[#d22864] bg-white text-[#d22864] shadow-md scale-110" 
                     : "border-gray-300 bg-white text-gray-400"}
                 `}
               >
@@ -31,7 +31,7 @@ export const RegistrationStepper = ({ currentStep = 1 }) => {
               <span 
                 className={`
                   mt-3 text-[11px] font-bold text-center leading-tight max-w-[100px] transition-colors duration-300
-                  ${step.id <= currentStep ? "text-[#b13168]" : "text-gray-400"}
+                  ${step.id <= currentStep ? "text-[#d22864]" : "text-gray-400"}
                 `}
               >
                 {step.label}
@@ -39,7 +39,7 @@ export const RegistrationStepper = ({ currentStep = 1 }) => {
 
               {/* Active Dot indicator below label like in image */}
               {step.id === currentStep && (
-                <div className="absolute -bottom-2 w-1.5 h-1.5 bg-[#b13168] rounded-full"></div>
+                <div className="absolute -bottom-2 w-1.5 h-1.5 bg-[#d22864] rounded-full"></div>
               )}
             </div>
 
@@ -47,7 +47,7 @@ export const RegistrationStepper = ({ currentStep = 1 }) => {
             {index < steps.length - 1 && (
               <div className="flex-1 h-[2px] bg-gray-300 mx-4 mt-8 transition-colors duration-300">
                 <div 
-                  className="h-full bg-[#b13168] transition-all duration-500" 
+                  className="h-full bg-[#d22864] transition-all duration-500"
                   style={{ width: step.id < currentStep ? "100%" : "0%" }}
                 ></div>
               </div>

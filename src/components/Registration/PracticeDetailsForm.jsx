@@ -57,7 +57,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
                 value="presencial" 
                 checked={formData.practiceType === 'presencial'}
                 onChange={handleChange}
-                className="w-6 h-6 accent-[#b13168]"
+                className="w-6 h-6 accent-[#d22864]"
               />
               <span className="text-xl text-gray-700">Presencial</span>
             </label>
@@ -68,7 +68,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
                 value="virtual" 
                 checked={formData.practiceType === 'virtual'}
                 onChange={handleChange}
-                className="w-6 h-6 accent-[#b13168]"
+                className="w-6 h-6 accent-[#d22864]"
               />
               <span className="text-xl text-gray-700">Virtual</span>
             </label>
@@ -84,7 +84,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
               name="startDate"
               value={formData.startDate}
               onChange={handleChange}
-              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
             />
           </div>
           <div className="space-y-3">
@@ -94,7 +94,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
               name="endDate"
               value={formData.endDate}
               onChange={handleChange}
-              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
             />
           </div>
         </div>
@@ -111,7 +111,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
                   value={day.id} 
                   checked={formData.days.includes(day.id)}
                   onChange={handleChange}
-                  className="w-6 h-6 accent-[#b13168]"
+                  className="w-6 h-6 accent-[#d22864]"
                 />
                 <span className="text-xl text-gray-700">{day.label}</span>
               </label>
@@ -128,7 +128,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
               name="startTime"
               value={formData.startTime}
               onChange={handleChange}
-              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
             />
           </div>
           <div className="space-y-3">
@@ -138,7 +138,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
               name="endTime"
               value={formData.endTime}
               onChange={handleChange}
-              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
             />
           </div>
         </div>
@@ -152,7 +152,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
             value={formData.address}
             onChange={handleChange}
             placeholder="Calle y número. Ej. Av. francia 01145"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all"
+            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
           />
         </div>
 
@@ -164,7 +164,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
               name="region" 
               value={formData.region} 
               onChange={handleChange}
-              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all appearance-none"
+              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all appearance-none"
             >
               <option value="">Seleccione una región</option>
               <option value="araucania">La Araucanía</option>
@@ -180,7 +180,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
               name="commune" 
               value={formData.commune} 
               onChange={handleChange}
-              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#b13168] focus:ring-1 focus:ring-[#b13168] outline-none transition-all appearance-none"
+              className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all appearance-none"
             >
               <option value="">Seleccione una comuna</option>
               <option value="temuco">Temuco</option>
@@ -194,13 +194,13 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
           <button 
             type="button"
             onClick={onBack}
-            className="flex-1 h-16 bg-[#b13168] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
           >
             Anterior
           </button>
           <button 
             type="submit"
-            className="flex-1 h-16 bg-[#b13168] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
           >
             Siguiente
           </button>

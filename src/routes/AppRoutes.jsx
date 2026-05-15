@@ -7,6 +7,7 @@ import { StudentDashboardPage } from '../pages/StudentDashboard/StudentDashboard
 import { CoordinatorDashboardPage } from '../pages/CoordinatorDashboard/CoordinatorDashboardPage'
 import { SeguimientoPage } from '../pages/Seguimiento/SeguimientoPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
+import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 export const AppRoutes = () => {
   return (
     <Routes>
@@ -19,6 +20,7 @@ export const AppRoutes = () => {
       <Route path="/coordinador" element={<CoordinatorDashboardPage />} />
       <Route path="/seguimiento" element={<SeguimientoPage />} />
       <Route path="/supervisor" element={<SupervisorPage />} />
+      <Route path="/autoevaluacion" element={<SelfEvaluationPage />} />
     </Routes>
   )
 }

@@ -128,7 +128,7 @@ export const Login = () => {
             </div>
             <button
               type="submit"
-              className="flex w-[444px] h-16 items-center justify-center gap-2.5 p-2.5 relative bg-variable-collection-FICA-primary rounded-[20px] hover:opacity-90 transition-opacity cursor-pointer"
+              className="flex w-[444px] h-16 items-center justify-center gap-2.5 p-2.5 relative bg-[#d22864] rounded-[20px] hover:opacity-90 transition-opacity cursor-pointer"
             >
               <span className="relative w-fit font-bold text-white text-2xl tracking-[0] leading-[normal]">
                 Iniciar Sesión
