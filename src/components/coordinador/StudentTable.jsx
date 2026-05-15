@@ -1,15 +1,7 @@
 import React from 'react';
 import { Search } from 'lucide-react';
 
-const mockStudents = [
-  { id: '1', name: 'Nombre estudiante', email: 'Correo electrónico', career: 'Ingeniería civil informática', company: 'Nombre empresa', status: 'En proceso' },
-  { id: '2', name: 'Nombre estudiante', email: 'Correo electrónico', career: 'Ingeniería civil informática', company: 'Nombre empresa', status: 'Pendiente' },
-  { id: '3', name: 'Nombre estudiante', email: 'Correo electrónico', career: 'Ingeniería civil informática', company: 'Nombre empresa', status: 'Completada' },
-  { id: '4', name: 'Nombre estudiante', email: 'Correo electrónico', career: 'Ingeniería civil informática', company: 'Nombre empresa', status: 'En proceso' },
-  { id: '5', name: 'Nombre estudiante', email: 'Correo electrónico', career: 'Ingeniería civil informática', company: 'Nombre empresa', status: 'En proceso' },
-];
-
-export const StudentTable = () => {
+export const StudentTable = ({ students = [] }) => {
   return (
     <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 space-y-4 md:space-y-0">
@@ -36,7 +28,7 @@ export const StudentTable = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {mockStudents.map((student) => (
+            {students.map((student) => (
               <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="py-5">
                   <p className="font-bold text-gray-800">{student.name}</p>

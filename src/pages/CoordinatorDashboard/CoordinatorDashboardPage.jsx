@@ -5,27 +5,10 @@ import { Footer } from '../../components/Footer/Footer';
 import { ActionCard } from '../../components/coordinador/ActionCard';
 import { StatCard } from '../../components/coordinador/StatCard';
 import { StudentTable } from '../../components/coordinador/StudentTable';
-import { 
-  Users, 
-  FileText, 
-  CheckCircle, 
-  Clock, 
-  AlertTriangle, 
-  Calendar 
-} from 'lucide-react';
+import { useCoordinatorData } from '../../hooks/useCoordinatorData';
 
 export const CoordinatorDashboardPage = () => {
-  const stats = [
-    { label: 'Total', value: '10', Icon: Users, variant: 'default' },
-    { label: 'En progreso', value: '10', Icon: Clock, variant: 'progress' },
-    { label: 'Pendientes', value: '10', Icon: AlertTriangle, variant: 'alert' },
-    { label: 'Completadas', value: '10', Icon: CheckCircle, variant: 'success' },
-  ];
-
-  const actions = [
-    { title: 'Gestión de Prácticas', description: 'Aprobar o rechazar solicitudes', Icon: FileText },
-    { title: 'Configurar Horarios', description: 'Gestionar horario disponibles para entrevistas', Icon: Calendar },
-  ];
+  const { stats, actions, students } = useCoordinatorData();
 
     return (
       <div className="min-h-screen flex flex-col bg-ufro-bg">
@@ -80,7 +63,7 @@ export const CoordinatorDashboardPage = () => {
           animate={{ opacity: 1, scale: 1 }} 
           transition={{ delay: 0.7 }}
         >
-          <StudentTable />
+          <StudentTable students={students} />
         </motion.div>
       </main>
 
