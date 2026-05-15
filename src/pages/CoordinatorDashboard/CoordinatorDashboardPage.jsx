@@ -1,28 +1,89 @@
-import { UserHeader } from "../../components/Header/UserHeader";
-import { Footer } from "../../components/Footer/Footer";
-import { motion } from "framer-motion";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { UserHeader } from '../../components/Header/UserHeader';
+import { Footer } from '../../components/Footer/Footer';
+import { ActionCard } from '../../components/coordinador/ActionCard';
+import { StatCard } from '../../components/coordinador/StatCard';
+import { StudentTable } from '../../components/coordinador/StudentTable';
+import { 
+  Users, 
+  FileText, 
+  CheckCircle, 
+  Clock, 
+  AlertTriangle, 
+  Calendar 
+} from 'lucide-react';
 
 export const CoordinatorDashboardPage = () => {
-  return (
-    <div className="bg-gray-50 min-h-screen flex flex-col relative overflow-x-hidden font-sans selection:bg-brand-medium selection:text-white">
-      <UserHeader userName="Coordinador FICA" userRole="Coordinador" />
-      <main className="flex-grow flex flex-col w-full">
+  const stats = [
+    { label: 'Total', value: '10', Icon: Users, variant: 'default' },
+    { label: 'En progreso', value: '10', Icon: Clock, variant: 'progress' },
+    { label: 'Pendientes', value: '10', Icon: AlertTriangle, variant: 'alert' },
+    { label: 'Completadas', value: '10', Icon: CheckCircle, variant: 'success' },
+  ];
+
+  const actions = [
+    { title: 'Gestión de Prácticas', description: 'Aprobar o rechazar solicitudes', Icon: FileText },
+    { title: 'Configurar Horarios', description: 'Gestionar horario disponibles para entrevistas', Icon: Calendar },
+  ];
+
+    return (
+      <div className="min-h-screen flex flex-col bg-ufro-bg">
+        <UserHeader userName="Coordinador FICA" userRole="Coordinador" />
+        
+        <main className="flex-grow container mx-auto px-4 py-12 max-w-6xl">
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold text-ufro-primary mb-1">Panel Coordinador</h2>
+            <p className="text-xl text-ufro-secondary font-medium tracking-tight">Bienvenido al sistema de gestión de prácticas profesionales.</p>
+          </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat, index) => (
+            <motion.div 
+              key={index} 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.1 * (index + 1) }}
+            >
+              <StatCard 
+                label={stat.label} 
+                value={stat.value} 
+                Icon={stat.Icon} 
+                variant={stat.variant}
+              />
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Actions Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          {actions.map((action, index) => (
+            <motion.div 
+              key={index} 
+              initial={{ opacity: 0, x: index === 0 ? -20 : 20 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              transition={{ delay: 0.5 + (index * 0.1) }}
+            >
+              <ActionCard 
+                title={action.title} 
+                description={action.description} 
+                Icon={action.Icon} 
+              />
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Students Table */}
         <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="max-w-7xl mx-auto py-12 px-6 space-y-12 w-full flex-grow flex items-center justify-center"
+          initial={{ opacity: 0, scale: 0.98 }} 
+          animate={{ opacity: 1, scale: 1 }} 
+          transition={{ delay: 0.7 }}
         >
-          <section className="flex flex-col items-center gap-6 px-12 py-16 bg-white rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-gray-50 text-center max-w-2xl">
-            <h1 className="text-4xl font-bold text-brand-medium">
-              Panel de Coordinador
-            </h1>
-            <p className="text-gray-500 text-xl leading-relaxed">
-              Bienvenido al panel de coordinación. Aquí podrás revisar y aprobar solicitudes de prácticas, supervisar los estados de los alumnos y generar reportes.
-            </p>
-          </section>
+          <StudentTable />
         </motion.div>
       </main>
+
       <Footer />
     </div>
   );

@@ -18,6 +18,10 @@
   --color-ufro-light-gray: #f8f9fa;
   --color-ufro-footer-start: #a31e4e;
   --color-ufro-footer-end: #6e2e8e;
+  --color-ufro-primary: #b02a6b;
+  --color-ufro-secondary: #8c2155;
+  --color-ufro-bg: #f8f9fa;
+  --color-ufro-footer: #9d2561;
 
   --animate-spin: spin 1s linear infinite;
   --animate-fade-in: fade-in 1s var(--animation-delay, 0s) ease forwards;
