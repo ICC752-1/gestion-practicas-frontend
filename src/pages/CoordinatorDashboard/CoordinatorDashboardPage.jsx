@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import Dashboard from '../../components/coordinador/Dashboard';
@@ -7,6 +8,7 @@ import { useCoordinatorDashboard } from '../../hooks/useCoordinatorDashboard';
 
 export const CoordinatorDashboardPage = () => {
   const [view, setView] = useState('dashboard');
+  const navigate = useNavigate();
   const { students, updateStudentStatus } = useCoordinatorDashboard();
 
   return (
@@ -18,6 +20,7 @@ export const CoordinatorDashboardPage = () => {
           <Dashboard 
             students={students} 
             onNavigateToManagement={() => setView('management')} 
+            onNavigateToScheduling={() => navigate('/entrevistas')}
           />
         ) : (
           <Management 

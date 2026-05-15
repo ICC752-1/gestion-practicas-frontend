@@ -1,7 +1,7 @@
 import { Search, Users, Clock, AlertCircle, CheckCircle, ClipboardCheck, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function Dashboard({ students, onNavigateToManagement }) {
+export default function Dashboard({ students, onNavigateToManagement, onNavigateToScheduling }) {
   const stats = [
     { label: 'Total', value: students.length, icon: Users, color: 'text-[#B5305F]' },
     { label: 'En curso', value: students.filter(s => s.estado === 'En curso').length, icon: Clock, color: 'text-red-500' },
@@ -67,6 +67,7 @@ export default function Dashboard({ students, onNavigateToManagement }) {
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          onClick={onNavigateToScheduling}
           className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
         >
           <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">

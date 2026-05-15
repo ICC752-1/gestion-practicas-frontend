@@ -8,6 +8,7 @@ import { CoordinatorDashboardPage } from '../pages/CoordinatorDashboard/Coordina
 import { SeguimientoPage } from '../pages/Seguimiento/SeguimientoPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
+import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
 export const AppRoutes = () => {
   return (
     <Routes>
@@ -21,6 +22,7 @@ export const AppRoutes = () => {
       <Route path="/seguimiento" element={<SeguimientoPage />} />
       <Route path="/supervisor" element={<SupervisorPage />} />
       <Route path="/autoevaluacion" element={<SelfEvaluationPage />} />
+      <Route path="/entrevistas" element={<InterviewSchedulingPage />} />
     </Routes>
   )
 }
