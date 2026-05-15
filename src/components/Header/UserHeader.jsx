@@ -34,7 +34,7 @@ export const UserHeader = ({ userName = "María Gómez", userRole = "Estudiante"
         <Link to="/faq" className="font-bold text-[#b13168] hover:opacity-80 transition-opacity">
           Preguntas Frecuentes
         </Link>
-        <Link to="#" className="font-bold text-[#b13168] hover:opacity-80 transition-opacity">
+        <Link to="/requisitos" className="font-bold text-[#b13168] hover:opacity-80 transition-opacity">
           Requisitos
         </Link>
       </nav>

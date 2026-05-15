@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 export const Header = () => {
   const navItems = [
     { label: "Preguntas Frecuentes", to: "/faq", active: false },
-    { label: "Requisitos", to: "#", active: false },
+    { label: "Requisitos", to: "/requisitos", active: false },
     { label: "Iniciar Sesión", to: "/login", active: true },
   ];
 

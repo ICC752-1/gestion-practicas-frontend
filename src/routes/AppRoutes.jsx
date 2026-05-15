@@ -8,6 +8,7 @@ import { CoordinatorDashboardPage } from '../pages/CoordinatorDashboard/Coordina
 import { SeguimientoPage } from '../pages/Seguimiento/SeguimientoPage'
 import { StudentEnrollmentPage } from '../pages/StudentEnrollment/StudentEnrollmentPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
+import RequirementsPage from '../pages/Requirements/RequirementsPage'
 export const AppRoutes = () => {
   return (
     <Routes>
@@ -21,6 +22,8 @@ export const AppRoutes = () => {
       <Route path="/seguimiento" element={<SeguimientoPage />} />
       <Route path="/inscripcion" element={<StudentEnrollmentPage />} />
       <Route path="/supervisor" element={<SupervisorPage />} />
+      <Route path="/requisitos" element={<RequirementsPage />} />
+      <Route path="/requirements" element={<RequirementsPage />} />
     </Routes>
   )
 }
