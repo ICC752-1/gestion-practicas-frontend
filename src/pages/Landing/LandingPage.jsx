@@ -27,7 +27,7 @@ export const LandingPage = () => {
           exit={{ opacity: 0 }}
         >
           {/* Hero Section */}
-          <section className="bg-brand-dark text-white py-24 px-6 relative overflow-hidden">
+          <section className="bg-brand-medium text-white py-24 px-6 relative overflow-hidden">
             <div className="max-w-4xl mx-auto text-center relative z-10">
               <motion.h2 
                 initial={{ y: -20, opacity: 0 }}

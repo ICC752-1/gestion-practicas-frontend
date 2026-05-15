@@ -4,19 +4,19 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   
   --color-variable-collection-color-placeholder: rgba(150, 150, 150, 1);
-  --color-variable-collection-FICA-primary: rgba(177, 49, 104, 1);
+  --color-variable-collection-FICA-primary: rgba(210, 40, 100, 1);
 
   /* Tokens de registro-practica */
   --color-brand-dark: #8B1D46;
-  --color-brand-medium: #A6265A;
+  --color-brand-medium: #d22864;
   --color-brand-light: #B03060;
   --color-brand-footer: #6B1334;
 
   /* Tokens de supervisor-flow */
   --color-ufro-maroon: #a31e4e;
-  --color-ufro-pink: #d1638d;
+  --color-ufro-pink: #d22864;
   --color-ufro-light-gray: #f8f9fa;
-  --color-ufro-footer-start: #a31e4e;
+  --color-ufro-footer-start: #d22864;
   --color-ufro-footer-end: #6e2e8e;
 
   --animate-spin: spin 1s linear infinite;
