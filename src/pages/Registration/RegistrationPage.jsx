@@ -40,8 +40,7 @@ export const RegistrationPage = () => {
           icon: User,
           checklist: [
             "Verifique que su correo está actualizado",
-            "Use su correo institucional (@ufromail.cl)",
-            "Asegúrese de tener un número de contacto válido"
+            "Use su correo institucional (@ufromail.cl)"
           ],
           form: <StudentInfoForm onNext={handleNext} initialData={formData} />
         };
