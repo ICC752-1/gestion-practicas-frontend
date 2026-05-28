@@ -47,21 +47,22 @@ export const RegistrationPage = () => {
       case 2:
         return {
           title: "Información de la Organización",
-          description: "Ingrese los datos de la organización donde realizará su práctica profesional y del supervisor que lo acompañará durante el proceso.",
+          description: "Ingrese los datos de la organización donde realizará su práctica profesional.",
           icon: Building2,
           checklist: [
             "Verifique la dirección completa de la empresa",
-            "Asegúrese de tener el contacto del supervisor"
+            "Asegúrese de que la información sea precisa para evitar inconvenientes durante el proceso de validación"
           ],
           form: <OrganizationInfoForm onNext={handleNext} onBack={handleBack} initialData={formData} />
         };
       case 3:
         return {
           title: "Información del supervisor/a",
-          description: "Especifique las fechas, horarios y actividades que realizará durante su práctica I o II",
+          description: "Especifique las datos del supervisor/a que estará a cargo de su práctica.",
           icon: UserRound,
           checklist: [
-            "El email del supervisor será el medio por donde se le contactará directamente"
+            "El email del supervisor será el medio por donde se le contactará directamente",
+            "Asegúrese de los datos del supervisor estén completos y sin errores"
           ],
           form: <SupervisorInfoForm onNext={handleNext} onBack={handleBack} initialData={formData} />
         };
