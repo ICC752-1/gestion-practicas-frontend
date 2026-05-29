@@ -9,7 +9,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
     days: initialData.days || [],
     startTime: initialData.startTime || '',
     endTime: initialData.endTime || '',
-    address: initialData.address || '',
+    internship_address: initialData.internship_address || '',
     region: initialData.region || '',
     commune: initialData.commune || '',
   });
@@ -58,8 +58,8 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
       newErrors.endTime = 'La hora de término es obligatoria.';
     }
 
-    if (!formData.address.trim()) {
-      newErrors.address = 'La dirección es obligatoria.';
+    if (!formData.internship_address.trim()) {
+      newErrors.internship_address = 'La dirección de la práctica es obligatoria.';
     }
 
     if (!formData.region) {
@@ -215,13 +215,13 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
           <label className="block text-xl font-bold text-black">Ingrese la dirección donde realizará su Práctica</label>
           <input 
             type="text" 
-            name="address"
-            value={formData.address}
+            name="internship_address"
+            value={formData.internship_address}
             onChange={handleChange}
             placeholder="Calle y número. Ej. Av. francia 01145"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.address ? 'border border-red-500' : 'border border-gray-300'}`}
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.internship_address ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.address && <p className="text-sm text-red-600">{errors.address}</p>}
+          {errors.internship_address && <p className="text-sm text-red-600">{errors.internship_address}</p>}
         </div>
 
         {/* Región y Comuna */}
@@ -258,19 +258,15 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
         </div>
 
         <div className="space-y-3">
-          <label className="block text-xl font-bold text-black">Seleccione la comuna donde realizará su Práctica</label>
-          <div className="relative">
-            <select 
-              name="commune" 
-              value={formData.commune} 
-              onChange={handleChange}
-              className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all appearance-none ${errors.commune ? 'border border-red-500' : 'border border-gray-300'}`}
-            >
-              <option value="">Seleccione una comuna</option>
-              <option value="temuco">Temuco</option>
-            </select>
-            <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-black pointer-events-none" size={28} />
-          </div>
+          <label className="block text-xl font-bold text-black">Comuna donde realizará su Práctica</label>
+          <input
+            type="text"
+            name="commune"
+            value={formData.commune}
+            onChange={handleChange}
+            placeholder="Ej: Temuco"
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.commune ? 'border border-red-500' : 'border border-gray-300'}`}
+          />
           {errors.commune && <p className="text-sm text-red-600">{errors.commune}</p>}
         </div>
 
