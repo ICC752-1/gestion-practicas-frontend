@@ -7,7 +7,7 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
     address: initialData.address || '',
     city: initialData.city || '',
     org_phone: initialData.org_phone || '',
-    website: initialData.website || '',
+    web: initialData.web || '',
   });
   const [errors, setErrors] = useState({});
 
@@ -43,8 +43,8 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
       newErrors.org_phone = 'Ingrese un teléfono válido. Puede incluir + al inicio.';
     }
 
-    if (!formData.website.trim()) {
-      newErrors.website = 'La página web es obligatoria.';
+    if (!formData.web.trim()) {
+      newErrors.web = 'La página web es obligatoria.';
     }
 
     setErrors(newErrors);
@@ -138,13 +138,13 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
           <label className="block text-2xl font-bold text-black">Página web</label>
           <input 
             type="url" 
-            name="website"
-            value={formData.website}
+            name="web"
+            value={formData.web}
             onChange={handleChange}
             placeholder="Ej: https://fica.ufro.cl/"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.website ? 'border border-red-500' : 'border border-gray-300'}`}
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.web ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.website && <p className="text-sm text-red-600">{errors.website}</p>}
+          {errors.web && <p className="text-sm text-red-600">{errors.web}</p>}
         </div>
 
         {/* Buttons */}
