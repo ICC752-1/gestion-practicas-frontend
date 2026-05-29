@@ -1,20 +1,21 @@
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+import api from './api';
 
 export const coordinatorService = {
   async getDashboardStats() {
-    const response = await axios.get(`${API_BASE_URL}/coordinator/stats`);
+    const response = await api.get('/admin/summary');
     return response.data;
   },
 
   async getPractices() {
-    const response = await axios.get(`${API_BASE_URL}/coordinator/practices`);
+    const response = await api.get('/admin/internships');
     return response.data;
   },
 
-  async updatePracticeStatus(practiceId, status) {
-    const response = await axios.patch(`${API_BASE_URL}/coordinator/practices/${practiceId}`, { status });
+  async updatePracticeStatus(studentId, requirementId, status) {
+    const response = await api.patch(
+      `/admin/students/${studentId}/internship-requirements/${requirementId}/status`,
+      { status }
+    );
     return response.data;
   },
 };
