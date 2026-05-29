@@ -16,13 +16,59 @@ export const RegistrationPage = () => {
   const [formData, setFormData] = useState({});
   const [isFinished, setIsFinished] = useState(false);
 
-  const handleNext = (stepData) => {
-    setFormData((prev) => ({ ...prev, ...stepData }));
+  const handleNext = async (stepData) => {
+    const updatedFormData = { ...formData, ...stepData };
+    setFormData(updatedFormData);
+
     if (currentStep === 5) {
-      setIsFinished(true);
+      try {
+        const payload = {
+          // Paso 2 - Organización
+          org_name:   updatedFormData.org_name,
+          sector:     updatedFormData.sector,
+          address:    updatedFormData.address,
+          city:       updatedFormData.city,
+          org_phone:  updatedFormData.org_phone,
+          web:        updatedFormData.website,
+
+          // Paso 4 - Detalles práctica
+          start_date:          updatedFormData.startDate,
+          end_date:            updatedFormData.endDate,
+          schedule:            `${updatedFormData.startTime} - ${updatedFormData.endTime}`,
+          days:                updatedFormData.days.join(", "),
+          modality:            updatedFormData.practiceType.charAt(0).toUpperCase() + updatedFormData.practiceType.slice(1),
+          internship_address:  updatedFormData.internship_address,
+
+          // Paso 5 - Actividades
+          act_description: updatedFormData.act_description,
+          ben_description: Array.isArray(updatedFormData.ben_description)
+                            ? updatedFormData.ben_description.join(", ")
+                            : updatedFormData.ben_description,
+          amount: Number(updatedFormData.amount) || 0,
+        };
+
+        const response = await fetch("http://localhost:8000/internships", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          console.error("Error del backend:", error);
+          alert("Hubo un error al registrar la práctica.");
+          return;
+        }
+
+        setIsFinished(true);
+      } catch (err) {
+        console.error("Error de red:", err);
+        alert("No se pudo conectar al servidor.");
+      }
     } else {
       setCurrentStep((prev) => prev + 1);
     }
+
     window.scrollTo(0, 0);
   };
 
@@ -40,29 +86,29 @@ export const RegistrationPage = () => {
           icon: User,
           checklist: [
             "Verifique que su correo está actualizado",
-            "Use su correo institucional (@ufromail.cl)",
-            "Asegúrese de tener un número de contacto válido"
+            "Use su correo institucional (@ufromail.cl)"
           ],
           form: <StudentInfoForm onNext={handleNext} initialData={formData} />
         };
       case 2:
         return {
           title: "Información de la Organización",
-          description: "Ingrese los datos de la organización donde realizará su práctica profesional y del supervisor que lo acompañará durante el proceso.",
+          description: "Ingrese los datos de la organización donde realizará su práctica profesional.",
           icon: Building2,
           checklist: [
             "Verifique la dirección completa de la empresa",
-            "Asegúrese de tener el contacto del supervisor"
+            "Asegúrese de que la información sea precisa para evitar inconvenientes durante el proceso de validación"
           ],
           form: <OrganizationInfoForm onNext={handleNext} onBack={handleBack} initialData={formData} />
         };
       case 3:
         return {
           title: "Información del supervisor/a",
-          description: "Especifique las fechas, horarios y actividades que realizará durante su práctica I o II",
+          description: "Especifique las datos del supervisor/a que estará a cargo de su práctica.",
           icon: UserRound,
           checklist: [
-            "El email del supervisor será el medio por donde se le contactará directamente"
+            "El email del supervisor será el medio por donde se le contactará directamente",
+            "Asegúrese de los datos del supervisor estén completos y sin errores"
           ],
           form: <SupervisorInfoForm onNext={handleNext} onBack={handleBack} initialData={formData} />
         };

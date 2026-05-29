@@ -9,15 +9,53 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
     supervisorEmail: initialData.supervisorEmail || '',
     supervisorPhone: initialData.supervisorPhone || '',
   });
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    const phonePattern = /^\+?[0-9]+$/;
+
+    if (!formData.supervisorName.trim()) {
+      newErrors.supervisorName = 'El nombre del supervisor es obligatorio.';
+    }
+
+    if (!formData.supervisorProfession.trim()) {
+      newErrors.supervisorProfession = 'La profesión es obligatoria.';
+    }
+
+    if (!formData.supervisorPosition.trim()) {
+      newErrors.supervisorPosition = 'El cargo es obligatorio.';
+    }
+
+    if (!formData.supervisorDepartment.trim()) {
+      newErrors.supervisorDepartment = 'El departamento es obligatorio.';
+    }
+
+    if (!formData.supervisorEmail.trim()) {
+      newErrors.supervisorEmail = 'El correo electrónico es obligatorio.';
+    }
+
+    if (!formData.supervisorPhone.trim()) {
+      newErrors.supervisorPhone = 'El teléfono es obligatorio.';
+    } else if (!phonePattern.test(formData.supervisorPhone.trim())) {
+      newErrors.supervisorPhone = 'El teléfono solo puede contener números y opcionalmente + al inicio.';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onNext?.(formData);
+    if (validateForm()) {
+      onNext?.(formData);
+    }
   };
 
   return (
@@ -33,9 +71,10 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
             name="supervisorName"
             value={formData.supervisorName}
             onChange={handleChange}
-            placeholder="Nombre supervisor/a"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
+            placeholder="Ej: Pedro Gonzalez Neira"
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisorName ? 'border border-red-500' : 'border border-gray-300'}`}
           />
+          {errors.supervisorName && <p className="text-sm text-red-600">{errors.supervisorName}</p>}
         </div>
 
         {/* Profesión */}
@@ -46,9 +85,10 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
             name="supervisorProfession"
             value={formData.supervisorProfession}
             onChange={handleChange}
-            placeholder="Profesión supervisor/a"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
+            placeholder="Ej: Ingeniero en Informática"
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisorProfession ? 'border border-red-500' : 'border border-gray-300'}`}
           />
+          {errors.supervisorProfession && <p className="text-sm text-red-600">{errors.supervisorProfession}</p>}
         </div>
 
         {/* Cargo */}
@@ -59,9 +99,10 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
             name="supervisorPosition"
             value={formData.supervisorPosition}
             onChange={handleChange}
-            placeholder="Cargo supervisor/a"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
+            placeholder="Ej: Jefe de Departamento"
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisorPosition ? 'border border-red-500' : 'border border-gray-300'}`}
           />
+          {errors.supervisorPosition && <p className="text-sm text-red-600">{errors.supervisorPosition}</p>}
         </div>
 
         {/* Departamento */}
@@ -72,9 +113,10 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
             name="supervisorDepartment"
             value={formData.supervisorDepartment}
             onChange={handleChange}
-            placeholder="Departamento Supervisor/a"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
+            placeholder="Ej: Departamento de Informática"
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisorDepartment ? 'border border-red-500' : 'border border-gray-300'}`}
           />
+          {errors.supervisorDepartment && <p className="text-sm text-red-600">{errors.supervisorDepartment}</p>}
         </div>
 
         {/* Email */}
@@ -85,9 +127,10 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
             name="supervisorEmail"
             value={formData.supervisorEmail}
             onChange={handleChange}
-            placeholder="Correo electrónico supervisor/a"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
+            placeholder="Ej: pedro.gonzalez@empresa.cl"
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisorEmail ? 'border border-red-500' : 'border border-gray-300'}`}
           />
+          {errors.supervisorEmail && <p className="text-sm text-red-600">{errors.supervisorEmail}</p>}
         </div>
 
         {/* Teléfono */}
@@ -98,9 +141,10 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
             name="supervisorPhone"
             value={formData.supervisorPhone}
             onChange={handleChange}
-            placeholder="Número de teléfono supervisor/a"
-            className="w-full h-16 px-6 bg-white border border-gray-300 rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all"
+            placeholder="Ej: +56912345678"
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisorPhone ? 'border border-red-500' : 'border border-gray-300'}`}
           />
+          {errors.supervisorPhone && <p className="text-sm text-red-600">{errors.supervisorPhone}</p>}
         </div>
 
         {/* Buttons */}
@@ -108,7 +152,7 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
           <button 
             type="button"
             onClick={onBack}
-            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+            className="flex-1 h-16 bg-white text-[#d22864] border border-[#d22864] text-2xl font-bold rounded-[20px] hover:bg-[#f9f4f7] transition-all shadow-sm cursor-pointer"
           >
             Anterior
           </button>
