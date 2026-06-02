@@ -2,9 +2,13 @@ import { useState } from 'react';
 
 export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
   const [formData, setFormData] = useState({
-    act_description: initialData.act_description || '',
-    ben_description: initialData.ben_description || '',
-    amount: initialData.amount || '',
+    activities: initialData.activities || '',
+    benefits: Array.isArray(initialData.benefits)
+      ? initialData.benefits
+      : initialData.benefits
+        ? initialData.benefits.split(", ")
+        : [],
+    paymentAmount: initialData.paymentAmount || '',
   });
 
   const [errors, setErrors] = useState({});
@@ -13,20 +17,21 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
     const { name, value, type, checked } = e.target;
     if (type === 'checkbox' && name === 'benefits') {
       const newBenefits = checked
-        ? [...formData.ben_description, value]
-        : formData.ben_description.filter(b => b !== value);
-      setFormData(prev => ({ ...prev, ben_description: newBenefits }));
+        ? [...formData.benefits, value]
+        : formData.benefits.filter(b => b !== value);
+      setFormData(prev => ({ ...prev, benefits: newBenefits }));
+      setErrors(prev => ({ ...prev, benefits: '' }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
-    setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.act_description.trim()) {
-      newErrors.act_description = 'La descripción de las actividades es obligatoria.';
+    if (!formData.activities.trim()) {
+      newErrors.activities = 'La descripción de las actividades es obligatoria.';
     }
 
     setErrors(newErrors);
@@ -63,13 +68,13 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
             Recuerde que las actividades deben tributar a los resultados de aprendizaje del programa de asignatura de su práctica.
           </p>
           <textarea
-            name="act_description"
-            value={formData.act_description}
+            name="activities"
+            value={formData.activities}
             onChange={handleChange}
             placeholder="Describa las actividades que realizará..."
             className={`w-full h-40 p-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all resize-none ${errors.activities ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.act_description && <p className="text-sm text-red-600">{errors.act_description}</p>}
+          {errors.activities && <p className="text-sm text-red-600">{errors.activities}</p>}
         </div>
 
         {/* Beneficios */}
@@ -82,7 +87,7 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
               <label
                 key={benefit.id}
                 className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${
-                  formData.ben_description.includes(benefit.id)
+                  formData.benefits.includes(benefit.id)
                     ? 'border-[#d22864] bg-[#ffe7f0]'
                     : 'border-gray-300 hover:bg-gray-50'
                 }`}
@@ -91,7 +96,7 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
                   type="checkbox"
                   name="benefits"
                   value={benefit.id}
-                  checked={formData.ben_description.includes(benefit.id)}
+                  checked={formData.benefits.includes(benefit.id)}
                   onChange={handleChange}
                   className="w-6 h-6 accent-[#d22864]"
                 />
@@ -111,8 +116,8 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
           </p>
           <input
             type="number"
-            name="amount"
-            value={formData.amount}
+            name="paymentAmount"
+            value={formData.paymentAmount}
             onChange={handleChange}
             placeholder="0"
             min="0"
