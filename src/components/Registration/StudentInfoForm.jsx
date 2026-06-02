@@ -5,8 +5,7 @@ import { ChevronDown } from 'lucide-react';
 export const StudentInfoForm = ({ onNext, initialData = {} }) => {
   const navigate = useNavigate();
   const careerOptions = {
-    '3095': 'Ingeniería Civil en Informática',
-    '30086': 'Ingeniería en Informática',
+    '3095': 'Ingeniería Civil Informática'
   };
 
   const [formData, setFormData] = useState({
@@ -102,7 +101,6 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
             >
               <option value="">Seleccione una opción</option>
               <option value="3095">3095</option>
-              <option value="30086">30086</option>
             </select>
             <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-black pointer-events-none" size={28} />
           </div>
