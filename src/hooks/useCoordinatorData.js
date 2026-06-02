@@ -1,38 +1,50 @@
-import { 
-  Users, 
-  FileText, 
-  CheckCircle, 
-  Clock, 
-  AlertTriangle, 
-  Calendar 
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, FileText, CheckCircle, Clock, AlertTriangle, Calendar } from 'lucide-react';
+import { coordinatorService } from '../services/coordinatorService';
 
 export const useCoordinatorData = () => {
-  const stats = [
-    { label: 'Total', value: '10', Icon: Users, variant: 'default' },
-    { label: 'En progreso', value: '10', Icon: Clock, variant: 'progress' },
-    { label: 'Pendientes', value: '10', Icon: AlertTriangle, variant: 'alert' },
-    { label: 'Completadas', value: '10', Icon: CheckCircle, variant: 'success' },
-  ];
+  const [stats, setStats] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsData, practicesData] = await Promise.all([
+          coordinatorService.getDashboardStats(),
+          coordinatorService.getPractices(),
+        ]);
+        setStats(statsData);
+        setStudents(practicesData);
+      } catch (err) {
+        setError(err.message || 'Error al cargar datos');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const actions = [
     { title: 'Gestión de Prácticas', description: 'Aprobar o rechazar solicitudes', Icon: FileText },
-    { title: 'Configurar Horarios', description: 'Gestionar horario disponibles para entrevistas', Icon: Calendar },
+    { title: 'Configurar Horarios', description: 'Gestionar horarios disponibles para entrevistas', Icon: Calendar },
   ];
 
-  const students = [
-    { id: '1', name: 'Camila Rojas', email: 'c.rojas01@ufromail.cl', career: 'Ingeniería Civil', company: 'Empresa A', status: 'En proceso' },
-    { id: '2', name: 'Diego Valenzuela', email: 'd.valenzuela02@ufromail.cl', career: 'Ingeniería Informática', company: 'Empresa B', status: 'Pendiente' },
-    { id: '3', name: 'Valentina Soto', email: 'v.soto03@ufromail.cl', career: 'Ingeniería Civil', company: 'Empresa C', status: 'Completada' },
-    { id: '4', name: 'Sebastián Muñoz', email: 's.munoz04@ufromail.cl', career: 'Ingeniería Informática', company: 'Empresa D', status: 'En proceso' },
-    { id: '5', name: 'Francisca Morales', email: 'f.morales05@ufromail.cl', career: 'Ingeniería Civil', company: 'Empresa E', status: 'Pendiente' },
-  ];
+  // Construye las stats cards con los datos reales del backend
+  const statsCards = stats ? [
+    { label: 'Total', value: String(stats.total_internships), Icon: Users, variant: 'default' },
+    { label: 'En progreso', value: String(stats.internships_by_status?.find(s => s.status === 'En curso')?.total ?? 0), Icon: Clock, variant: 'progress' },
+    { label: 'Pendientes', value: String(stats.internships_by_status?.find(s => s.status === 'Pendiente')?.total ?? 0), Icon: AlertTriangle, variant: 'alert' },
+    { label: 'Completadas', value: String(stats.internships_by_status?.find(s => s.status === 'Finalizada')?.total ?? 0), Icon: CheckCircle, variant: 'success' },
+  ] : [];
 
-  return { 
-    stats, 
-    actions, 
-    students, 
-    loading: false, 
-    error: null 
+  return {
+    stats: statsCards,
+    actions,
+    students,
+    loading,
+    error,
   };
 };

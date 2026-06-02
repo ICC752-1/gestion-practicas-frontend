@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/useAuth";
 import ficaLogo from "../../assets/logo_fica.jpg";
 import { Header } from "../Header/Header";
 import { Footer } from "../Footer/Footer";
@@ -8,18 +9,37 @@ export const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+    const {
+        login,
+        loading,
+        error
+    } = useAuth();
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    
-    if (email.endsWith("@ufromail.cl")) {
-      navigate("/dashboard");
-    } else if (email === "coordinador@ufrontera.cl") {
-      navigate("/coordinador");
-    } else if (email.endsWith("@ufrontera.cl")) {
-      navigate("/supervisor");
-    }
-  };
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        try {
+
+            const user = await login(email, password);
+
+            const roles = user.roles || [];
+
+            if (roles.includes("Estudiante")) {
+                navigate("/dashboard");
+
+            } else if (
+                roles.includes("Encargado de práctica")
+            ) {
+                navigate("/coordinador");
+
+            } else {
+                navigate("/supervisor");
+            }
+
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
   return (
     <div className="bg-[#f3f3f3] w-full min-h-screen flex flex-col relative overflow-x-hidden">
@@ -124,16 +144,24 @@ export const Login = () => {
                     aria-label="Contraseña"
                   />
                 </div>
+                  {
+                      error && (
+                          <div className="text-red-500 text-sm mt-2">
+                              {error}
+                          </div>
+                      )
+                  }
               </div>
             </div>
-            <button
-              type="submit"
-              className="flex w-[444px] h-16 items-center justify-center gap-2.5 p-2.5 relative bg-[#d22864] rounded-[20px] hover:opacity-90 transition-opacity cursor-pointer"
-            >
-              <span className="relative w-fit font-bold text-white text-2xl tracking-[0] leading-[normal]">
-                Iniciar Sesión
-              </span>
-            </button>
+              <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex w-[444px] h-16 items-center justify-center gap-2.5 p-2.5 relative bg-[#d22864] rounded-[20px] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+              >
+  <span className="relative w-fit font-bold text-white text-2xl tracking-[0] leading-[normal]">
+    {loading ? "Ingresando..." : "Iniciar Sesión"}
+  </span>
+              </button>
             <a
               href="#"
               className="relative w-[444px] h-[29px] font-normal text-black text-2xl text-center tracking-[0] leading-[normal] hover:underline"
@@ -145,6 +173,7 @@ export const Login = () => {
       </main>
       <Footer />
     </div>
+
   );
 };
 

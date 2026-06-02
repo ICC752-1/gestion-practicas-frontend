@@ -1,0 +1,20 @@
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
+
+export const PrivateRoute = ({ children }) => {
+    const { isAuthenticated, loading } = useAuth();
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                Cargando...
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return children;
+};
