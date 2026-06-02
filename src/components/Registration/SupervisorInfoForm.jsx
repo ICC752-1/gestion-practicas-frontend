@@ -2,12 +2,12 @@ import { useState } from 'react';
 
 export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
   const [formData, setFormData] = useState({
-    supervisor_name: initialData.supervisor_name || '',
-    supervisor_profession: initialData.supervisor_profession || '',
-    supervisor_position: initialData.supervisor_position || '',
-    supervisor_department: initialData.supervisor_department || '',
-    supervisor_email: initialData.supervisor_email || '',
-    supervisor_phone: initialData.supervisor_phone || '',
+    supervisorName: initialData.supervisorName || '',
+    supervisorProfession: initialData.supervisorProfession || '',
+    supervisorPosition: initialData.supervisorPosition || '',
+    supervisorDepartment: initialData.supervisorDepartment || '',
+    supervisorEmail: initialData.supervisorEmail || '',
+    supervisorPhone: initialData.supervisorPhone || '',
   });
   const [errors, setErrors] = useState({});
 
@@ -21,30 +21,30 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
     const newErrors = {};
     const phonePattern = /^\+?[0-9]+$/;
 
-    if (!formData.supervisor_name.trim()) {
-      newErrors.supervisor_name = 'El nombre del supervisor es obligatorio.';
+    if (!formData.supervisorName.trim()) {
+      newErrors.supervisorName = 'El nombre del supervisor es obligatorio.';
     }
 
-    if (!formData.supervisor_profession.trim()) {
-      newErrors.supervisor_profession = 'La profesión es obligatoria.';
+    if (!formData.supervisorProfession.trim()) {
+      newErrors.supervisorProfession = 'La profesión es obligatoria.';
     }
 
-    if (!formData.supervisor_position.trim()) {
-      newErrors.supervisor_position = 'El cargo es obligatorio.';
+    if (!formData.supervisorPosition.trim()) {
+      newErrors.supervisorPosition = 'El cargo es obligatorio.';
     }
 
-    if (!formData.supervisor_department.trim()) {
-      newErrors.supervisor_department = 'El departamento es obligatorio.';
+    if (!formData.supervisorDepartment.trim()) {
+      newErrors.supervisorDepartment = 'El departamento es obligatorio.';
     }
 
-    if (!formData.supervisor_email.trim()) {
-      newErrors.supervisor_email = 'El correo electrónico es obligatorio.';
+    if (!formData.supervisorEmail.trim()) {
+      newErrors.supervisorEmail = 'El correo electrónico es obligatorio.';
     }
 
-    if (!formData.supervisor_phone.trim()) {
-      newErrors.supervisor_phone = 'El teléfono es obligatorio.';
-    } else if (!phonePattern.test(formData.supervisor_phone.trim())) {
-      newErrors.supervisor_phone = 'El teléfono solo puede contener números y opcionalmente + al inicio.';
+    if (!formData.supervisorPhone.trim()) {
+      newErrors.supervisorPhone = 'El teléfono es obligatorio.';
+    } else if (!phonePattern.test(formData.supervisorPhone.trim())) {
+      newErrors.supervisorPhone = 'El teléfono solo puede contener números y opcionalmente + al inicio.';
     }
 
     setErrors(newErrors);
@@ -68,13 +68,13 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
           <label className="block text-xl font-bold text-black">Ingrese nombre completo del Supervisor de Práctica</label>
           <input 
             type="text" 
-            name="supervisor_name"
-            value={formData.supervisor_name}
+            name="supervisorName"
+            value={formData.supervisorName}
             onChange={handleChange}
             placeholder="Ej: Pedro Gonzalez Neira"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisor_name ? 'border border-red-500' : 'border border-gray-300'}`}
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisorName ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.supervisor_name && <p className="text-sm text-red-600">{errors.supervisor_name}</p>}
+          {errors.supervisorName && <p className="text-sm text-red-600">{errors.supervisorName}</p>}
         </div>
 
         {/* Profesión */}
@@ -82,13 +82,13 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
           <label className="block text-xl font-bold text-black">Ingrese profesión del Supervisor de Práctica</label>
           <input 
             type="text" 
-            name="supervisor_profession"
-            value={formData.supervisor_profession}
+            name="supervisorProfession"
+            value={formData.supervisorProfession}
             onChange={handleChange}
             placeholder="Ej: Ingeniero en Informática"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisor_profession ? 'border border-red-500' : 'border border-gray-300'}`}
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisorProfession ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.supervisor_profession && <p className="text-sm text-red-600">{errors.supervisor_profession}</p>}
+          {errors.supervisorProfession && <p className="text-sm text-red-600">{errors.supervisorProfession}</p>}
         </div>
 
         {/* Cargo */}
@@ -96,13 +96,13 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
           <label className="block text-xl font-bold text-black">Ingrese cargo del Supervisor de Práctica</label>
           <input 
             type="text" 
-            name="supervisor_position"
-            value={formData.supervisor_position}
+            name="supervisorPosition"
+            value={formData.supervisorPosition}
             onChange={handleChange}
             placeholder="Ej: Jefe de Departamento"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisor_position ? 'border border-red-500' : 'border border-gray-300'}`}
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisorPosition ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.supervisor_position && <p className="text-sm text-red-600">{errors.supervisor_position}</p>}
+          {errors.supervisorPosition && <p className="text-sm text-red-600">{errors.supervisorPosition}</p>}
         </div>
 
         {/* Departamento */}
@@ -124,13 +124,13 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
           <label className="block text-xl font-bold text-black">Ingrese correo electrónico del Supervisor de Práctica</label>
           <input 
             type="email" 
-            name="supervisor_email"
-            value={formData.supervisor_email}
+            name="supervisorEmail"
+            value={formData.supervisorEmail}
             onChange={handleChange}
             placeholder="Ej: pedro.gonzalez@empresa.cl"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisor_email ? 'border border-red-500' : 'border border-gray-300'}`}
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisorEmail ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.supervisor_email && <p className="text-sm text-red-600">{errors.supervisor_email}</p>}
+          {errors.supervisorEmail && <p className="text-sm text-red-600">{errors.supervisorEmail}</p>}
         </div>
 
         {/* Teléfono */}
@@ -138,13 +138,13 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
           <label className="block text-xl font-bold text-black">Ingrese número de teléfono del Supervisor de Práctica</label>
           <input 
             type="tel" 
-            name="supervisor_phone"
-            value={formData.supervisor_phone}
+            name="supervisorPhone"
+            value={formData.supervisorPhone}
             onChange={handleChange}
             placeholder="Ej: +56912345678"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisor_phone ? 'border border-red-500' : 'border border-gray-300'}`}
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.supervisorPhone ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.supervisor_phone && <p className="text-sm text-red-600">{errors.supervisor_phone}</p>}
+          {errors.supervisorPhone && <p className="text-sm text-red-600">{errors.supervisorPhone}</p>}
         </div>
 
         {/* Buttons */}
