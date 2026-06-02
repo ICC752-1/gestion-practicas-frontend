@@ -9,7 +9,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
     days: initialData.days || [],
     startTime: initialData.startTime || '',
     endTime: initialData.endTime || '',
-    internship_address: initialData.internship_address || '',
+    internshipAddress: initialData.internshipAddress || '',
     region: initialData.region || '',
     commune: initialData.commune || '',
   });
@@ -58,8 +58,8 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
       newErrors.endTime = 'La hora de término es obligatoria.';
     }
 
-    if (!formData.internship_address.trim()) {
-      newErrors.internship_address = 'La dirección de la práctica es obligatoria.';
+    if (!formData.internshipAddress.trim()) {
+      newErrors.internshipAddress = 'La dirección de la práctica es obligatoria.';
     }
 
     if (!formData.region) {
@@ -111,17 +111,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
               />
               <span className="text-xl text-gray-700">Presencial</span>
             </label>
-            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'virtual' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
-              <input 
-                type="radio" 
-                name="practiceType" 
-                value="virtual" 
-                checked={formData.practiceType === 'virtual'}
-                onChange={handleChange}
-                className="w-6 h-6 accent-[#d22864]"
-              />
-              <span className="text-xl text-gray-700">Virtual</span>
-            </label>
+          
             <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'remoto' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
               <input 
                 type="radio" 
@@ -133,6 +123,18 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
               />
               <span className="text-xl text-gray-700">Remoto</span>
             </label>
+            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'hibrido' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
+              <input 
+                type="radio" 
+                name="practiceType" 
+                value="hibrido" 
+                checked={formData.practiceType === 'hibrido'}
+                onChange={handleChange}
+                className="w-6 h-6 accent-[#d22864]"
+              />
+              <span className="text-xl text-gray-700">Híbrido</span>
+            </label>
+
           </div>
           {errors.practiceType && <p className="text-sm text-red-600">{errors.practiceType}</p>}
         </div>
@@ -215,13 +217,13 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
           <label className="block text-xl font-bold text-black">Ingrese la dirección donde realizará su Práctica</label>
           <input 
             type="text" 
-            name="internship_address"
-            value={formData.internship_address}
+            name="internshipAddress"
+            value={formData.internshipAddress}
             onChange={handleChange}
             placeholder="Calle y número. Ej. Av. francia 01145"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.internship_address ? 'border border-red-500' : 'border border-gray-300'}`}
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.internshipAddress ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.internship_address && <p className="text-sm text-red-600">{errors.internship_address}</p>}
+          {errors.internshipAddress && <p className="text-sm text-red-600">{errors.internshipAddress}</p>}
         </div>
 
         {/* Región y Comuna */}
