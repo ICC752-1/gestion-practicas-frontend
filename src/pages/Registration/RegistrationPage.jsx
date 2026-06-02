@@ -10,60 +10,61 @@ import { RegistrationSuccess } from "../../components/Registration/RegistrationS
 import { RegistrationInfoCard } from "../../components/Registration/RegistrationInfoCard";
 import { Footer } from "../../components/Footer/Footer";
 import { User, Building2, UserRound, ClipboardList, FileText } from "lucide-react";
+import { internshipService } from "../../services/internshipService";
 
 export const RegistrationPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
   const [isFinished, setIsFinished] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleNext = async (stepData) => {
     const updatedFormData = { ...formData, ...stepData };
     setFormData(updatedFormData);
 
     if (currentStep === 5) {
+      setIsSubmitting(true);
       try {
         const payload = {
           // Paso 2 - Organización
-          org_name:   updatedFormData.org_name,
-          sector:     updatedFormData.sector,
-          address:    updatedFormData.address,
-          city:       updatedFormData.city,
-          org_phone:  updatedFormData.org_phone,
-          web:        updatedFormData.website,
+          org_name:             updatedFormData.org_name,
+          sector:               updatedFormData.sector,
+          address:              updatedFormData.address,
+          city:                 updatedFormData.city,
+          org_phone:            updatedFormData.org_phone,
+          web:                  updatedFormData.website,
+
+          // Paso 3 - Supervisor
+          supervisor_name:       updatedFormData.supervisorName,
+          supervisor_profession: updatedFormData.supervisorProfession,
+          supervisor_position:   updatedFormData.supervisorPosition,
+          supervisor_department: updatedFormData.supervisorDepartment,
+          supervisor_email:      updatedFormData.supervisorEmail,
+          supervisor_phone:      updatedFormData.supervisorPhone,
 
           // Paso 4 - Detalles práctica
-          start_date:          updatedFormData.startDate,
-          end_date:            updatedFormData.endDate,
-          schedule:            `${updatedFormData.startTime} - ${updatedFormData.endTime}`,
-          days:                updatedFormData.days.join(", "),
-          modality:            updatedFormData.practiceType.charAt(0).toUpperCase() + updatedFormData.practiceType.slice(1),
-          internship_address:  updatedFormData.internship_address,
+          start_date:           updatedFormData.startDate,
+          end_date:             updatedFormData.endDate,
+          schedule:             `${updatedFormData.startTime} - ${updatedFormData.endTime}`,
+          days:                 updatedFormData.days.join(", "),
+          modality:             updatedFormData.practiceType.charAt(0).toUpperCase() + updatedFormData.practiceType.slice(1),
+          internship_address:   updatedFormData.internship_address,
 
           // Paso 5 - Actividades
-          act_description: updatedFormData.act_description,
-          ben_description: Array.isArray(updatedFormData.ben_description)
-                            ? updatedFormData.ben_description.join(", ")
-                            : updatedFormData.ben_description,
-          amount: Number(updatedFormData.amount) || 0,
+          act_description:      updatedFormData.act_description,
+          ben_description:      Array.isArray(updatedFormData.ben_description)
+                                  ? updatedFormData.ben_description.join(", ")
+                                  : updatedFormData.ben_description,
+          amount:               Number(updatedFormData.amount) || 0,
         };
 
-        const response = await fetch("http://localhost:8000/internships", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          console.error("Error del backend:", error);
-          alert("Hubo un error al registrar la práctica.");
-          return;
-        }
-
+        await internshipService.createIntership(payload);
         setIsFinished(true);
       } catch (err) {
-        console.error("Error de red:", err);
-        alert("No se pudo conectar al servidor.");
+        console.error("Error al registrar práctica:", err);
+        alert("Hubo un error al registrar la práctica.");
+      } finally {
+        setIsSubmitting(false);
       }
     } else {
       setCurrentStep((prev) => prev + 1);
@@ -133,7 +134,7 @@ export const RegistrationPage = () => {
             "Marque solo beneficios confirmados",
             "Ingrese $0 si no existe ayuda económica"
           ],
-          form: <ActivitiesForm onNext={handleNext} onBack={handleBack} initialData={formData} />
+          form: <ActivitiesForm onNext={handleNext} onBack={handleBack} initialData={formData} isSubmitting={isSubmitting} />
         };
       default:
         return {
@@ -155,12 +156,8 @@ export const RegistrationPage = () => {
       <main className="flex-grow container mx-auto px-4 py-8">
         {!isFinished && (
           <>
-            {/* Stepper Section */}
             <RegistrationStepper currentStep={currentStep} />
-
-            {/* Content Section */}
             <div className="flex flex-col items-center gap-12 mt-4 pb-16">
-              {/* Top: Info Card */}
               <div className="w-full flex justify-center">
                 <RegistrationInfoCard 
                   title={stepConfig.title}
@@ -169,8 +166,6 @@ export const RegistrationPage = () => {
                   checklist={stepConfig.checklist}
                 />
               </div>
-
-              {/* Bottom: Main Form */}
               <div className="w-full flex justify-center">
                 {stepConfig.form}
               </div>
@@ -191,5 +186,3 @@ export const RegistrationPage = () => {
 };
 
 export default RegistrationPage;
-
-
