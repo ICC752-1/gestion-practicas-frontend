@@ -2,12 +2,12 @@ import { useState } from 'react';
 
 export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
   const [formData, setFormData] = useState({
-    org_name: initialData.org_name || '',
+    organizationName: initialData.organizationName || '',
     sector: initialData.sector || '',
     address: initialData.address || '',
     city: initialData.city || '',
-    org_phone: initialData.org_phone || '',
-    web: initialData.web || '',
+    phone: initialData.phone || '',
+    website: initialData.website || '',
   });
   const [errors, setErrors] = useState({});
 
@@ -21,8 +21,8 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
     const newErrors = {};
     const phonePattern = /^\+?[0-9]+$/;
 
-    if (!formData.org_name.trim()) {
-      newErrors.org_name = 'El nombre de la organización es obligatorio.';
+    if (!formData.organizationName.trim()) {
+      newErrors.organizationName = 'El nombre de la organización es obligatorio.';
     }
 
     if (!formData.sector.trim()) {
@@ -37,14 +37,14 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
       newErrors.city = 'La ciudad es obligatoria.';
     }
 
-    if (!formData.org_phone.trim()) {
-      newErrors.org_phone = 'El teléfono es obligatorio.';
-    } else if (!phonePattern.test(formData.org_phone.trim())) {
-      newErrors.org_phone = 'Ingrese un teléfono válido. Puede incluir + al inicio.';
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'El teléfono es obligatorio.';
+    } else if (!phonePattern.test(formData.phone.trim())) {
+      newErrors.phone = 'Ingrese un teléfono válido. Puede incluir + al inicio.';
     }
 
-    if (!formData.web.trim()) {
-      newErrors.web = 'La página web es obligatoria.';
+    if (!formData.website.trim()) {
+      newErrors.website = 'La página web es obligatoria.';
     }
 
     setErrors(newErrors);
@@ -68,13 +68,13 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
           <label className="block text-2xl font-bold text-black">Nombre de la organización</label>
           <input 
             type="text" 
-            name="org_name"
-            value={formData.org_name}
+            name="organizationName"
+            value={formData.organizationName}
             onChange={handleChange}
             placeholder="Ej: Organización S.A"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.org_name ? 'border border-red-500' : 'border border-gray-300'}`}
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.organizationName ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.org_name && <p className="text-sm text-red-600">{errors.org_name}</p>}
+          {errors.organizationName && <p className="text-sm text-red-600">{errors.organizationName}</p>}
         </div>
 
         {/* Rubro */}
@@ -124,13 +124,13 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
           <label className="block text-2xl font-bold text-black">Teléfono de la organización</label>
           <input 
             type="tel" 
-            name="org_phone"
-            value={formData.org_phone}
+            name="phone"
+            value={formData.phone}
             onChange={handleChange}
             placeholder="Ej: +56912356789"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.org_phone ? 'border border-red-500' : 'border border-gray-300'}`}
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.phone ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.org_phone && <p className="text-sm text-red-600">{errors.org_phone}</p>}
+          {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
         </div>
 
         {/* Página web */}
@@ -138,13 +138,13 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
           <label className="block text-2xl font-bold text-black">Página web</label>
           <input 
             type="url" 
-            name="web"
-            value={formData.web}
+            name="website"
+            value={formData.website}
             onChange={handleChange}
             placeholder="Ej: https://fica.ufro.cl/"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.web ? 'border border-red-500' : 'border border-gray-300'}`}
+            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.website ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.web && <p className="text-sm text-red-600">{errors.web}</p>}
+          {errors.website && <p className="text-sm text-red-600">{errors.website}</p>}
         </div>
 
         {/* Buttons */}
