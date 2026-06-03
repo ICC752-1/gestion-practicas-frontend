@@ -18,9 +18,50 @@ const DashboardSkeleton = () => (
   </div>
 );
 
-const Dashboard = () => {
-  const { stats, loading, error, refreshData } = useCoordinatorState();
+const Dashboard = ({ students = [] }) => {
+  const { stats: apiStats, loading, error, refreshData, practices } = useCoordinatorState();
   const navigate = useNavigate();
+
+  // Si la API de stats falla (devuelve 0 por el fallback 403), calculamos desde las prácticas cargadas
+  const calculatedStats = React.useMemo(() => {
+    const list = (practices && practices.length > 0) ? practices : (students || []);
+    if (list.length === 0) return { total: 0, pending: 0, inReview: 0, approved: 0 };
+
+    return {
+      total: list.length,
+      pending: list.filter(s => {
+        const statusValue = typeof s.status === 'object' ? s.status?.title : s.status;
+        const normalizedStatus = String(statusValue || '').toLowerCase();
+        return normalizedStatus === 'pendiente' || normalizedStatus === 'submitted' || normalizedStatus === 'submited' || normalizedStatus === '';
+      }).length,
+      inReview: list.filter(s => {
+        const statusValue = typeof s.status === 'object' ? s.status?.title : s.status;
+        const normalizedStatus = String(statusValue || '').toLowerCase();
+        return normalizedStatus === 'en revisión' || normalizedStatus === 'en revision' || normalizedStatus === 'in_review';
+      }).length,
+      approved: list.filter(s => {
+        const statusValue = typeof s.status === 'object' ? s.status?.title : s.status;
+        const normalizedStatus = String(statusValue || '').toLowerCase();
+        return normalizedStatus === 'aprobada' || normalizedStatus === 'aprobado' || normalizedStatus === 'approved';
+      }).length
+    };
+  }, [practices, students]);
+
+  const stats = (apiStats && apiStats.total_internships > 0) ? {
+    total: apiStats.total_internships,
+    pending: apiStats.internships_by_status?.find(s => {
+      const status = String(s.status || '').toLowerCase();
+      return status === 'pendiente' || status === 'submitted' || status === 'submited';
+    })?.total || 0,
+    inReview: apiStats.internships_by_status?.find(s => {
+      const status = String(s.status || '').toLowerCase();
+      return status === 'en revisión' || status === 'en revision' || status === 'in_review';
+    })?.total || 0,
+    approved: apiStats.internships_by_status?.find(s => {
+      const status = String(s.status || '').toLowerCase();
+      return status === 'aprobada' || status === 'aprobado' || status === 'approved';
+    })?.total || 0,
+  } : calculatedStats;
 
   if (loading) return <DashboardSkeleton />;
   
@@ -46,25 +87,25 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           label="Total" 
-          value={stats?.total || 0} 
+          value={stats.total} 
           Icon={Users} 
           variant="default"
         />
         <StatCard 
           label="Pendientes" 
-          value={stats?.submitted || 0} 
+          value={stats.pending} 
           Icon={Clock} 
           variant="alert"
         />
         <StatCard 
           label="En Revisión" 
-          value={stats?.in_review || 0} 
+          value={stats.inReview} 
           Icon={AlertCircle} 
           variant="progress"
         />
         <StatCard 
           label="Aprobadas" 
-          value={stats?.approved || 0} 
+          value={stats.approved} 
           Icon={CheckCircle} 
           variant="success"
         />
@@ -75,7 +116,7 @@ const Dashboard = () => {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
-        >git
+        >
           <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
             <FileText className="w-7 h-7 text-[#B5305F] group-hover:text-white transition-colors" />
           </div>
@@ -101,7 +142,7 @@ const Dashboard = () => {
         </motion.button>
       </div>
        
-       <Management />
+       <Management students={students} />
     </div>
   );
 };

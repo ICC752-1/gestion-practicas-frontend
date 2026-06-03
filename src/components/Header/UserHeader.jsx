@@ -6,7 +6,8 @@ export const UserHeader = ({ userName = "María Gómez", userRole = "Estudiante"
   const navigate = useNavigate();
   
   const handleLogout = () => {
-    navigate("/login");
+    localStorage.removeItem("token");
+    window.location.href = "/login";
   };
   return (
     <header className="flex w-full items-center justify-between px-10 h-20 bg-white border-b-[3px] border-[#d22864] z-50 shadow-sm sticky top-0">

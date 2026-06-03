@@ -23,16 +23,17 @@ export const Login = () => {
             const user = await login(email, password);
 
             const roles = user.roles || [];
+            console.log("[DEBUG_LOG] Roles detectados en Login:", roles);
 
             if (roles.includes("Estudiante")) {
                 navigate("/dashboard");
-
             } else if (
-                roles.includes("Encargado de practica") || 
-                roles.includes("Director de carrera")
+                roles.includes("Encargado de practica") ||
+                roles.includes("Director de carrera") ||
+                roles.includes("Coordinador") ||
+                roles.includes("Coordinador FICA")
             ) {
                 navigate("/coordinador");
-
             } else {
                 navigate("/supervisor");
             }

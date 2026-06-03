@@ -12,7 +12,7 @@ export const useCoordinatorState = () => {
     try {
       const [statsData, practicesData] = await Promise.all([
         internshipService.getInternshipStats(),
-        internshipService.getInternships('submitted'),
+        internshipService.getInternships(),
       ]);
       setStats(statsData);
       setPractices(practicesData);

@@ -2,9 +2,7 @@ import React from 'react';
 import { useCoordinatorState } from '../../hooks/useCoordinatorState';
 import { StudentTable } from '../coordinador/StudentTable';
 
-const Management = () => {
-  const { practices, loading } = useCoordinatorState();
-
+const Management = ({ students }) => {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] border border-gray-100/50">
       <div className="flex justify-between items-center mb-6">
@@ -13,7 +11,7 @@ const Management = () => {
           Export Report
         </button>
       </div>
-      <StudentTable students={practices} />
+      <StudentTable students={students} />
     </div>
   );
 };
