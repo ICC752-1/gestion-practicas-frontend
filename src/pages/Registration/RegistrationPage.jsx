@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserHeader } from "../../components/Header/UserHeader";
 import { RegistrationStepper } from "../../components/Registration/RegistrationStepper";
+import { PracticeTypeForm } from "../../components/Registration/PracticeTypeForm";
 import { StudentInfoForm } from "../../components/Registration/StudentInfoForm";
 import { OrganizationInfoForm } from "../../components/Registration/OrganizationInfoForm";
 import { SupervisorInfoForm } from "../../components/Registration/SupervisorInfoForm";
@@ -16,6 +17,7 @@ import { internshipService } from "../../services/internshipService";
 export const RegistrationPage = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [showPracticeType, setShowPracticeType] = useState(true);
   const [formData, setFormData] = useState({});
   const [isFinished, setIsFinished] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,6 +29,12 @@ export const RegistrationPage = () => {
   
     const updatedFormData = { ...formData, ...stepData };
 
+    const modalityMap = {
+      presencial: "Presencial",
+      remoto: "Remoto",
+      hibrido: "Híbrido",
+    };
+
     setFormData(updatedFormData);
 
     if (currentStep === 5) {
@@ -36,6 +44,10 @@ export const RegistrationPage = () => {
 
       try {
         const payload = {
+          // Paso Inicial - Tipo y período de práctica
+          internship_type:       updatedFormData.internship_type,
+          internship_period:     updatedFormData.internship_period,
+
           // Paso 2 - Organización
           org_name:              updatedFormData.organizationName,
           sector:                updatedFormData.sector,
@@ -57,7 +69,7 @@ export const RegistrationPage = () => {
           end_date:              updatedFormData.endDate,
           schedule:              `${updatedFormData.startTime} - ${updatedFormData.endTime}`,
           days:                  updatedFormData.days?.join(", "),
-          modality:              updatedFormData.practiceType?.charAt(0).toUpperCase() + updatedFormData.practiceType?.slice(1),
+          modality: modalityMap[updatedFormData.practiceType],
           internship_address:    updatedFormData.internshipAddress,
 
           // Paso 5 - Actividades
@@ -67,10 +79,7 @@ export const RegistrationPage = () => {
                                    : updatedFormData.benefits,
           amount:                Number(updatedFormData.paymentAmount) || 0,
 
-          // Campos temporales
-          internship_period:     "Semestre",
-          internship_type:       "Práctica de Estudio I",
-          has_school_insurance:  false,
+          has_school_insurance: true,
         };
         
         const result = await internshipService.createInternship(payload);
@@ -129,17 +138,41 @@ export const RegistrationPage = () => {
 
   const getStepConfig = () => {
     switch (currentStep) {
+
+
       case 1:
         return {
           title: "Información Personal",
-          description: "Complete sus datos personales y de contacto. Esta información será utilizada para comunicarnos con usted durante el periodo de práctica.",
+          description:
+            "Complete los antecedentes iniciales y sus datos personales.",
           icon: User,
           checklist: [
+            "Seleccione el tipo de práctica",
             "Verifique que su correo está actualizado",
             "Use su correo institucional (@ufromail.cl)",
           ],
-          form: <StudentInfoForm onNext={handleNext} initialData={formData} />,
+          form: showPracticeType ? (
+            <PracticeTypeForm
+              initialData={formData}
+              onBack={() => navigate('/dashboard')}
+              onNext={(data) => {
+                setFormData((prev) => ({ ...prev, ...data }));
+                setShowPracticeType(false);
+                window.scrollTo(0, 0);
+              }}
+            />
+          ) : (
+            <StudentInfoForm
+              initialData={formData}
+              onNext={handleNext}
+              onBack={() => {
+                setShowPracticeType(true);
+                window.scrollTo(0, 0);
+              }}
+            />
+          ),
         };
+
       case 2:
         return {
           title: "Información de la Organización",
