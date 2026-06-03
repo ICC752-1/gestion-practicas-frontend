@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 
-export const StudentInfoForm = ({ onNext, initialData = {} }) => {
+export const StudentInfoForm = ({ onNext, onBack, initialData = {} }) => {
   const navigate = useNavigate();
   const careerOptions = {
     '3095': 'Ingeniería Civil Informática'
@@ -155,7 +155,7 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
         <div className="flex gap-4 mt-8">
           <button 
             type="button"
-            onClick={() => navigate('/dashboard')}
+            onClick={onBack}
             className="flex-1 h-16 bg-white text-[#d22864] border border-[#d22864] text-2xl font-bold rounded-[20px] hover:bg-[#f9f4f7] transition-all shadow-sm cursor-pointer"
           >
             Volver
