@@ -12,7 +12,7 @@ export const PracticeTypeForm = ({ onNext, onBack, initialData = {} }) => {
   const [errors, setErrors] = useState({});
   const [showRequirementModal, setShowRequirementModal] = useState(false);
 
-  // Valor temporal para las pruebas de frontend - se asume que el estudiante tiene seguro escolar. En la integración real, este dato vendrá del backend.
+  // Valor temporal para las pruebas de frontend - se asume que el estudiante no tiene seguro escolar. En la integración real, este dato vendrá del backend.
   const hasSchoolInsurance = false;
 
   const validateForm = () => {
@@ -47,7 +47,7 @@ export const PracticeTypeForm = ({ onNext, onBack, initialData = {} }) => {
       return;
     }
 
-    // Caso 1 y 3
+    // Caso 1 y 3para 
     onNext?.(formData);
   };
 
