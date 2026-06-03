@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from "framer-motion";
 import { 
   Plus, 
@@ -16,6 +16,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
+import { internshipService } from '../../services/internshipService';
 
 // --- Sub-components ---
 
@@ -37,9 +38,21 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const formatDate = (dateStr) => {
+  if (!dateStr) return '—';
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-CL', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
 const PracticeCard = ({ title, company, supervisor, startDate, endDate, status, showEvalButton }) => {
   const navigate = useNavigate();
   
+  const [internships, setInternships] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -120,7 +133,22 @@ const QuickAction = ({ icon: Icon, title, desc, onClick, primary }) => (
 
 export const StudentDashboardPage = () => {
   const navigate = useNavigate();
+  const [internships, setInternships] = useState([]);   // ← agregar
+  const [loading, setLoading] = useState(true); 
 
+  useEffect(() => {
+    const loadInternships = async () => {
+      try {
+        const data = await internshipService.getMyInternship();
+        setInternships(data);
+      } catch (error) {
+        console.error('Error cargando prácticas:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInternships();
+  }, []);
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans selection:bg-[#d22864]/10 selection:text-[#d22864]">
       <UserHeader />
@@ -165,10 +193,33 @@ export const StudentDashboardPage = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   Mis Prácticas
-                  <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-1 rounded-md">2 TOTAL</span>
+                  <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-1 rounded-md">
+                    {internships.length} TOTAL
+                  </span>
                 </h3>
               </div>
-
+              {loading ? (
+                  <div className="bg-white rounded-[2rem] p-8 shadow">
+                    Cargando prácticas...
+                  </div>
+                ) : internships.length === 0 ? (
+                  <div className="bg-white rounded-[2rem] p-8 shadow">
+                    No tienes prácticas registradas.
+                  </div>
+                ) : (
+                  internships.map((internship) => (
+                    <PracticeCard
+                      key={internship.id}
+                      title={internship.internship_type}
+                      company={internship.org_name}
+                      supervisor={internship.supervisor_name}
+                      startDate={formatDate(internship.start_date)}
+                      endDate={formatDate(internship.end_date)}
+                      status="Inscripción en revisión"
+                      showEvalButton={false}
+                    />
+                  ))
+                )}
               <PracticeCard 
                 title="Práctica I"
                 company="Software Company"
