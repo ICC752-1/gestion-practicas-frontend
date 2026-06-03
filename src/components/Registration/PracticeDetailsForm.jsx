@@ -123,12 +123,12 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
               />
               <span className="text-xl text-gray-700">Remoto</span>
             </label>
-            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'hibrido' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
+            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'híbrido' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
               <input 
                 type="radio" 
                 name="practiceType" 
-                value="hibrido" 
-                checked={formData.practiceType === 'hibrido'}
+                value="híbrido" 
+                checked={formData.practiceType === 'híbrido'}
                 onChange={handleChange}
                 className="w-6 h-6 accent-[#d22864]"
               />
