@@ -70,11 +70,26 @@ const Dashboard = () => {
         />
        </div>
        
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <motion.button 
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
+        >git
+          <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
+            <FileText className="w-7 h-7 text-[#B5305F] group-hover:text-white transition-colors" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">Gestión de Prácticas</h3>
+            <p className="text-sm text-gray-400">Administra las solicitudes y estados</p>
+          </div>
+        </motion.button>
+
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/entrevistas')}
-          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group w-full"
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
         >
           <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
             <Calendar className="w-7 h-7 text-[#B5305F] group-hover:text-white transition-colors" />
@@ -84,6 +99,7 @@ const Dashboard = () => {
             <p className="text-sm text-gray-400">Gestiona tus horarios disponibles para las entrevistas</p>
           </div>
         </motion.button>
+      </div>
        
        <Management />
     </div>

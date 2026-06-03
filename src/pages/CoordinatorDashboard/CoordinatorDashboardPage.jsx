@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
-import Dashboard from '../../components/coordinador/Dashboard';
-import Management from '../../components/coordinador/Management';
+import Dashboard from '../../components/CoordinatorDashboard/Dashboard';
+import Management from '../../components/CoordinatorDashboard/Management';
 import { useCoordinatorDashboard } from '../../hooks/useCoordinatorDashboard';
 
 export const CoordinatorDashboardPage = () => {

@@ -44,24 +44,34 @@ export const StudentTable = ({ students = [] }) => {
           <tbody className="divide-y divide-gray-50">
             {students.map((student) => (
               <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
+                {/* Columna Estudiante */}
                 <td className="py-5">
-                  <p className="font-bold text-gray-800">{student.name}</p>
-                  <p className="text-xs text-gray-400 font-medium">{student.email}</p>
+                  <p className="font-bold text-gray-800">
+                    {student.student ? `${student.student.first_name} ${student.student.last_name}` : 'Estudiante no registrado'}
+                  </p>
+                  <p className="text-xs text-gray-400 font-medium">{student.student?.email}</p>
                 </td>
+
+                {/* Columna Carrera */}
                 <td className="py-5">
-                  <p className="text-sm text-gray-700 font-medium">{student.career}</p>
+                  <p className="text-sm text-gray-700 font-medium">{student.student?.degree || 'N/A'}</p>
                 </td>
+
+                {/* Columna Empresa */}
                 <td className="py-5">
-                  <p className="text-sm text-gray-700 font-medium">{student.company}</p>
+                  <p className="text-sm text-gray-700 font-medium">{student.org_name}</p>
                 </td>
+
+                {/* Columna Estado */}
                 <td className="py-5 text-center">
                   <span className={`
                     px-6 py-1.5 rounded-full text-white text-xs font-bold inline-block min-w-32
-                    ${student.status === 'En proceso' ? 'bg-ufro-primary' : ''}
-                    ${student.status === 'Pendiente' ? 'bg-ufro-footer' : ''}
-                    ${student.status === 'Completada' ? 'bg-ufro-secondary' : ''}
+                    ${student.status === 'in_review' ? 'bg-blue-500' : ''}
+                    ${student.status === 'submitted' ? 'bg-amber-500' : ''}
+                    ${student.status === 'approved' ? 'bg-emerald-500' : ''}
+                    ${student.status === 'rejected' ? 'bg-red-500' : ''}
                   `}>
-                    {student.status}
+                    {student.status_label}
                   </span>
                 </td>
                 <td className="py-5 text-right">
