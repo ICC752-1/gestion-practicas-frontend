@@ -52,6 +52,7 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
     { id: 'colacion_org', label: 'Colación organización' },
     { id: 'alojamiento', label: 'Bono alojamiento' },
     { id: 'ayuda', label: 'Ayuda económica' },
+    { id: 'Ningun beneficio', label: 'Ningún beneficio' },
   ];
 
   return (
