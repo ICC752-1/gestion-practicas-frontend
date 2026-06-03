@@ -28,7 +28,8 @@ export const Login = () => {
                 navigate("/dashboard");
 
             } else if (
-                roles.includes("Encargado de práctica")
+                roles.includes("Encargado de practica") || 
+                roles.includes("Director de carrera")
             ) {
                 navigate("/coordinador");
 

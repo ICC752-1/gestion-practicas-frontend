@@ -16,4 +16,14 @@ export const internshipService = {
         return response.data;
     },
 
+    async getInternships(status) {
+        const params = status ? { status } : {};
+        const response = await api.get('/internships', { params });
+        return response.data;
+    },
+
+    async getInternshipStats() {
+        const response = await api.get('/internships/stats');
+        return response.data;
+    },
 }

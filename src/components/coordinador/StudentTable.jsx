@@ -1,7 +1,21 @@
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, Inbox } from 'lucide-react';
 
 export const StudentTable = ({ students = [] }) => {
+  if (students.length === 0) {
+    return (
+      <div className="bg-white rounded-3xl p-12 shadow-xl border border-gray-100 flex flex-col items-center justify-center text-center space-y-4">
+        <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center">
+          <Inbox className="w-10 h-10 text-gray-300" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-gray-800">No hay prácticas registradas aún</h3>
+          <p className="text-gray-500 max-w-xs mx-auto">Cuando los estudiantes envíen sus solicitudes de práctica, aparecerán en esta lista.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 space-y-4 md:space-y-0">

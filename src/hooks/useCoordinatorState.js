@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { coordinatorService } from '../services/coordinatorService';
+import { internshipService } from '../services/internshipService';
 
 export const useCoordinatorState = () => {
   const [stats, setStats] = useState(null);
@@ -11,13 +11,14 @@ export const useCoordinatorState = () => {
     setLoading(true);
     try {
       const [statsData, practicesData] = await Promise.all([
-        coordinatorService.getDashboardStats(),
-        coordinatorService.getPractices(),
+        internshipService.getInternshipStats(),
+        internshipService.getInternships('submitted'),
       ]);
       setStats(statsData);
       setPractices(practicesData);
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to fetch coordinator data');
+      setError(err.response?.data?.message || err.message || 'Failed to fetch coordinator data');
     } finally {
       setLoading(false);
     }
