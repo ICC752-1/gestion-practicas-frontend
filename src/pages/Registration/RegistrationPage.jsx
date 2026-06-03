@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { UserHeader } from "../../components/Header/UserHeader";
 import { RegistrationStepper } from "../../components/Registration/RegistrationStepper";
 import { StudentInfoForm } from "../../components/Registration/StudentInfoForm";
@@ -13,26 +14,35 @@ import { User, Building2, UserRound, ClipboardList, FileText } from "lucide-reac
 import { internshipService } from "../../services/internshipService";
 
 export const RegistrationPage = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
   const [isFinished, setIsFinished] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [internshipResult, setInternshipResult] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleNext = async (stepData) => {
+  
     const updatedFormData = { ...formData, ...stepData };
+
     setFormData(updatedFormData);
 
     if (currentStep === 5) {
       setIsSubmitting(true);
+      setSubmitError(null);
+      setFieldErrors({});
+
       try {
         const payload = {
           // Paso 2 - Organización
-          org_name:             updatedFormData.org_name,
-          sector:               updatedFormData.sector,
-          address:              updatedFormData.address,
-          city:                 updatedFormData.city,
-          org_phone:            updatedFormData.org_phone,
-          web:                  updatedFormData.website,
+          org_name:              updatedFormData.organizationName,
+          sector:                updatedFormData.sector,
+          address:               updatedFormData.address,
+          city:                  updatedFormData.city,
+          org_phone:             updatedFormData.phone,
+          web:                   updatedFormData.website,
 
           // Paso 3 - Supervisor
           supervisor_name:       updatedFormData.supervisorName,
@@ -43,29 +53,66 @@ export const RegistrationPage = () => {
           supervisor_phone:      updatedFormData.supervisorPhone,
 
           // Paso 4 - Detalles práctica
-          start_date:           updatedFormData.startDate,
-          end_date:             updatedFormData.endDate,
-          schedule:             `${updatedFormData.startTime} - ${updatedFormData.endTime}`,
-          days:                 updatedFormData.days.join(", "),
-          modality:             updatedFormData.practiceType.charAt(0).toUpperCase() + updatedFormData.practiceType.slice(1),
-          internship_address:   updatedFormData.internship_address,
+          start_date:            updatedFormData.startDate,
+          end_date:              updatedFormData.endDate,
+          schedule:              `${updatedFormData.startTime} - ${updatedFormData.endTime}`,
+          days:                  updatedFormData.days?.join(", "),
+          modality:              updatedFormData.practiceType?.charAt(0).toUpperCase() + updatedFormData.practiceType?.slice(1),
+          internship_address:    updatedFormData.internshipAddress,
 
           // Paso 5 - Actividades
-          act_description:      updatedFormData.act_description,
-          ben_description:      Array.isArray(updatedFormData.ben_description)
-                                  ? updatedFormData.ben_description.join(", ")
-                                  : updatedFormData.ben_description,
-          amount:               Number(updatedFormData.amount) || 0,
-        };
+          act_description:       updatedFormData.activities,
+          ben_description:       Array.isArray(updatedFormData.benefits)
+                                   ? updatedFormData.benefits.join(", ")
+                                   : updatedFormData.benefits,
+          amount:                Number(updatedFormData.paymentAmount) || 0,
 
-        await internshipService.createIntership(payload);
+          // Campos temporales
+          internship_period:     "Semestre",
+          internship_type:       "Práctica de Estudio I",
+          has_school_insurance:  false,
+        };
+        
+        const result = await internshipService.createInternship(payload);
+        
+
+        setInternshipResult(result);
         setIsFinished(true);
+
       } catch (err) {
-        console.error("Error al registrar práctica:", err);
-        alert("Hubo un error al registrar la práctica.");
+        console.log("Error completo:", err);
+        console.log("err.response:", err.response);
+
+        if (!err.response) {
+          setSubmitError("No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.");
+        } else {
+          const status = err.response.status;
+
+          if (status === 400) {
+            const detail = err.response.data?.detail;
+            if (Array.isArray(detail)) {
+              const mapped = {};
+              detail.forEach(({ loc, msg }) => {
+                const field = loc?.[loc.length - 1];
+                if (field) mapped[field] = msg;
+              });
+              setFieldErrors(mapped);
+              setSubmitError("Por favor corrige los errores antes de continuar.");
+            } else {
+              setSubmitError("Datos inválidos. Revisa el formulario.");
+            }
+          } else if (status === 401) {
+            navigate("/login");
+          } else if (status === 403) {
+            setSubmitError("No tiene permisos para registrar prácticas.");
+          } else {
+            setSubmitError("Ocurrió un error inesperado. Intenta nuevamente.");
+          }
+        }
       } finally {
         setIsSubmitting(false);
       }
+
     } else {
       setCurrentStep((prev) => prev + 1);
     }
@@ -75,6 +122,8 @@ export const RegistrationPage = () => {
 
   const handleBack = () => {
     setCurrentStep((prev) => prev - 1);
+    setSubmitError(null);
+    setFieldErrors({});
     window.scrollTo(0, 0);
   };
 
@@ -87,9 +136,9 @@ export const RegistrationPage = () => {
           icon: User,
           checklist: [
             "Verifique que su correo está actualizado",
-            "Use su correo institucional (@ufromail.cl)"
+            "Use su correo institucional (@ufromail.cl)",
           ],
-          form: <StudentInfoForm onNext={handleNext} initialData={formData} />
+          form: <StudentInfoForm onNext={handleNext} initialData={formData} />,
         };
       case 2:
         return {
@@ -98,9 +147,9 @@ export const RegistrationPage = () => {
           icon: Building2,
           checklist: [
             "Verifique la dirección completa de la empresa",
-            "Asegúrese de que la información sea precisa para evitar inconvenientes durante el proceso de validación"
+            "Asegúrese de que la información sea precisa para evitar inconvenientes durante el proceso de validación",
           ],
-          form: <OrganizationInfoForm onNext={handleNext} onBack={handleBack} initialData={formData} />
+          form: <OrganizationInfoForm onNext={handleNext} onBack={handleBack} initialData={formData} />,
         };
       case 3:
         return {
@@ -109,9 +158,9 @@ export const RegistrationPage = () => {
           icon: UserRound,
           checklist: [
             "El email del supervisor será el medio por donde se le contactará directamente",
-            "Asegúrese de los datos del supervisor estén completos y sin errores"
+            "Asegúrese de los datos del supervisor estén completos y sin errores",
           ],
-          form: <SupervisorInfoForm onNext={handleNext} onBack={handleBack} initialData={formData} />
+          form: <SupervisorInfoForm onNext={handleNext} onBack={handleBack} initialData={formData} />,
         };
       case 4:
         return {
@@ -121,9 +170,9 @@ export const RegistrationPage = () => {
           checklist: [
             "Duración practica I : 176 horas",
             "Duración practica II : 168 horas",
-            "Considere el formato 24 horas"
+            "Considere el formato 24 horas",
           ],
-          form: <PracticeDetailsForm onNext={handleNext} onBack={handleBack} initialData={formData} />
+          form: <PracticeDetailsForm onNext={handleNext} onBack={handleBack} initialData={formData} />,
         };
       case 5:
         return {
@@ -132,9 +181,9 @@ export const RegistrationPage = () => {
           icon: FileText,
           checklist: [
             "Marque solo beneficios confirmados",
-            "Ingrese $0 si no existe ayuda económica"
+            "Ingrese $0 si no existe ayuda económica",
           ],
-          form: <ActivitiesForm onNext={handleNext} onBack={handleBack} initialData={formData} isSubmitting={isSubmitting} />
+          form: <ActivitiesForm onNext={handleNext} onBack={handleBack} initialData={formData} isSubmitting={isSubmitting} />,
         };
       default:
         return {
@@ -142,7 +191,7 @@ export const RegistrationPage = () => {
           description: "Complete los datos solicitados para continuar.",
           icon: User,
           checklist: [],
-          form: null
+          form: null,
         };
     }
   };
@@ -152,20 +201,36 @@ export const RegistrationPage = () => {
   return (
     <div className="bg-[#f3f3f3] min-h-screen flex flex-col font-sans">
       <UserHeader />
-      
+
       <main className="flex-grow container mx-auto px-4 py-8">
         {!isFinished && (
           <>
             <RegistrationStepper currentStep={currentStep} />
             <div className="flex flex-col items-center gap-12 mt-4 pb-16">
               <div className="w-full flex justify-center">
-                <RegistrationInfoCard 
+                <RegistrationInfoCard
                   title={stepConfig.title}
                   description={stepConfig.description}
                   icon={stepConfig.icon}
                   checklist={stepConfig.checklist}
                 />
               </div>
+
+              {submitError && (
+                <div className="w-full max-w-[650px] bg-red-50 border border-red-300 rounded-[20px] px-6 py-4 text-red-700 text-base">
+                  {submitError}
+                  {Object.keys(fieldErrors).length > 0 && (
+                    <ul className="mt-2 list-disc list-inside space-y-1 text-sm">
+                      {Object.entries(fieldErrors).map(([field, msg]) => (
+                        <li key={field}>
+                          <span className="font-semibold">{field}:</span> {msg}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+
               <div className="w-full flex justify-center">
                 {stepConfig.form}
               </div>
@@ -175,7 +240,12 @@ export const RegistrationPage = () => {
 
         {isFinished && (
           <div className="flex justify-center py-12">
-            <RegistrationSuccess />
+            <RegistrationSuccess
+              internshipId={internshipResult?.id}
+              uploadDate={internshipResult?.upload_date}
+              status="Pendiente de revisión"
+              internshipData={internshipResult}
+            />
           </div>
         )}
       </main>
