@@ -12,8 +12,8 @@ export const PracticeTypeForm = ({ onNext, onBack, initialData = {} }) => {
   const [errors, setErrors] = useState({});
   const [showRequirementModal, setShowRequirementModal] = useState(false);
 
-  // Temporal hasta implementar la validación real
-  const hasSchoolInsurance = true;
+  // Valor temporal para las pruebas de frontend - se asume que el estudiante tiene seguro escolar. En la integración real, este dato vendrá del backend.
+  const hasSchoolInsurance = false;
 
   const validateForm = () => {
     const newErrors = {};
