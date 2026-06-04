@@ -23,3 +23,14 @@ dist-ssr
 *.sln
 *.sw?
 .env
+<<<<<<< HEAD
+=======
+
+# Agent & Skills configuration (local to each developer)
+.opencode/
+.agents/
+GUIA_AGENTES.md
+opencode.json
+AGENTS.md
+skills-lock.json
+>>>>>>> develop
