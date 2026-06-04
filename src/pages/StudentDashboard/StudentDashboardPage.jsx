@@ -16,6 +16,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
+import { useAuth } from "../../context/useAuth";
 import { internshipService } from '../../services/internshipService';
 
 // --- Sub-components ---
@@ -133,6 +134,12 @@ const QuickAction = ({ icon: Icon, title, desc, onClick, primary }) => (
 
 export const StudentDashboardPage = () => {
   const navigate = useNavigate();
+    const { user } = useAuth();
+
+    const userName = user
+        ? `${user.first_name} ${user.last_name}`
+        : "Estudiante";
+        
   const [internships, setInternships] = useState([]);   // ← agregar
   const [loading, setLoading] = useState(true); 
 
