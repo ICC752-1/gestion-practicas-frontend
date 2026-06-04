@@ -139,7 +139,7 @@ export const StudentDashboardPage = () => {
     const userName = user
         ? `${user.first_name} ${user.last_name}`
         : "Estudiante";
-        
+
   const [internships, setInternships] = useState([]);   // ← agregar
   const [loading, setLoading] = useState(true); 
 
@@ -171,7 +171,7 @@ export const StudentDashboardPage = () => {
             >
               <div>
                 <h2 className="text-4xl font-black text-gray-900 tracking-tight leading-none mb-3">
-                  Hola, María <span className="inline-block animate-bounce-slow">👋</span>
+                  Hola, {userName} <span className="inline-block animate-bounce-slow">👋</span>
                 </h2>
                 <p className="text-gray-500 font-medium text-lg">
                   Tienes una práctica pendiente de autoevaluación.
