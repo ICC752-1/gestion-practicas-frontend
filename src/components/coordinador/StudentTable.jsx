@@ -7,12 +7,32 @@ export const StudentTable = ({ students = [] }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredStudents = students.filter(s => {
+    // FE4: Mapear datos reales (estudiante, organización, ciudad, región, fechas, tipo de práctica)
     const name = s.student ? `${s.student.first_name} ${s.student.last_name}`.toLowerCase() : '';
     const email = s.student?.email?.toLowerCase() || '';
+    const degree = s.student?.degree?.toLowerCase() || '';
     const org = s.org_name?.toLowerCase() || '';
-    const term = searchTerm.toLowerCase();
     
-    return name.includes(term) || email.includes(term) || org.includes(term);
+    // Datos FE4 mapeados para búsqueda (sin mostrar columnas en tabla)
+    const city = s.city?.toLowerCase() || '';
+    const region = s.region?.toLowerCase() || '';
+    const practiceType = (s.modality || s.practice_type || '').toLowerCase();
+    const startDate = s.start_date?.toString().toLowerCase() || '';
+    const endDate = s.end_date?.toString().toLowerCase() || '';
+    
+    const term = searchTerm.toLowerCase();
+
+    return (
+      name.includes(term) ||
+      email.includes(term) ||
+      degree.includes(term) ||
+      org.includes(term) ||
+      city.includes(term) ||
+      region.includes(term) ||
+      practiceType.includes(term) ||
+      startDate.includes(term) ||
+      endDate.includes(term)
+    );
   });
 
   if (students.length === 0) {
@@ -36,7 +56,7 @@ export const StudentTable = ({ students = [] }) => {
         <div className="relative w-full md:w-96">
           <input
             type="text"
-            placeholder="Buscar estudiante o empresa..."
+            placeholder="Buscar por estudiante, carrera o empresa..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-ufro-primary/20 focus:border-ufro-primary transition-all"
@@ -57,50 +77,58 @@ export const StudentTable = ({ students = [] }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {filteredStudents.map((student) => (
-              <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
-                {/* Columna Estudiante */}
-                <td className="py-5">
-                  <div className="flex flex-col">
-                    <span className="font-bold text-gray-800 leading-tight">
-                      {student.student ? `${student.student.first_name} ${student.student.last_name}` : "Estudiante no registrado"}
+            {filteredStudents.map((student) => {
+              // FE4: Normalizar estado
+              const getNormalizedStatus = (status) => {
+                const statusStr = String(status?.title || status || '').toLowerCase();
+                if (statusStr.includes('revisi') || status === 'in_review') return { label: 'En Revisión', color: 'bg-blue-500' };
+                if (statusStr.includes('aprob') || status === 'approved') return { label: 'Aprobado', color: 'bg-emerald-500' };
+                if (statusStr.includes('rechaz') || status === 'rejected') return { label: 'Rechazado', color: 'bg-red-500' };
+                if (!status || statusStr === 'pendiente' || status === 'submitted' || status === 'submited') return { label: 'Pendiente', color: 'bg-amber-500' };
+                return { label: status || 'Pendiente', color: 'bg-gray-500' };
+              };
+
+              const normalizedStatus = getNormalizedStatus(student.status);
+
+              return (
+                <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="py-5 px-4">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-gray-800 leading-tight text-sm">
+                        {student.student ? `${student.student.first_name} ${student.student.last_name}` : 'Estudiante no registrado'}
+                      </span>
+                      <span className="text-xs text-gray-400 font-medium">{student.student?.email}</span>
+                    </div>
+                  </td>
+
+                  <td className="py-5 px-4">
+                    <p className="text-sm text-gray-700 font-medium">{student.student?.degree || 'N/A'}</p>
+                  </td>
+
+                  <td className="py-5 px-4">
+                    <p className="text-sm text-gray-700 font-medium">{student.org_name || 'N/A'}</p>
+                  </td>
+
+                  <td className="py-5 px-4 text-center">
+                    <span className={`
+                      px-6 py-1.5 rounded-full text-white text-xs font-bold inline-block min-w-32
+                      ${normalizedStatus.color}
+                    `}>
+                      {normalizedStatus.label}
                     </span>
-                    <span className="text-xs text-gray-400 font-medium">{student.student?.email}</span>
-                  </div>
-                </td>
+                  </td>
 
-                {/* Columna Carrera */}
-                <td className="py-5">
-                  <p className="text-sm text-gray-700 font-medium">{student.student?.degree || 'N/A'}</p>
-                </td>
-
-                {/* Columna Empresa */}
-                <td className="py-5">
-                  <p className="text-sm text-gray-700 font-medium">{student.org_name}</p>
-                </td>
-
-                {/* Columna Estado */}
-                <td className="py-5 text-center">
-                  <span className={`
-                    px-6 py-1.5 rounded-full text-white text-xs font-bold inline-block min-w-32
-                    ${(String(student.status?.title || student.status).toLowerCase().includes('revisi') || student.status === "in_review") ? "bg-blue-500" : ""}
-                    ${(!student.status || String(student.status?.title || student.status).toLowerCase() === "pendiente" || student.status === "submitted" || student.status === "submited") ? "bg-amber-500" : ""}
-                    ${(String(student.status?.title || student.status).toLowerCase().includes('aprob') || student.status === "approved") ? "bg-emerald-500" : ""}
-                    ${(String(student.status?.title || student.status).toLowerCase().includes('rechaz') || student.status === "rejected") ? "bg-red-500" : ""}
-                  `}>
-                    {typeof student.status === 'object' ? student.status?.title : ( (student.status === "submitted" || student.status === "submited") ? "Pendiente" : (student.status || "Pendiente"))}
-                  </span>
-                </td>
-                <td className="py-5 text-right">
-                  <button 
-                    onClick={() => navigate(`/coordinador/practica/${student.id}`)}
-                    className="text-ufro-primary font-bold hover:underline text-sm transition-all"
-                  >
-                    Ver detalles
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  <td className="py-5 px-4 text-right">
+                    <button
+                      onClick={() => navigate(`/coordinador/practica/${student.id}`)}
+                      className="text-ufro-primary font-bold hover:underline text-sm transition-all"
+                    >
+                      Ver detalles
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
