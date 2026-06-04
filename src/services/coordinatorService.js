@@ -18,6 +18,8 @@ export const coordinatorService = {
   },
 
   async getPractices(status) {
+
+
     const params = status ? { status } : {};
     try {
       const response = await api.get('/admin/internships', { params });

@@ -196,7 +196,7 @@ export const StudentTable = ({ students = [] }) => {
 
                     <td className="py-5 px-4 text-right">
                       <button
-                        onClick={() => navigate(`/coordinador/practica/${student.id}`)}
+                        onClick={() => navigate(`/coordinador/practica/${student.id}`, { state: { student: student.student } })}
                         className="text-ufro-primary font-bold hover:underline text-sm transition-all"
                       >
                         Ver detalles
