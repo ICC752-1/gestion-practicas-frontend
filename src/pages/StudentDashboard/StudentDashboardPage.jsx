@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { 
   Plus, 
@@ -11,11 +11,33 @@ import {
   Calendar,
   Building2,
   User,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
+import { useAuth } from "../../context/useAuth";
+import { internshipService } from "../../services/internshipService";
+
+// --- Helpers ---
+const STATUS_LABELS = {
+  1: 'Pendiente',
+  2: 'En revisión',
+  3: 'Aprobada',
+  4: 'Rechazada',
+  5: 'En revisión DIRAE'
+};
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-';
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-CL', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+};
 
 // --- Sub-components ---
 
@@ -120,6 +142,27 @@ const QuickAction = ({ icon: Icon, title, desc, onClick, primary }) => (
 
 export const StudentDashboardPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [internships, setInternships] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchInternships = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await internshipService.getMyInternships();
+        setInternships(data);
+      } catch (err) {
+        setError(err.message || 'Error al cargar las prácticas');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInternships();
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans selection:bg-[#d22864]/10 selection:text-[#d22864]">
@@ -136,10 +179,12 @@ export const StudentDashboardPage = () => {
             >
               <div>
                 <h2 className="text-4xl font-black text-gray-900 tracking-tight leading-none mb-3">
-                  Hola, María <span className="inline-block animate-bounce-slow">👋</span>
+                  Hola, {user?.first_name || 'Estudiante'} <span className="inline-block animate-bounce-slow">👋</span>
                 </h2>
                 <p className="text-gray-500 font-medium text-lg">
-                  Tienes una práctica pendiente de autoevaluación.
+                  {internships.length > 0
+                    ? `Tienes ${internships.length} práctica${internships.length > 1 ? 's' : ''} registrada${internships.length > 1 ? 's' : ''}.`
+                    : 'No tienes prácticas inscritas aún.'}
                 </p>
               </div>
               <div className="flex gap-4">
@@ -165,29 +210,64 @@ export const StudentDashboardPage = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   Mis Prácticas
-                  <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-1 rounded-md">2 TOTAL</span>
+                  <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-1 rounded-md">{internships.length} TOTAL</span>
                 </h3>
               </div>
 
-              <PracticeCard 
-                title="Práctica I"
-                company="Software Company"
-                supervisor="Roberto Sáez"
-                startDate="15 Mar 2026"
-                endDate="15 May 2026"
-                status="Pendiente Autoevaluación"
-                showEvalButton={true}
-              />
+              {loading && (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Loader2 className="animate-spin text-[#d22864]" size={48} />
+                  <p className="mt-4 text-gray-500 font-medium">Cargando tus prácticas...</p>
+                </div>
+              )}
 
-              <PracticeCard 
-                title="Práctica II"
-                company="Tech Solutions Corp"
-                supervisor="Ana Martínez"
-                startDate="01 Ago 2026"
-                endDate="30 Oct 2026"
-                status="Inscripción en revisión"
-                showEvalButton={false}
-              />
+              {error && (
+                <div className="flex flex-col items-center justify-center py-20 bg-red-50 rounded-3xl p-8">
+                  <AlertCircle className="text-red-500" size={48} />
+                  <p className="mt-4 text-red-600 font-medium text-center">{error}</p>
+                  <button
+                    onClick={() => {
+                      setLoading(true);
+                      setError(null);
+                      internshipService.getMyInternships()
+                        .then(setInternships)
+                        .catch((err) => setError(err.message || 'Error al cargar'))
+                        .finally(() => setLoading(false));
+                    }}
+                    className="mt-4 flex items-center gap-2 bg-red-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors"
+                  >
+                    <RefreshCw size={18} />
+                    Reintentar
+                  </button>
+                </div>
+              )}
+
+              {!loading && !error && internships.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-3xl p-8">
+                  <ClipboardCheck className="text-gray-300" size={48} />
+                  <p className="mt-4 text-gray-500 font-medium text-center">No tienes prácticas inscritas</p>
+                  <button
+                    onClick={() => navigate('/inscripcion')}
+                    className="mt-4 flex items-center gap-2 bg-[#d22864] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#b01e52] transition-colors"
+                  >
+                    <Plus size={18} />
+                    Inscribirte ahora
+                  </button>
+                </div>
+              )}
+
+              {!loading && !error && internships.map((internship) => (
+                <PracticeCard 
+                  key={internship.id}
+                  title={internship.internship_type}
+                  company={internship.org_name}
+                  supervisor={internship.supervisor_name}
+                  startDate={formatDate(internship.start_date)}
+                  endDate={formatDate(internship.end_date)}
+                  status={STATUS_LABELS[internship.status_id] || 'En Proceso'}
+                  showEvalButton={internship.status_id === 3}
+                />
+              ))}
             </div>
 
             {/* Side Actions & Widgets */}
@@ -206,7 +286,7 @@ export const StudentDashboardPage = () => {
                   icon={Play} 
                   title="Ver Seguimiento" 
                   desc="Revisa el estado de tus procesos actuales"
-                  onClick={() => navigate('/seguimiento')}
+                  onClick={() => navigate(internships.length > 0 ? `/seguimiento/${internships[0].id}` : '/seguimiento')}
                 />
                 <QuickAction 
                   icon={Upload} 

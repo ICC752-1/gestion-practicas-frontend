@@ -10,6 +10,7 @@ import { RegistrationSuccess } from "../../components/Registration/RegistrationS
 import { RegistrationInfoCard } from "../../components/Registration/RegistrationInfoCard";
 import { Footer } from "../../components/Footer/Footer";
 import { User, Building2, UserRound, ClipboardList, FileText } from "lucide-react";
+import api from "../../services/api";
 
 export const RegistrationPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -29,14 +30,22 @@ export const RegistrationPage = () => {
           address:    updatedFormData.address,
           city:       updatedFormData.city,
           org_phone:  updatedFormData.org_phone,
-          web:        updatedFormData.website,
+          web:        updatedFormData.web,
+
+          // Paso 3 - Supervisor
+          supervisor_name:       updatedFormData.supervisorName,
+          supervisor_profession: updatedFormData.supervisorProfession,
+          supervisor_position:   updatedFormData.supervisorPosition,
+          supervisor_department: updatedFormData.supervisorDepartment,
+          supervisor_email:      updatedFormData.supervisorEmail,
+          supervisor_phone:      updatedFormData.supervisorPhone,
 
           // Paso 4 - Detalles práctica
           start_date:          updatedFormData.startDate,
           end_date:            updatedFormData.endDate,
           schedule:            `${updatedFormData.startTime} - ${updatedFormData.endTime}`,
           days:                updatedFormData.days.join(", "),
-          modality:            updatedFormData.practiceType.charAt(0).toUpperCase() + updatedFormData.practiceType.slice(1),
+          modality:            updatedFormData.practiceType,
           internship_address:  updatedFormData.internship_address,
 
           // Paso 5 - Actividades
@@ -45,16 +54,22 @@ export const RegistrationPage = () => {
                             ? updatedFormData.ben_description.join(", ")
                             : updatedFormData.ben_description,
           amount: Number(updatedFormData.amount) || 0,
+
+          // Campos del paso 1 (estudiante y práctica)
+          internship_period:     updatedFormData.internship_period,
+          internship_type:       updatedFormData.internship_type,
+          // Para períodos estivales (Verano/Invierno) el backend exige has_school_insurance=true
+          // Para Semestre se envía true por defecto ya que el checkbox no se muestra
+          has_school_insurance: (updatedFormData.internship_period === 'Semestre')
+            ? true
+            : (updatedFormData.has_school_insurance ?? true),
         };
 
-        const response = await fetch("http://localhost:8000/internships", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+        const response = await api.post("/internships", payload);
+        console.log("Payload enviado:", JSON.stringify(payload, null, 2));
 
-        if (!response.ok) {
-          const error = await response.json();
+        if (response.status !== 201 && response.status !== 200) {
+          const error = response.data;
           console.error("Error del backend:", error);
           alert("Hubo un error al registrar la práctica.");
           return;
@@ -63,6 +78,7 @@ export const RegistrationPage = () => {
         setIsFinished(true);
       } catch (err) {
         console.error("Error de red:", err);
+        console.error("Error completo:", err.response?.data || err);
         alert("No se pudo conectar al servidor.");
       }
     } else {

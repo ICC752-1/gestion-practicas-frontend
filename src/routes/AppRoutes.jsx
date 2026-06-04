@@ -63,6 +63,11 @@ export const AppRoutes = () => {
 
           <Route
               path="/seguimiento"
+              element={<Navigate to="/dashboard" replace />}
+          />
+
+          <Route
+              path="/seguimiento/:internshipId"
               element={
                   <PrivateRoute>
                       <SeguimientoPage />

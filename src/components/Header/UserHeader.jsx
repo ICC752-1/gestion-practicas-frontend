@@ -1,8 +1,12 @@
 import { Bell, LogOut } from 'lucide-react';
 import universityLogo from "../../assets/university_logo.webp";
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from "../../context/useAuth";
 
 export const UserHeader = ({ userName = "María Gómez", userRole = "Estudiante", userAvatar = null }) => {
+  const { user } = useAuth();
+  const displayName = user ? `${user.first_name} ${user.last_name}` : userName;
+  const displayRole = user?.roles?.[0] || userRole;
   const navigate = useNavigate();
   
   const handleLogout = () => {
@@ -51,8 +55,8 @@ export const UserHeader = ({ userName = "María Gómez", userRole = "Estudiante"
 
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-end leading-none">
-            <span className="font-bold text-[#d22864] text-base">{userName}</span>
-            <span className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider">{userRole}</span>
+            <span className="font-bold text-[#d22864] text-base">{displayName}</span>
+            <span className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider">{displayRole}</span>
           </div>
           
           <div className="relative">

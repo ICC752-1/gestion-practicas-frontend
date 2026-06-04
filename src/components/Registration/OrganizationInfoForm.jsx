@@ -45,6 +45,8 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
 
     if (!formData.web.trim()) {
       newErrors.web = 'La página web es obligatoria.';
+    } else if (!/^[a-zA-Z0-9]+([.-]?[a-zA-Z0-9]+)*\.[a-zA-Z]{2,}(.*)?$/i.test(formData.web.trim())) {
+      newErrors.web = 'Ingrese una URL válida (ej: empresa.cl o https://empresa.cl)';
     }
 
     setErrors(newErrors);
@@ -137,11 +139,11 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
         <div className="space-y-3">
           <label className="block text-2xl font-bold text-black">Página web</label>
           <input 
-            type="url" 
+            type="text" 
             name="web"
             value={formData.web}
             onChange={handleChange}
-            placeholder="Ej: https://fica.ufro.cl/"
+            placeholder="Ej: empresa.cl o https://empresa.cl"
             className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.web ? 'border border-red-500' : 'border border-gray-300'}`}
           />
           {errors.web && <p className="text-sm text-red-600">{errors.web}</p>}

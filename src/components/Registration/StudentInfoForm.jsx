@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
+import { useAuth } from "../../context/useAuth";
 
 export const StudentInfoForm = ({ onNext, initialData = {} }) => {
+  const { user } = useAuth();
   const navigate = useNavigate();
+
   const careerOptions = {
     '3095': 'Ingeniería Civil en Informática',
     '30086': 'Ingeniería en Informática',
@@ -13,14 +16,15 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
     enrollment: initialData.enrollment || '',
     careerCode: initialData.careerCode || '3095',
     careerName: initialData.careerName || careerOptions[initialData.careerCode || '3095'] || '',
-    fullName: initialData.fullName || '',
-    gender: initialData.gender || '',
+    internship_period: initialData.internship_period || 'Semestre',
+    internship_type: initialData.internship_type || 'Práctica de Estudio I',
+    has_school_insurance: initialData.has_school_insurance ?? false,
   });
 
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
 
     if (name === 'careerCode') {
       setFormData((prev) => ({
@@ -29,6 +33,12 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
         careerName: careerOptions[value] || '',
       }));
       setErrors((prev) => ({ ...prev, careerCode: '', careerName: '' }));
+      return;
+    }
+
+    if (type === 'checkbox') {
+      setFormData((prev) => ({ ...prev, [name]: checked }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
       return;
     }
 
@@ -49,17 +59,16 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
       newErrors.enrollment = 'La matrícula solo puede contener números y una sola K.';
     }
 
-
     if (!formData.careerName) {
       newErrors.careerName = 'Seleccione una carrera.';
     }
 
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Nombre y apellido obligatorios.';
+    if (!formData.internship_period) {
+      newErrors.internship_period = 'Seleccione un período.';
     }
 
-    if (!formData.gender) {
-      newErrors.gender = 'Seleccione un género.';
+    if (!formData.internship_type) {
+      newErrors.internship_type = 'Seleccione un tipo de práctica.';
     }
 
     setErrors(newErrors);
@@ -76,12 +85,21 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
   return (
     <div className="bg-white rounded-[40px] shadow-[0px_4px_30px_#00000015] p-12 w-full max-w-[650px]">
       <h2 className="text-3xl font-bold text-black mb-10">Información del estudiante</h2>
-      
+
+      <div className="mb-6 p-4 bg-[#f9f4f7] rounded-[20px] border border-[#d22864]">
+        <p className="text-lg text-gray-700">
+          <span className="font-bold">Estudiante:</span> {user?.first_name} {user?.last_name}
+        </p>
+        <p className="text-lg text-gray-700">
+          <span className="font-bold">Correo:</span> {user?.email}
+        </p>
+      </div>
+
       <form className="space-y-8" onSubmit={handleSubmit}>
         <div className="space-y-3">
-          <label className="block text-2xl font-bold text-black">Matricula</label>
-          <input 
-            type="text" 
+          <label className="block text-2xl font-bold text-black">Matrícula</label>
+          <input
+            type="text"
             name="enrollment"
             value={formData.enrollment}
             onChange={handleChange}
@@ -121,48 +139,86 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
           {errors.careerName && <p className="text-sm text-red-600">{errors.careerName}</p>}
         </div>
 
-        <div className="space-y-3">
-          <label className="block text-2xl font-bold text-black">Nombre y apellido</label>
-          <input 
-            type="text" 
-            name="fullName"
-            value={formData.fullName}
-            onChange={handleChange}
-            placeholder="Ej: Juan Perez"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.fullName ? 'border border-red-500' : 'border border-gray-300'}`}
-          />
-          {errors.fullName && <p className="text-sm text-red-600">{errors.fullName}</p>}
-        </div>
-
-        <div className="space-y-3">
-          <label className="block text-2xl font-bold text-black">Género con el que se identifica</label>
+<div className="space-y-3">
+          <label className="block text-2xl font-bold text-black">Período académico</label>
           <div className="relative">
-            <select 
-              name="gender"
-              value={formData.gender}
+            <select
+              name="internship_period"
+              value={formData.internship_period}
               onChange={handleChange}
-              className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all appearance-none ${errors.gender ? 'border border-red-500' : 'border border-gray-300'}`}
+              className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all appearance-none ${errors.internship_period ? 'border border-red-500' : 'border border-gray-300'}`}
             >
-              <option value="">Seleccione una opción</option>
-              <option value="male">Masculino</option>
-              <option value="female">Femenino</option>
-              <option value="other">Otro</option>
-              <option value="prefer_not_to_say">Prefiero no decirlo</option>
+              <option value="Semestre">Semestre</option>
+              <option value="Verano">Verano</option>
+              <option value="Invierno">Invierno</option>
             </select>
             <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-black pointer-events-none" size={28} />
           </div>
-          {errors.gender && <p className="text-sm text-red-600">{errors.gender}</p>}
+          {errors.internship_period && <p className="text-sm text-red-600">{errors.internship_period}</p>}
+        </div>
+
+        {formData.internship_period === 'Verano' || formData.internship_period === 'Invierno' ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                id="has_school_insurance"
+                role="checkbox"
+                aria-checked={formData.has_school_insurance}
+                onClick={() => {
+                  console.log('Checkbox clicked:', !formData.has_school_insurance);
+                  setFormData((prev) => ({ 
+                    ...prev, 
+                    has_school_insurance: !prev.has_school_insurance 
+                  }));
+                  setErrors((prev) => ({ ...prev, has_school_insurance: '' }));
+                }}
+                className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
+                  formData.has_school_insurance 
+                    ? 'bg-[#d22864] border-[#d22864]' 
+                    : 'bg-white border-[#d22864] hover:bg-gray-50'
+                }`}
+              >
+                {formData.has_school_insurance && (
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+              <label htmlFor="has_school_insurance" className="text-xl text-gray-700 cursor-pointer select-none">
+                ¿Cuentas con seguro escolar?
+              </label>
+            </div>
+            {errors.has_school_insurance && <p className="text-sm text-red-600">{errors.has_school_insurance}</p>}
+          </div>
+        ) : null}
+
+        <div className="space-y-3">
+          <label className="block text-2xl font-bold text-black">Tipo de práctica</label>
+          <div className="relative">
+            <select
+              name="internship_type"
+              value={formData.internship_type}
+              onChange={handleChange}
+              className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all appearance-none ${errors.internship_type ? 'border border-red-500' : 'border border-gray-300'}`}
+            >
+              <option value="Práctica de Estudio I">Práctica de Estudio I</option>
+              <option value="Práctica de Estudio II">Práctica de Estudio II</option>
+            </select>
+            <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-black pointer-events-none" size={28} />
+          </div>
+          {errors.internship_type && <p className="text-sm text-red-600">{errors.internship_type}</p>}
         </div>
 
         <div className="flex gap-4 mt-8">
-          <button 
+          <button
             type="button"
             onClick={() => navigate('/dashboard')}
             className="flex-1 h-16 bg-white text-[#d22864] border border-[#d22864] text-2xl font-bold rounded-[20px] hover:bg-[#f9f4f7] transition-all shadow-sm cursor-pointer"
           >
             Volver
           </button>
-          <button 
+          <button
             type="submit"
             className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
           >
