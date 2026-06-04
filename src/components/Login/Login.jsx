@@ -26,13 +26,17 @@ export const Login = () => {
 
             if (roles.includes("Estudiante")) {
                 navigate("/dashboard");
-
-            } else if (
-                roles.includes("Encargado de práctica")
+            }
+            else if (
+                roles.includes("Encargado de practica") ||
+                roles.includes("Director de carrera") ||
+                roles.includes("Secretaria de Carrera")
             ) {
                 navigate("/coordinador");
-
-            } else {
+            }
+            else if (
+                roles.includes("Supervisor de practica")
+            ) {
                 navigate("/supervisor");
             }
 
