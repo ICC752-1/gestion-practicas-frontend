@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { internshipService } from '../services/internshipService';
+import { coordinatorService } from '../services/coordinatorService';
 
 export const useCoordinatorState = () => {
   const [stats, setStats] = useState(null);
@@ -11,8 +11,8 @@ export const useCoordinatorState = () => {
     setLoading(true);
     try {
       const [statsData, practicesData] = await Promise.all([
-        internshipService.getInternshipStats(),
-        internshipService.getInternships(),
+        coordinatorService.getDashboardStats(),
+        coordinatorService.getPractices(),
       ]);
       setStats(statsData);
       setPractices(practicesData);

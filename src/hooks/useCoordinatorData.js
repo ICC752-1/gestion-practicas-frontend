@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, FileText, CheckCircle, Clock, AlertTriangle, Calendar } from 'lucide-react';
-import { internshipService } from '../services/internshipService';
+import { coordinatorService } from '../services/coordinatorService';
 
 export const useCoordinatorData = () => {
   const [stats, setStats] = useState(null);
@@ -12,8 +12,8 @@ export const useCoordinatorData = () => {
     try {
       setLoading(true);
       const [statsData, practicesData] = await Promise.all([
-        internshipService.getInternshipStats(),
-        internshipService.getInternships('submitted'),
+        coordinatorService.getDashboardStats(),
+        coordinatorService.getPractices('submitted'),
       ]);
       setStats(statsData);
       setStudents(practicesData);

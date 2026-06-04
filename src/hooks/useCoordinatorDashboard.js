@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { internshipService } from '../services/internshipService';
+import { coordinatorService } from '../services/coordinatorService';
 
 export const useCoordinatorDashboard = () => {
   const [students, setStudents] = useState([]);
@@ -10,7 +10,7 @@ export const useCoordinatorDashboard = () => {
     try {
       setLoading(true);
       // Según la tarea: GET /internships?status=submitted
-      const data = await internshipService.getInternships('submitted');
+      const data = await coordinatorService.getPractices('submitted');
       setStudents(data);
       setError(null);
     } catch (err) {
