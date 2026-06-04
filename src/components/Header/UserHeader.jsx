@@ -1,13 +1,21 @@
 import { Bell, LogOut } from 'lucide-react';
 import universityLogo from "../../assets/university_logo.webp";
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useAuth } from "../../context/useAuth";
 
-export const UserHeader = ({ userName = "María Gómez", userRole = "Estudiante", userAvatar = null }) => {
-  const navigate = useNavigate();
-  
-  const handleLogout = () => {
-    navigate("/login");
-  };
+export const UserHeader = () => {
+    const { user, logout } = useAuth();
+
+    const userName = user
+        ? `${user.first_name} ${user.last_name}`
+        : "Usuario";
+
+    const userRole = user?.roles?.[0] || "";
+
+    const handleLogout = () => {
+        logout();
+    };
+
   return (
     <header className="flex w-full items-center justify-between px-10 h-20 bg-white border-b-[3px] border-[#d22864] z-50 shadow-sm sticky top-0">
       {/* Left Section: Logo and Title */}
@@ -55,17 +63,14 @@ export const UserHeader = ({ userName = "María Gómez", userRole = "Estudiante"
           </div>
           
           <div className="relative">
-            {userAvatar ? (
-              <img src={userAvatar} alt={userName} className="w-11 h-11 rounded-full object-cover border-2 border-[#d22864] p-0.5" />
-            ) : (
+
               <div className="w-11 h-11 rounded-full bg-blue-100 border-2 border-[#d22864] flex items-center justify-center overflow-hidden">
-                <img 
-                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=Maria" 
-                  alt="Avatar"
-                  className="w-full h-full"
-                />
+                  <img
+                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`}
+                          alt={userName}
+                          className="w-full h-full"
+                  />
               </div>
-            )}
           </div>
         </div>
 

@@ -16,6 +16,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
+import { useAuth } from "../../context/useAuth";
 
 // --- Sub-components ---
 
@@ -120,6 +121,11 @@ const QuickAction = ({ icon: Icon, title, desc, onClick, primary }) => (
 
 export const StudentDashboardPage = () => {
   const navigate = useNavigate();
+    const { user } = useAuth();
+
+    const userName = user
+        ? `${user.first_name} ${user.last_name}`
+        : "Estudiante";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans selection:bg-[#d22864]/10 selection:text-[#d22864]">
@@ -135,9 +141,9 @@ export const StudentDashboardPage = () => {
               className="flex flex-col md:flex-row justify-between items-end md:items-center gap-6"
             >
               <div>
-                <h2 className="text-4xl font-black text-gray-900 tracking-tight leading-none mb-3">
-                  Hola, María <span className="inline-block animate-bounce-slow">👋</span>
-                </h2>
+                  <h2 className="text-4xl font-black text-gray-900 tracking-tight leading-none mb-3">
+                      Hola, {userName} <span className="inline-block animate-bounce-slow">👋</span>
+                  </h2>
                 <p className="text-gray-500 font-medium text-lg">
                   Tienes una práctica pendiente de autoevaluación.
                 </p>

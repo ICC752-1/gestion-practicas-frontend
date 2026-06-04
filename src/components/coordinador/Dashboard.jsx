@@ -1,7 +1,14 @@
 import { Search, Users, Clock, AlertCircle, CheckCircle, ClipboardCheck, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from "../../context/useAuth";
 
 export default function Dashboard({ students, onNavigateToManagement, onNavigateToScheduling }) {
+    const { user } = useAuth();
+
+    const userName = user
+        ? `${user.first_name ?? ""} ${user.last_name ?? ""}`
+        : "Usuario";
+
   const stats = [
     { label: 'Total', value: students.length, icon: Users, color: 'text-[#B5305F]' },
     { label: 'En curso', value: students.filter(s => s.estado === 'En curso').length, icon: Clock, color: 'text-red-500' },
@@ -25,7 +32,9 @@ export default function Dashboard({ students, onNavigateToManagement, onNavigate
     <div className="space-y-10 lg:px-12 py-8">
       <header>
         <h2 className="text-3xl font-bold text-[#B5305F] mb-1">Panel Coordinador</h2>
-        <p className="text-xl text-gray-400 font-medium italic">Bienvenido/a, Carlos Rivera</p>
+          <p className="text-xl text-gray-400 font-medium italic">
+              Bienvenido/a, {userName}
+          </p>
       </header>
 
       {/* Stats Grid */}
