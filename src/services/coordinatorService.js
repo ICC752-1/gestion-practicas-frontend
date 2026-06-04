@@ -32,6 +32,20 @@ export const coordinatorService = {
     }
   },
 
+  async getPracticeById(id) {
+    try {
+      const response = await api.get(`/admin/internships/${id}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 403) {
+        // Fallback a ruta estándar
+        const response = await api.get(`/internships/${id}`);
+        return response.data;
+      }
+      throw error;
+    }
+  },
+
   async updatePracticeStatus(studentId, requirementId, status) {
     const response = await api.patch(
       `/admin/students/${studentId}/internship-requirements/${requirementId}/status`,
