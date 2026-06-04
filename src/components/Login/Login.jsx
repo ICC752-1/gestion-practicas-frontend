@@ -27,14 +27,19 @@ export const Login = () => {
 
             if (roles.includes("Estudiante")) {
                 navigate("/dashboard");
-            } else if (
+            }
+            else if (
                 roles.includes("Encargado de practica") ||
                 roles.includes("Director de carrera") ||
                 roles.includes("Coordinador") ||
-                roles.includes("Coordinador FICA")
+                roles.includes("Coordinador FICA") ||
+                roles.includes("Secretaria de Carrera")
             ) {
                 navigate("/coordinador");
-            } else {
+            }
+            else if (
+                roles.includes("Supervisor de practica")
+            ) {
                 navigate("/supervisor");
             }
 
@@ -163,6 +168,22 @@ export const Login = () => {
   <span className="relative w-fit font-bold text-white text-2xl tracking-[0] leading-[normal]">
     {loading ? "Ingresando..." : "Iniciar Sesión"}
   </span>
+              </button>
+              <button
+                  type="button"
+                  className="flex w-[444px] h-16 items-center justify-center gap-3 p-2.5 bg-white border border-gray-300 rounded-[20px] hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => {
+                      alert("Inicio de sesión con Google disponible próximamente.");
+                  }}
+              >
+                  <img
+                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                      alt="Google"
+                      className="w-6 h-6"
+                  />
+                  <span className="font-bold text-gray-700 text-xl">
+        Continuar con Google
+    </span>
               </button>
             <a
               href="#"

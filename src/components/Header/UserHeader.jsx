@@ -1,18 +1,21 @@
 import { Bell, LogOut } from 'lucide-react';
 import universityLogo from "../../assets/university_logo.webp";
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from "../../context/useAuth";
 
-export const UserHeader = ({ userName = "María Gómez", userRole = "Estudiante", userAvatar = null }) => {
-  const { user } = useAuth();
-  const displayName = user ? `${user.first_name} ${user.last_name}` : userName;
-  const displayRole = user?.roles?.[0] || userRole;
-  const navigate = useNavigate();
-  
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    window.location.href = "/login";
-  };
+export const UserHeader = () => {
+    const { user, logout } = useAuth();
+
+    const userName = user
+        ? `${user.first_name} ${user.last_name}`
+        : "Usuario";
+
+    const userRole = user?.roles?.[0] || "";
+
+    const handleLogout = () => {
+        logout();
+    };
+
   return (
     <header className="flex w-full items-center justify-between px-10 h-20 bg-white border-b-[3px] border-[#d22864] z-50 shadow-sm sticky top-0">
       {/* Left Section: Logo and Title */}
@@ -55,22 +58,19 @@ export const UserHeader = ({ userName = "María Gómez", userRole = "Estudiante"
 
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-end leading-none">
-            <span className="font-bold text-[#d22864] text-base">{displayName}</span>
-            <span className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider">{displayRole}</span>
+            <span className="font-bold text-[#d22864] text-base">{userName}</span>
+            <span className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider">{userRole}</span>
           </div>
           
           <div className="relative">
-            {userAvatar ? (
-              <img src={userAvatar} alt={userName} className="w-11 h-11 rounded-full object-cover border-2 border-[#d22864] p-0.5" />
-            ) : (
+
               <div className="w-11 h-11 rounded-full bg-blue-100 border-2 border-[#d22864] flex items-center justify-center overflow-hidden">
-                <img 
-                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=Maria" 
-                  alt="Avatar"
-                  className="w-full h-full"
-                />
+                  <img
+                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`}
+                          alt={userName}
+                          className="w-full h-full"
+                  />
               </div>
-            )}
           </div>
         </div>
 

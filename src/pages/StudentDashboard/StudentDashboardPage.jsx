@@ -164,6 +164,10 @@ export const StudentDashboardPage = () => {
     fetchInternships();
   }, []);
 
+  const userName = user
+    ? `${user.first_name} ${user.last_name}`
+    : "Estudiante";
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans selection:bg-[#d22864]/10 selection:text-[#d22864]">
       <UserHeader />
@@ -179,7 +183,7 @@ export const StudentDashboardPage = () => {
             >
               <div>
                 <h2 className="text-4xl font-black text-gray-900 tracking-tight leading-none mb-3">
-                  Hola, {user?.first_name || 'Estudiante'} <span className="inline-block animate-bounce-slow">👋</span>
+                  Hola, {userName} <span className="inline-block animate-bounce-slow">👋</span>
                 </h2>
                 <p className="text-gray-500 font-medium text-lg">
                   {internships.length > 0
