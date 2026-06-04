@@ -10,6 +10,7 @@ import { SeguimientoPage } from '../pages/Seguimiento/SeguimientoPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
+import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
 export const AppRoutes = () => {
   return (
       <Routes>
@@ -20,6 +21,10 @@ export const AppRoutes = () => {
           {/* Rutas públicas */}
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
+          <Route
+              path="/auth/callback"
+              element={<AuthCallbackPage />}
+          />
           <Route path="/faq" element={<FAQPage />} />
 
           {/* Rutas protegidas */}

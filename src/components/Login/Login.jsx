@@ -166,6 +166,22 @@ export const Login = () => {
     {loading ? "Ingresando..." : "Iniciar Sesión"}
   </span>
               </button>
+              <button
+                  type="button"
+                  className="flex w-[444px] h-16 items-center justify-center gap-3 p-2.5 bg-white border border-gray-300 rounded-[20px] hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => {
+                      alert("Inicio de sesión con Google disponible próximamente.");
+                  }}
+              >
+                  <img
+                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                      alt="Google"
+                      className="w-6 h-6"
+                  />
+                  <span className="font-bold text-gray-700 text-xl">
+        Continuar con Google
+    </span>
+              </button>
             <a
               href="#"
               className="relative w-[444px] h-[29px] font-normal text-black text-2xl text-center tracking-[0] leading-[normal] hover:underline"

@@ -78,6 +78,26 @@ export const AuthProvider = ({ children }) => {
         window.location.href = "/landing";
     };
 
+    const handleOAuthCallback = async () => {
+
+        const params = new URLSearchParams(window.location.search);
+
+        const accessToken = params.get("token");
+
+        if (!accessToken) {
+            throw new Error("No se recibió un token.");
+        }
+
+        localStorage.setItem("token", accessToken);
+        setToken(accessToken);
+
+        const userData = await authService.getMe();
+
+        setUser(userData);
+
+        return userData;
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -88,6 +108,7 @@ export const AuthProvider = ({ children }) => {
                 error,
                 login,
                 logout,
+                handleOAuthCallback
             }}
         >
             {children}
