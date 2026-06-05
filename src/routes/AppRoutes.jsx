@@ -8,6 +8,7 @@ import { StudentDashboardPage } from '../pages/StudentDashboard/StudentDashboard
 import { CoordinatorDashboardPage } from '../pages/CoordinatorDashboard/CoordinatorDashboardPage'
 import { PracticeDetailPage } from '../pages/CoordinatorDashboard/PracticeDetailPage'
 import { SeguimientoPage } from '../pages/Seguimiento/SeguimientoPage'
+import { SeguimientoListPage } from '../pages/Seguimiento/SeguimientoListPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
@@ -68,7 +69,11 @@ export const AppRoutes = () => {
 
           <Route
               path="/seguimiento"
-              element={<Navigate to="/dashboard" replace />}
+              element={
+                  <PrivateRoute>
+                      <SeguimientoListPage />
+                  </PrivateRoute>
+              }
           />
 
           <Route
