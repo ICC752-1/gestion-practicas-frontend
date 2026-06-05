@@ -230,6 +230,8 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
             >
               <option value="Práctica de Estudio I">Práctica de Estudio I</option>
               <option value="Práctica de Estudio II">Práctica de Estudio II</option>
+              <option value="Práctica Controlada">Práctica Controlada</option>
+              <option value="Tesis">Tesis</option>
             </select>
             <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-black pointer-events-none" size={28} />
           </div>
