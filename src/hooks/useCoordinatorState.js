@@ -16,8 +16,9 @@ export const useCoordinatorState = () => {
       ]);
       setStats(statsData);
       setPractices(practicesData);
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to fetch coordinator data');
+      setError(err.response?.data?.message || err.message || 'Failed to fetch coordinator data');
     } finally {
       setLoading(false);
     }

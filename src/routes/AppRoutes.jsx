@@ -6,11 +6,13 @@ import { LandingPage } from '../pages/Landing/LandingPage'
 import { FAQPage } from '../pages/FAQ/FAQPage'
 import { StudentDashboardPage } from '../pages/StudentDashboard/StudentDashboardPage'
 import { CoordinatorDashboardPage } from '../pages/CoordinatorDashboard/CoordinatorDashboardPage'
+import { PracticeDetailPage } from '../pages/CoordinatorDashboard/PracticeDetailPage'
 import { SeguimientoPage } from '../pages/Seguimiento/SeguimientoPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
 import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
+
 export const AppRoutes = () => {
   return (
       <Routes>
@@ -56,7 +58,21 @@ export const AppRoutes = () => {
           />
 
           <Route
+              path="/coordinador/practica/:id"
+              element={
+                  <PrivateRoute>
+                      <PracticeDetailPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
               path="/seguimiento"
+              element={<Navigate to="/dashboard" replace />}
+          />
+
+          <Route
+              path="/seguimiento/:internshipId"
               element={
                   <PrivateRoute>
                       <SeguimientoPage />

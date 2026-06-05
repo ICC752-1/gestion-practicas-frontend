@@ -58,10 +58,15 @@
 
 @layer base {
   button,
-  input,
+  input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
     @apply appearance-none bg-transparent border-0 outline-none;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply appearance-none;
   }
 }
 

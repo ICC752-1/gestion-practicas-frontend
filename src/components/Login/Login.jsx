@@ -23,6 +23,7 @@ export const Login = () => {
             const user = await login(email, password);
 
             const roles = user.roles || [];
+            console.log("[DEBUG_LOG] Roles detectados en Login:", roles);
 
             if (roles.includes("Estudiante")) {
                 navigate("/dashboard");
@@ -30,6 +31,8 @@ export const Login = () => {
             else if (
                 roles.includes("Encargado de practica") ||
                 roles.includes("Director de carrera") ||
+                roles.includes("Coordinador") ||
+                roles.includes("Coordinador FICA") ||
                 roles.includes("Secretaria de Carrera")
             ) {
                 navigate("/coordinador");

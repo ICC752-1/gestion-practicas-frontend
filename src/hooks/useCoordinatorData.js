@@ -8,22 +8,24 @@ export const useCoordinatorData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [statsData, practicesData] = await Promise.all([
-          coordinatorService.getDashboardStats(),
-          coordinatorService.getPractices(),
-        ]);
-        setStats(statsData);
-        setStudents(practicesData);
-      } catch (err) {
-        setError(err.message || 'Error al cargar datos');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [statsData, practicesData] = await Promise.all([
+        coordinatorService.getDashboardStats(),
+        coordinatorService.getPractices('submitted'),
+      ]);
+      setStats(statsData);
+      setStudents(practicesData);
+      setError(null);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Error al cargar datos');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -33,11 +35,12 @@ export const useCoordinatorData = () => {
   ];
 
   // Construye las stats cards con los datos reales del backend
+  // GET /internships/stats retorna conteos: { total, submitted, in_review, approved, rejected }
   const statsCards = stats ? [
-    { label: 'Total', value: String(stats.total_internships), Icon: Users, variant: 'default' },
-    { label: 'En progreso', value: String(stats.internships_by_status?.find(s => s.status === 'En curso')?.total ?? 0), Icon: Clock, variant: 'progress' },
-    { label: 'Pendientes', value: String(stats.internships_by_status?.find(s => s.status === 'Pendiente')?.total ?? 0), Icon: AlertTriangle, variant: 'alert' },
-    { label: 'Completadas', value: String(stats.internships_by_status?.find(s => s.status === 'Finalizada')?.total ?? 0), Icon: CheckCircle, variant: 'success' },
+    { label: 'Total', value: String(stats.total || 0), Icon: Users, variant: 'default' },
+    { label: 'Pendientes', value: String(stats.submitted || 0), Icon: Clock, variant: 'alert' },
+    { label: 'En Revisión', value: String(stats.in_review || 0), Icon: AlertTriangle, variant: 'progress' },
+    { label: 'Aprobadas', value: String(stats.approved || 0), Icon: CheckCircle, variant: 'success' },
   ] : [];
 
   return {
@@ -46,5 +49,6 @@ export const useCoordinatorData = () => {
     students,
     loading,
     error,
+    refreshData: fetchData
   };
 };

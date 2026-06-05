@@ -6,7 +6,7 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
     practiceType: initialData.practiceType || '',
     startDate: initialData.startDate || '',
     endDate: initialData.endDate || '',
-    days: initialData.days || [],
+    days: Array.isArray(initialData.days) ? initialData.days : [],
     startTime: initialData.startTime || '',
     endTime: initialData.endTime || '',
     internship_address: initialData.internship_address || '',
@@ -19,9 +19,10 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
     const { name, value, type, checked } = e.target;
 
     if (type === 'checkbox' && name === 'days') {
+      const currentDays = Array.isArray(formData.days) ? formData.days : [];
       const newDays = checked
-        ? [...formData.days, value]
-        : formData.days.filter((d) => d !== value);
+        ? [...currentDays, value]
+        : currentDays.filter((d) => d !== value);
       setFormData((prev) => ({ ...prev, days: newDays }));
       setErrors((prev) => ({ ...prev, days: '' }));
       return;
@@ -100,34 +101,34 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
         <div className="space-y-4">
           <label className="block text-xl font-bold text-black">Seleccione el tipo de práctica que realizará</label>
           <div className="space-y-3">
-            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'presencial' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
+            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'Presencial' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
               <input 
                 type="radio" 
                 name="practiceType" 
-                value="presencial" 
-                checked={formData.practiceType === 'presencial'}
+                value="Presencial" 
+                checked={formData.practiceType === 'Presencial'}
                 onChange={handleChange}
                 className="w-6 h-6 accent-[#d22864]"
               />
               <span className="text-xl text-gray-700">Presencial</span>
             </label>
-            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'virtual' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
+            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'Híbrido' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
               <input 
                 type="radio" 
                 name="practiceType" 
-                value="virtual" 
-                checked={formData.practiceType === 'virtual'}
+                value="Híbrido" 
+                checked={formData.practiceType === 'Híbrido'}
                 onChange={handleChange}
                 className="w-6 h-6 accent-[#d22864]"
               />
-              <span className="text-xl text-gray-700">Virtual</span>
+              <span className="text-xl text-gray-700">Híbrido</span>
             </label>
-            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'remoto' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
+            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'Remoto' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
               <input 
                 type="radio" 
                 name="practiceType" 
-                value="remoto" 
-                checked={formData.practiceType === 'remoto'}
+                value="Remoto" 
+                checked={formData.practiceType === 'Remoto'}
                 onChange={handleChange}
                 className="w-6 h-6 accent-[#d22864]"
               />
@@ -168,17 +169,35 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
           <label className="block text-xl font-bold text-black">Seleccione los días regulares de la semana en que realizará su práctica</label>
           <div className="space-y-2">
             {dayOptions.map((day) => (
-              <label key={day.id} className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.days.includes(day.id) ? 'border-[#d22864] bg-[#ffe7f0]' : 'border-gray-300 hover:bg-gray-50'}`}>
-                <input 
-                  type="checkbox" 
-                  name="days" 
-                  value={day.id} 
-                  checked={formData.days.includes(day.id)}
-                  onChange={handleChange}
-                  className="w-6 h-6 accent-[#d22864]"
-                />
+              <div
+                key={day.id}
+                onClick={() => {
+                  const currentDays = Array.isArray(formData.days) ? formData.days : [];
+                  const newDays = currentDays.includes(day.id)
+                    ? currentDays.filter((d) => d !== day.id)
+                    : [...currentDays, day.id];
+                  setFormData((prev) => ({ ...prev, days: newDays }));
+                  setErrors((prev) => ({ ...prev, days: '' }));
+                }}
+                className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${
+                  formData.days.includes(day.id)
+                    ? 'border-[#d22864] bg-[#ffe7f0]'
+                    : 'border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
+                  formData.days.includes(day.id)
+                    ? 'bg-[#d22864] border-[#d22864]'
+                    : 'bg-white border-gray-400'
+                }`}>
+                  {formData.days.includes(day.id) && (
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
                 <span className="text-xl text-gray-700">{day.label}</span>
-              </label>
+              </div>
             ))}
           </div>
           {errors.days && <p className="text-sm text-red-600">{errors.days}</p>}

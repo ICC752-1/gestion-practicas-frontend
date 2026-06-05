@@ -3,7 +3,7 @@ import { useState } from 'react';
 export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
   const [formData, setFormData] = useState({
     act_description: initialData.act_description || '',
-    ben_description: initialData.ben_description || '',
+    ben_description: Array.isArray(initialData.ben_description) ? initialData.ben_description : [],
     amount: initialData.amount || '',
   });
 
@@ -12,9 +12,12 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (type === 'checkbox' && name === 'benefits') {
+      const currentBenefits = Array.isArray(formData.ben_description) 
+        ? formData.ben_description 
+        : [];
       const newBenefits = checked
-        ? [...formData.ben_description, value]
-        : formData.ben_description.filter(b => b !== value);
+        ? [...currentBenefits, value]
+        : currentBenefits.filter(b => b !== value);
       setFormData(prev => ({ ...prev, ben_description: newBenefits }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -79,24 +82,36 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
           </label>
           <div className="space-y-3">
             {benefitOptions.map(benefit => (
-              <label
+              <div
                 key={benefit.id}
+                onClick={() => {
+                  const currentBenefits = Array.isArray(formData.ben_description) 
+                    ? formData.ben_description 
+                    : [];
+                  const newBenefits = currentBenefits.includes(benefit.id)
+                    ? currentBenefits.filter(b => b !== benefit.id)
+                    : [...currentBenefits, benefit.id];
+                  setFormData(prev => ({ ...prev, ben_description: newBenefits }));
+                }}
                 className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${
                   formData.ben_description.includes(benefit.id)
                     ? 'border-[#d22864] bg-[#ffe7f0]'
                     : 'border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                <input
-                  type="checkbox"
-                  name="benefits"
-                  value={benefit.id}
-                  checked={formData.ben_description.includes(benefit.id)}
-                  onChange={handleChange}
-                  className="w-6 h-6 accent-[#d22864]"
-                />
+                <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
+                  formData.ben_description.includes(benefit.id)
+                    ? 'bg-[#d22864] border-[#d22864]'
+                    : 'bg-white border-gray-400'
+                }`}>
+                  {formData.ben_description.includes(benefit.id) && (
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
                 <span className="text-xl text-gray-700">{benefit.label}</span>
-              </label>
+              </div>
             ))}
           </div>
         </div>
