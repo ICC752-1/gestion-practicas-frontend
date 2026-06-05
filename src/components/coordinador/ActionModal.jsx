@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Loader2, CheckCircle2, AlertTriangle, ArrowRightLeft } from 'lucide-react';
 
-export const ActionModal = ({ isOpen, onClose, onConfirm, actionType }) => {
+export const ActionModal = ({ isOpen, onClose, onConfirm, actionType, isLoading }) => {
   const [comment, setComment] = useState('');
 
   if (!isOpen) return null;
 
   const handleConfirm = () => {
     if ((actionType === 'reject' || actionType === 'derive') && !comment.trim()) {
-      alert('El comentario es obligatorio para esta acción.');
       return;
     }
     onConfirm(comment);
@@ -22,29 +21,53 @@ export const ActionModal = ({ isOpen, onClose, onConfirm, actionType }) => {
   };
 
   const actionColors = {
-    approve: 'text-green-600',
+    approve: 'text-emerald-600',
     reject: 'text-red-600',
     derive: 'text-blue-600',
   };
 
   const buttonColors = {
-    approve: 'bg-green-600 hover:bg-green-700',
-    reject: 'bg-red-600 hover:bg-red-700',
-    derive: 'bg-blue-600 hover:bg-blue-700',
+    approve: 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500',
+    reject: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
+    derive: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
   };
 
+  const icons = {
+    approve: <CheckCircle2 className="w-10 h-10 text-emerald-600" />,
+    reject: <AlertTriangle className="w-10 h-10 text-red-600" />,
+    derive: <ArrowRightLeft className="w-10 h-10 text-blue-600" />,
+  };
+
+  const actionDescriptions = {
+    approve: '¿Está seguro de que desea aprobar esta práctica? Esta acción es irreversible y cambiará el estado de la solicitud a Aprobada.',
+    reject: 'Esta acción rechazará la práctica de forma definitiva. Es obligatorio que ingrese un motivo claro para el rechazo.',
+    derive: 'Esta acción derivará la práctica a revisión por la Dirección de Registro Académico Estudiantil (DIRAE). Es obligatorio ingresar un motivo.',
+  };
+
+  const isCommentRequired = actionType === 'reject' || actionType === 'derive';
+  const isConfirmDisabled = isLoading || (isCommentRequired && !comment.trim());
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white rounded-[30px] p-8 w-full max-w-[550px] shadow-xl animate-fade-up">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4">
+      <div className="bg-white rounded-[28px] p-8 w-full max-w-[520px] shadow-2xl border border-gray-100 flex flex-col relative animate-fade-up">
         
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className={`text-2xl font-bold ${actionColors[actionType]}`}>
-            {actionLabels[actionType]}
-          </h3>
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-2xl bg-gray-50 flex items-center justify-center border border-gray-100">
+              {icons[actionType]}
+            </div>
+            <div>
+              <h3 className={`text-2xl font-bold tracking-tight ${actionColors[actionType]}`}>
+                {actionLabels[actionType]}
+              </h3>
+              <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mt-0.5">Acción Administrativa</p>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer text-gray-600"
+            disabled={isLoading}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer text-gray-500 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Cerrar"
           >
             <X size={20} />
@@ -52,20 +75,25 @@ export const ActionModal = ({ isOpen, onClose, onConfirm, actionType }) => {
         </div>
 
         {/* Body */}
-        <div className="mb-8">
-          <p className="text-gray-700 text-lg mb-4">
-            {actionType === 'approve' 
-              ? '¿Está seguro de que desea aprobar esta práctica?' 
-              : 'Por favor, proporcione un motivo para esta acción.'}
+        <div className="mb-6 flex-grow">
+          <p className="text-gray-600 text-[15px] leading-relaxed mb-6 font-medium">
+            {actionDescriptions[actionType]}
           </p>
           
-          {(actionType === 'reject' || actionType === 'derive') && (
-            <textarea
-              className="w-full p-4 border border-gray-300 rounded-[20px] focus:ring-2 focus:ring-[#d22864] focus:border-transparent outline-none transition-all resize-none h-32"
-              placeholder="Escriba aquí el motivo..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
+          {isCommentRequired && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-gray-700 flex justify-between">
+                <span>Motivo / Comentario</span>
+                <span className="text-red-500 text-xs font-semibold">Obligatorio</span>
+              </label>
+              <textarea
+                disabled={isLoading}
+                className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#d22864]/30 focus:border-[#d22864] outline-none transition-all resize-none h-32 text-gray-800 placeholder-gray-400 text-sm font-medium shadow-inner"
+                placeholder="Escriba el motivo detallado aquí..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
+            </div>
           )}
         </div>
 
@@ -73,15 +101,24 @@ export const ActionModal = ({ isOpen, onClose, onConfirm, actionType }) => {
         <div className="flex gap-4">
           <button
             onClick={onClose}
-            className="flex-1 h-14 bg-gray-100 text-gray-700 rounded-[20px] font-bold hover:bg-gray-200 transition-colors cursor-pointer"
+            disabled={isLoading}
+            className="flex-1 h-12 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>
           <button
             onClick={handleConfirm}
-            className={`flex-1 h-14 text-white rounded-[20px] font-bold transition-opacity shadow-md cursor-pointer ${buttonColors[actionType]}`}
+            disabled={isConfirmDisabled}
+            className={`flex-1 h-12 text-white rounded-xl font-bold active:scale-95 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${buttonColors[actionType]}`}
           >
-            Confirmar
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Procesando...</span>
+              </>
+            ) : (
+              <span>Confirmar</span>
+            )}
           </button>
         </div>
       </div>
