@@ -1,0 +1,91 @@
+name: CD
+
+on:
+  workflow_dispatch:
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run lint
+
+      - name: Build Application
+        env:
+          VITE_API_URL: /api
+        run: npm run build
+
+  deploy:
+    name: Build And Deploy Frontend
+    needs: quality
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: gestion-practicas-frontend
+      IMAGE_ARCHIVE: frontend-${{ github.sha }}.tar.gz
+      RELEASES_DIR: /srv/team-b/releases
+      APP_DIR: /srv/team-b/app
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_PORT: ${{ secrets.VPS_PORT }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Image
+        run: |
+          docker build \
+            --build-arg VITE_API_URL=/api \
+            --label app=gestion-practicas \
+            --label service=frontend \
+            -t "$IMAGE_NAME:${{ github.sha }}" \
+            .
+
+      - name: Export Image
+        run: docker save "$IMAGE_NAME:${{ github.sha }}" | gzip > "$IMAGE_ARCHIVE"
+
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          if [ -n "$VPS_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+            exit 0
+          fi
+          for attempt in 1 2 3 4 5; do
+            if ssh-keyscan -T 15 -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts; then
+              break
+            fi
+            if [ "$attempt" = "5" ]; then
+              exit 1
+            fi
+            sleep 3
+          done
+
+      - name: Upload Image Archive
+        run: |
+          ssh -i ~/.ssh/vps_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "mkdir -p '$APP_DIR' '$RELEASES_DIR'"
+          scp -i ~/.ssh/vps_key -P "$VPS_PORT" "$IMAGE_ARCHIVE" \
+            "$VPS_USER@$VPS_HOST:$RELEASES_DIR/$IMAGE_ARCHIVE"
+
+      - name: Deploy Frontend
+        run: |
+          ssh -i ~/.ssh/vps_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' RELEASES_DIR='$RELEASES_DIR' '$APP_DIR/scripts/deploy-loaded-image.sh' frontend '$IMAGE_NAME:${{ github.sha }}' '$RELEASES_DIR/$IMAGE_ARCHIVE'"
