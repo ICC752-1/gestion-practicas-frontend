@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
+import { authService } from "../../services/authService";
+import { getOAuthErrorMessage } from "../../services/oauthErrors";
+import { getRedirectPathForRoles } from "../../services/roleRouting";
 import ficaLogo from "../../assets/logo_fica.jpg";
 import { Header } from "../Header/Header";
 import { Footer } from "../Footer/Footer";
@@ -8,6 +11,12 @@ import { Footer } from "../Footer/Footer";
 export const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [oauthError, setOauthError] = useState(() => {
+      const oauthErrorCode = new URLSearchParams(window.location.search)
+          .get("oauth_error");
+
+      return oauthErrorCode ? getOAuthErrorMessage(oauthErrorCode) : "";
+  });
   const navigate = useNavigate();
     const {
         login,
@@ -17,6 +26,7 @@ export const Login = () => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        setOauthError("");
 
         try {
 
@@ -25,27 +35,16 @@ export const Login = () => {
             const roles = user.roles || [];
             console.log("[DEBUG_LOG] Roles detectados en Login:", roles);
 
-            if (roles.includes("Estudiante")) {
-                navigate("/dashboard");
-            }
-            else if (
-                roles.includes("Encargado de practica") ||
-                roles.includes("Director de carrera") ||
-                roles.includes("Coordinador") ||
-                roles.includes("Coordinador FICA") ||
-                roles.includes("Secretaria de Carrera")
-            ) {
-                navigate("/coordinador");
-            }
-            else if (
-                roles.includes("Supervisor de practica")
-            ) {
-                navigate("/supervisor");
-            }
+            navigate(getRedirectPathForRoles(roles));
 
         } catch (err) {
             console.error(err);
         }
+    };
+
+    const handleGoogleLogin = () => {
+        setOauthError("");
+        window.location.assign(authService.getGoogleLoginUrl());
     };
 
   return (
@@ -152,9 +151,9 @@ export const Login = () => {
                   />
                 </div>
                   {
-                      error && (
+                      (oauthError || error) && (
                           <div className="text-red-500 text-sm mt-2">
-                              {error}
+                              {oauthError || error}
                           </div>
                       )
                   }
@@ -172,9 +171,7 @@ export const Login = () => {
               <button
                   type="button"
                   className="flex w-[444px] h-16 items-center justify-center gap-3 p-2.5 bg-white border border-gray-300 rounded-[20px] hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => {
-                      alert("Inicio de sesión con Google disponible próximamente.");
-                  }}
+                  onClick={handleGoogleLogin}
               >
                   <img
                       src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
