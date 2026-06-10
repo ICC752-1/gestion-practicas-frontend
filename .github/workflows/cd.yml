@@ -1,0 +1,107 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "public/**"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.js"
+      - "Dockerfile"
+      - "nginx.conf"
+      - ".dockerignore"
+      - ".github/workflows/cd.yml"
+
+jobs:
+  deploy:
+    name: Build And Deploy Frontend
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: gestion-practicas-frontend
+      IMAGE_ARCHIVE: frontend-${{ github.sha }}.tar.gz
+      RELEASES_DIR: /srv/team-b/releases
+      APP_DIR: /srv/team-b/app
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_PORT: ${{ secrets.VPS_PORT }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Image
+        run: |
+          docker build \
+            --build-arg VITE_API_URL=/api \
+            --label app=gestion-practicas \
+            --label service=frontend \
+            -t "$IMAGE_NAME:${{ github.sha }}" \
+            .
+
+      - name: Export Image
+        run: docker save "$IMAGE_NAME:${{ github.sha }}" | gzip > "$IMAGE_ARCHIVE"
+
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          if [ -n "$VPS_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+            exit 0
+          fi
+          for attempt in 1 2 3 4 5; do
+            if ssh-keyscan -T 15 -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts; then
+              break
+            fi
+            if [ "$attempt" = "5" ]; then
+              exit 1
+            fi
+            sleep 3
+          done
+
+      - name: Upload Image Archive
+        run: |
+          SSH_OPTS=(-i ~/.ssh/vps_key -p "$VPS_PORT" -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4)
+          SCP_OPTS=(-i ~/.ssh/vps_key -P "$VPS_PORT" -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4)
+
+          retry() {
+            for attempt in 1 2 3 4 5; do
+              if "$@"; then
+                return 0
+              fi
+              if [ "$attempt" = "5" ]; then
+                return 1
+              fi
+              sleep 15
+            done
+          }
+
+          retry ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_HOST" \
+            "mkdir -p '$RELEASES_DIR'"
+          retry scp "${SCP_OPTS[@]}" "$IMAGE_ARCHIVE" \
+            "$VPS_USER@$VPS_HOST:$RELEASES_DIR/$IMAGE_ARCHIVE"
+
+      - name: Deploy Frontend
+        run: |
+          SSH_OPTS=(-i ~/.ssh/vps_key -p "$VPS_PORT" -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4)
+
+          retry() {
+            for attempt in 1 2 3 4 5; do
+              if "$@"; then
+                return 0
+              fi
+              if [ "$attempt" = "5" ]; then
+                return 1
+              fi
+              sleep 15
+            done
+          }
+
+          retry ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' RELEASES_DIR='$RELEASES_DIR' '$APP_DIR/scripts/deploy-loaded-image.sh' frontend '$IMAGE_NAME:${{ github.sha }}' '$RELEASES_DIR/$IMAGE_ARCHIVE'"
