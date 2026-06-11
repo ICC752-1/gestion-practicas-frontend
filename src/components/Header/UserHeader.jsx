@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, CheckCircle2, LogOut } from 'lucide-react';
+import { Bell, CheckCircle2, LogOut, Trash2 } from 'lucide-react';
 import universityLogo from '../../assets/university_logo.webp';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
@@ -12,7 +12,7 @@ const formatNotificationDate = (date) => new Intl.DateTimeFormat('es-CL', {
 
 export const UserHeader = () => {
   const { user, logout } = useAuth();
-  const { notifications, unreadCount, markAsRead, source } = useNotifications();
+  const { notifications, unreadCount, markAsRead, deleteNotification, source } = useNotifications();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const notificationPanelRef = useRef(null);
 
@@ -80,11 +80,18 @@ export const UserHeader = () => {
                 {notifications.length === 0 ? (
                   <div className="px-6 py-10 text-center text-sm text-gray-500">No tienes notificaciones.</div>
                 ) : notifications.map((notification) => (
-                  <button
-                    type="button"
+                  <div
                     key={notification.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => markAsRead(notification.id)}
-                    className={`flex w-full items-start gap-3 border-b border-gray-100 px-5 py-4 text-left transition-colors hover:bg-gray-50 ${notification.readAt ? 'bg-white' : 'bg-[#fff6f9]'}`}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        markAsRead(notification.id);
+                      }
+                    }}
+                    className={`group flex w-full cursor-pointer items-start gap-3 border-b border-gray-100 px-5 py-4 text-left transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#d22864]/30 ${notification.readAt ? 'bg-white' : 'bg-[#fff6f9]'}`}
                   >
                     <span className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${notification.readAt ? 'bg-gray-100 text-gray-400' : 'bg-[#d22864]/10 text-[#d22864]'}`}>
                       <CheckCircle2 size={17} />
@@ -94,8 +101,23 @@ export const UserHeader = () => {
                       <span className="mt-1 block text-xs leading-relaxed text-gray-600">{notification.message}</span>
                       <span className="mt-2 block text-[10px] font-semibold uppercase tracking-wide text-gray-400">{formatNotificationDate(notification.createdAt)}</span>
                     </span>
-                    {!notification.readAt && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#d22864]" aria-label="Sin leer" />}
-                  </button>
+                    <span className="flex shrink-0 items-center gap-2">
+                      {!notification.readAt && <span className="h-2 w-2 rounded-full bg-[#d22864]" aria-label="Sin leer" />}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          deleteNotification(notification.id);
+                        }}
+                        onKeyDown={(event) => event.stopPropagation()}
+                        className="rounded-full p-1.5 text-gray-400 opacity-100 transition-all hover:bg-red-50 hover:text-red-600 md:opacity-0 md:focus:opacity-100 md:group-hover:opacity-100"
+                        aria-label={`Eliminar notificación: ${notification.title}`}
+                        title="Eliminar notificación"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>

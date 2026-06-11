@@ -65,6 +65,14 @@ export const NotificationProvider = ({ children }) => {
     });
   }, [userId]);
 
+  const deleteNotification = useCallback((notificationId) => {
+    if (!userId) return;
+    setNotificationState({
+      userId,
+      items: notificationService.delete(userId, notificationId),
+    });
+  }, [userId]);
+
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.readAt).length,
     [notifications],
@@ -75,9 +83,10 @@ export const NotificationProvider = ({ children }) => {
     unreadCount,
     addNotification,
     markAsRead,
+    deleteNotification,
     showToast,
     source: notificationService.source,
-  }), [notifications, unreadCount, addNotification, markAsRead, showToast]);
+  }), [notifications, unreadCount, addNotification, markAsRead, deleteNotification, showToast]);
 
   return (
     <NotificationContext.Provider value={value}>

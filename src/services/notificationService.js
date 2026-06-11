@@ -96,6 +96,16 @@ export const notificationService = {
     return nextNotifications;
   },
 
+  delete(userId, notificationId) {
+    const notifications = readStoredNotifications(userId);
+    const nextNotifications = notifications.filter(
+      (notification) => notification.id !== notificationId,
+    );
+
+    persistNotifications(userId, nextNotifications);
+    return nextNotifications;
+  },
+
   createEvent(event, payload = {}) {
     const content = EVENT_CONTENT[event];
 
