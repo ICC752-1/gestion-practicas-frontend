@@ -11,8 +11,11 @@ import { RegistrationInfoCard } from "../../components/Registration/Registration
 import { Footer } from "../../components/Footer/Footer";
 import { User, Building2, UserRound, ClipboardList, FileText } from "lucide-react";
 import api from "../../services/api";
+import { useNotifications } from "../../context/useNotifications";
+import { notificationService } from "../../services/notificationService";
 
 export const RegistrationPage = () => {
+  const { addNotification, showToast } = useNotifications();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
   const [isFinished, setIsFinished] = useState(false);
@@ -79,6 +82,11 @@ export const RegistrationPage = () => {
         const result = response.data;
         setInternshipResult(result);
         setIsFinished(true);
+        addNotification(notificationService.createEvent('internship_registered', {
+          organization: result.org_name || payload.org_name,
+          referenceId: result.id,
+        }));
+        showToast({ type: 'success', message: 'Práctica registrada correctamente' });
 
       } catch (err) {
         console.error("Error de red:", err);
@@ -111,6 +119,10 @@ export const RegistrationPage = () => {
             setSubmitError("Hubo un error al registrar la práctica. Por favor, intenta nuevamente.");
           }
         }
+        showToast({
+          type: 'error',
+          message: 'No se pudo registrar la práctica. Revisa los datos e intenta nuevamente.',
+        });
         setIsSubmitting(false);
         return;
       }

@@ -13,7 +13,10 @@ Set the local backend URL in `.env.local`:
 
 ```env
 VITE_API_URL=http://localhost:8000
+VITE_NOTIFICATIONS_SOURCE=simulated
 ```
+
+`VITE_NOTIFICATIONS_SOURCE` defaults to `simulated`. The notification service encapsulates this mode so its storage methods can later be replaced with backend requests.
 
 ## Verification
 
