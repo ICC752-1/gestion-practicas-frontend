@@ -4,7 +4,10 @@ import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
+import { documentService } from "../../services/documentService";
 import { useState, useEffect } from "react";
+import { DocumentList } from "../../components/StudentDashboard/DocumentList";
+import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
 import {
   Building2,
   User,
@@ -114,22 +117,30 @@ export const SeguimientoPage = () => {
   const [error, setError] = useState(null);
   const [showOrgDetails, setShowOrgDetails] = useState(false);
   const [showSupervisorDetails, setShowSupervisorDetails] = useState(false);
+  const [documents, setDocuments] = useState([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [docsError, setDocsError] = useState(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
+        setDocsError(null);
 
-        const [internshipData, trackingData] = await Promise.all([
+        const [internshipData, trackingData, documentsData] = await Promise.all([
           internshipService.getIntershipById(internshipId),
-          internshipService.getInternshipTracking(internshipId)
+          internshipService.getInternshipTracking(internshipId),
+          documentService.getInternshipDocuments(internshipId)
         ]);
 
         setInternship(internshipData);
         setTracking(trackingData);
+        setDocuments(documentsData);
       } catch (err) {
         setError(err.message || 'Error al cargar los datos');
+        setDocsError(err.message || 'Error al cargar los documentos');
       } finally {
         setLoading(false);
       }
@@ -161,19 +172,63 @@ export const SeguimientoPage = () => {
       try {
         setLoading(true);
         setError(null);
-        const [internshipData, trackingData] = await Promise.all([
+        setDocsError(null);
+        const [internshipData, trackingData, documentsData] = await Promise.all([
           internshipService.getIntershipById(internshipId),
-          internshipService.getInternshipTracking(internshipId)
+          internshipService.getInternshipTracking(internshipId),
+          documentService.getInternshipDocuments(internshipId)
         ]);
         setInternship(internshipData);
         setTracking(trackingData);
+        setDocuments(documentsData);
       } catch (err) {
         setError(err.message || 'Error al cargar los datos');
+        setDocsError(err.message || 'Error al cargar los documentos');
       } finally {
         setLoading(false);
       }
     };
     fetchData();
+  };
+
+  const fetchDocuments = async () => {
+    try {
+      setLoadingDocs(true);
+      setDocsError(null);
+      const data = await documentService.getInternshipDocuments(internshipId);
+      setDocuments(data);
+    } catch (err) {
+      console.error("Error fetching documents:", err);
+      setDocsError('No se pudieron cargar los documentos. Intenta de nuevo.');
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
+
+  const handleDownload = async (doc) => {
+    try {
+      const blob = await documentService.downloadDocument(doc.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.filename || `${doc.document_type?.name || 'documento'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Error downloading document:", err);
+    }
+  };
+
+  const handleDelete = async (docId) => {
+    if (!window.confirm("¿Estás seguro de que quieres eliminar este documento?")) return;
+    try {
+      await documentService.deleteDocument(docId);
+      fetchDocuments();
+    } catch (err) {
+      console.error("Error deleting document:", err);
+    }
   };
 
   return (
@@ -342,6 +397,42 @@ export const SeguimientoPage = () => {
               )}
             </motion.div>
 
+            {/* Documents */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 mb-8 border border-gray-100"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <FileText size={20} className="text-[#d22864]" />
+                  Documentos de la Práctica
+                </h3>
+                <button
+                  onClick={() => setIsUploadModalOpen(true)}
+                  disabled={internship?.status_id === 3 || internship?.status_id === 4}
+                  className={`px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors ${
+                    internship?.status_id === 3 || internship?.status_id === 4
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-[#d22864] text-white hover:bg-[#b01e52]'
+                  }`}
+                >
+                  <FileText size={16} />
+                  Subir nuevo
+                </button>
+              </div>
+
+              <DocumentList
+                documents={documents}
+                loading={loadingDocs}
+                error={docsError}
+                onDownload={handleDownload}
+                onDelete={handleDelete}
+                canDelete={true}
+              />
+            </motion.div>
+
             {/* Timeline */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -392,6 +483,13 @@ export const SeguimientoPage = () => {
       </main>
 
       <Footer />
+
+      <DocumentUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        internships={internship ? [internship] : []}
+        onDocumentUploaded={fetchDocuments}
+      />
     </div>
   );
 };

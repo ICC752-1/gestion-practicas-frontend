@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertCircle, User, Building, MapPin } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, User, Building, MapPin, FileText } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import { usePractice } from '../../hooks/usePractice';
 import { useAuth } from '../../context/useAuth';
+import { documentService } from '../../services/documentService';
+import { AdminDocumentList } from '../../components/CoordinatorDashboard/AdminDocumentList';
 
 // Componente para mostrar un detalle con ícono
 const DetailItem = ({ icon: Icon, label, value, subValue }) => (
@@ -24,6 +26,46 @@ export const PracticeDetailPage = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { practice, loading, error } = usePractice(id);
+  
+  const [documents, setDocuments] = useState([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [docsError, setDocsError] = useState(null);
+
+  const fetchDocuments = async () => {
+    try {
+      setLoadingDocs(true);
+      setDocsError(null);
+      const data = await documentService.getInternshipDocuments(id);
+      setDocuments(data);
+    } catch (err) {
+      console.error("Error fetching documents:", err);
+      setDocsError("No se pudieron cargar los documentos del servidor.");
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (id) {
+      fetchDocuments();
+    }
+  }, [id]);
+
+  const handleDownload = async (doc) => {
+    try {
+      const blob = await documentService.downloadDocument(doc.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.filename || `${doc.document_type?.name || 'documento'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Error downloading document:", err);
+    }
+  };
 
   const userName = user ? `${user.first_name} ${user.last_name}` : "Coordinador";
   const userRole = "Coordinador";
@@ -106,6 +148,21 @@ export const PracticeDetailPage = () => {
                       <span className="font-medium">Término:</span> {practice.end_date || 'No definida'}
                    </p>
                 </div>
+              </div>
+
+              {/* Sección de Documentos */}
+              <div className="border-t border-gray-100 pt-8 mt-8">
+                <div className="flex items-center gap-2 mb-6">
+                  <FileText className="text-ufro-primary" size={24} />
+                  <h3 className="text-xl font-bold text-gray-800">Revisión de Documentos</h3>
+                </div>
+                <AdminDocumentList 
+                  documents={documents}
+                  loading={loadingDocs}
+                  error={docsError}
+                  onStatusUpdated={fetchDocuments}
+                  onDownload={handleDownload}
+                />
               </div>
             </div>
           ) : (
