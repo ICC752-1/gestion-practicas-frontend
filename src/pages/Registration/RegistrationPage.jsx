@@ -11,8 +11,10 @@ import { RegistrationInfoCard } from "../../components/Registration/Registration
 import { Footer } from "../../components/Footer/Footer";
 import { User, Building2, UserRound, ClipboardList, FileText } from "lucide-react";
 import api from "../../services/api";
+import { useToast } from "../../context/useToast";
 
 export const RegistrationPage = () => {
+  const { showToast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
   const [isFinished, setIsFinished] = useState(false);
@@ -79,6 +81,12 @@ export const RegistrationPage = () => {
         const result = response.data;
         setInternshipResult(result);
         setIsFinished(true);
+
+        showToast({
+          type: "success",
+          title: "Práctica registrada",
+          message: "Tu solicitud fue enviada y quedó pendiente de revisión.",
+        });
 
       } catch (err) {
         console.error("Error de red:", err);
