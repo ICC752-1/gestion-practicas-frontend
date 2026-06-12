@@ -22,7 +22,10 @@ export const ActionButtons = ({ practice, onActionSuccess }) => {
     return null;
   }
 
-  // Determine allowed actions based on user roles and current state (matching backend rules)
+  // Determine allowed actions based on user roles and current state (matching backend rules).
+  // NOTE: 'Encargado de practica' and 'Director de carrera' are treated as equivalent.
+  // There is NO forced sequential chain — either role can approve/reject directly
+  // from 'Pendiente' without requiring the other role to act first.
   const userRoles = user?.roles || [];
   const isEncargadoOrDirector = userRoles.some(role => 
     role === 'Encargado de practica' || role === 'Director de carrera'
@@ -76,10 +79,18 @@ export const ActionButtons = ({ practice, onActionSuccess }) => {
       }
     } catch (error) {
       console.error('Error performing action:', error);
-      const msg = error.response?.data?.detail?.message || 
-                  error.response?.data?.detail || 
-                  error.response?.data?.message || 
-                  'Ocurrió un error al procesar la acción. Por favor, intente nuevamente.';
+      let msg;
+      const status = error.response?.status;
+      if (status === 403) {
+        msg = 'No tiene permisos para realizar esta acción.';
+      } else if (status === 404) {
+        msg = 'La práctica no fue encontrada o ya no existe.';
+      } else {
+        msg = error.response?.data?.detail?.message ||
+              error.response?.data?.detail ||
+              error.response?.data?.message ||
+              'Ocurrió un error al procesar la acción. Por favor, intente nuevamente.';
+      }
       setActionError(msg);
     } finally {
       setIsSubmitting(false);
