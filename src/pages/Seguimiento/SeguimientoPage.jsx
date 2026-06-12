@@ -7,6 +7,7 @@ import { internshipService } from "../../services/internshipService";
 import { getInternshipStatus } from "../../constants/internshipStatus";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useInternships } from "../../context/useInternships";
+import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
 import {
   Building2,
   User,
@@ -160,6 +161,7 @@ export const SeguimientoPage = () => {
 
   const currentStatus = internship?.status_id;
   const statusStyle = getInternshipStatus(currentStatus);
+  const administrativeProgress = getInternshipAdministrativeProgress(currentStatus);
 
   const handleRetry = () => {
     fetchData();
@@ -201,7 +203,7 @@ export const SeguimientoPage = () => {
               animate={{ opacity: 1, y: 0 }}
               className={`rounded-[2rem] p-6 mb-8 border ${statusStyle.border} ${statusStyle.bg}`}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-6">
                 <div className="flex items-center gap-3">
                   <div className={`w-12 h-12 rounded-full ${statusStyle.color} flex items-center justify-center text-white`}>
                     {getStatusIcon(statusStyle.label)}
@@ -217,6 +219,16 @@ export const SeguimientoPage = () => {
                   <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Tipo</p>
                   <p className="text-sm font-bold text-gray-800">{internship.internship_type}</p>
                 </div>
+              </div>
+              <div className="mt-5 border-t border-black/5 pt-4">
+                <div className="mb-2 flex items-center justify-between gap-4 text-xs font-bold text-gray-600">
+                  <span>Avance administrativo</span>
+                  <span>{administrativeProgress.percentage}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/70">
+                  <div className={`h-full rounded-full transition-all duration-500 ${administrativeProgress.color}`} style={{ width: `${administrativeProgress.percentage}%` }} />
+                </div>
+                <p className="mt-2 text-xs text-gray-500">{administrativeProgress.label}</p>
               </div>
             </motion.div>
 
@@ -346,7 +358,12 @@ export const SeguimientoPage = () => {
               {tracking.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <InboxIcon className="w-12 h-12 text-gray-300 mb-4" />
-                  <p className="text-gray-500">No hay registros de seguimiento aún</p>
+                  <p className="font-bold text-gray-700">Aún no hay movimientos en el seguimiento</p>
+                  <p className="mt-2 max-w-md text-center text-sm text-gray-500">
+                    {currentStatus === 1
+                      ? 'La práctica fue registrada y está a la espera de su primera revisión.'
+                      : 'El estado actual está disponible, pero todavía no existen entradas en el historial.'}
+                  </p>
                 </div>
               ) : (
                 <div className="max-w-xl">
@@ -365,7 +382,14 @@ export const SeguimientoPage = () => {
         ) : (
           <div className="flex flex-col items-center justify-center py-20">
             <InboxIcon className="w-12 h-12 text-gray-300 mb-4" />
-            <p className="text-gray-500">No se encontró la práctica</p>
+            <p className="font-bold text-gray-700">No se encontró la práctica solicitada</p>
+            <p className="mt-2 text-center text-sm text-gray-500">Puede que haya sido eliminada o que no pertenezca a tu cuenta.</p>
+            <button
+              onClick={() => navigate('/seguimiento')}
+              className="mt-5 rounded-xl bg-[#d22864] px-6 py-3 text-sm font-bold text-white hover:bg-[#b01e52]"
+            >
+              Ver mis prácticas
+            </button>
           </div>
         )}
 

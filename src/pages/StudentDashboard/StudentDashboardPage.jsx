@@ -2,7 +2,6 @@ import React from 'react';
 import { motion } from "framer-motion";
 import {
   Plus,
-  Play,
   Upload,
   CheckCircle2,
   Clock,
@@ -25,6 +24,7 @@ import { Footer } from "../../components/Footer/Footer";
 import { useAuth } from "../../context/useAuth";
 import { getInternshipStatus } from "../../constants/internshipStatus";
 import { useInternships } from "../../context/useInternships";
+import { getInternshipAdministrativeProgress, getOverallInternshipProgress } from "../../constants/internshipProgress";
 
 // --- Constants ---
 const STATUS_ICONS = {
@@ -68,6 +68,7 @@ const DetailChip = ({ icon: Icon, label, value }) => (
 
 const PracticeCard = ({ internship }) => {
   const navigate = useNavigate();
+  const progress = getInternshipAdministrativeProgress(internship.status_id);
 
   return (
     <motion.div
@@ -122,6 +123,17 @@ const PracticeCard = ({ internship }) => {
           <DetailChip icon={Clock} label="Horario" value={internship.schedule} />
           <DetailChip icon={MapPin} label="Ubicación" value={internship.internship_address || internship.city} />
         </div>
+
+        <div className="rounded-2xl border border-gray-100 bg-gray-50/80 p-4">
+          <div className="mb-2 flex items-center justify-between gap-4 text-xs font-bold">
+            <span className="text-gray-600">Avance administrativo</span>
+            <span className="text-gray-500">{progress.percentage}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+            <div className={`h-full rounded-full transition-all duration-500 ${progress.color}`} style={{ width: `${progress.percentage}%` }} />
+          </div>
+          <p className="mt-2 text-xs text-gray-500">{progress.label}</p>
+        </div>
       </div>
 
       {/* Footer */}
@@ -164,6 +176,7 @@ export const StudentDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { internships, loading, error, refreshInternships } = useInternships();
+  const overallProgress = getOverallInternshipProgress(internships);
 
   const userName = user
     ? `${user.first_name} ${user.last_name}`
@@ -192,13 +205,20 @@ export const StudentDashboardPage = () => {
                     : 'No tienes prácticas inscritas aún.'}
                 </p>
               </div>
-              <div className="flex gap-4">
-                <div className="text-right">
-                  <p className="text-[10px] uppercase tracking-widest font-black text-gray-400 mb-1">Prácticas</p>
-                  <div className="flex items-center gap-3">
-                    <span className="font-black text-3xl text-gray-900">{internships.length}</span>
+              <div className="w-full max-w-sm rounded-2xl border border-gray-100 bg-gray-50 p-5">
+                <div className="mb-3 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Progreso total</p>
+                    <p className="mt-1 text-sm font-bold text-gray-700">
+                      {overallProgress.completedCount} de {overallProgress.requiredCount} prácticas aprobadas
+                    </p>
                   </div>
+                  <span className="text-2xl font-black text-[#d22864]">{overallProgress.percentage}%</span>
                 </div>
+                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
+                  <div className="h-full rounded-full bg-[#d22864] transition-all duration-500" style={{ width: `${overallProgress.percentage}%` }} />
+                </div>
+                <p className="mt-2 text-xs text-gray-500">Solo las prácticas aprobadas aportan al progreso total.</p>
               </div>
             </motion.div>
           </div>
@@ -254,10 +274,7 @@ export const StudentDashboardPage = () => {
               {!loading && !error && internships.length > 0 && (
                 <div className="space-y-6">
                   {internships.map((internship) => (
-                    <PracticeCard
-                      key={internship.id}
-                      internship={internship}
-                    />
+                    <PracticeCard key={internship.id} internship={internship} />
                   ))}
                 </div>
               )}
@@ -274,12 +291,6 @@ export const StudentDashboardPage = () => {
                   desc="Comienza el proceso para tu próxima práctica"
                   onClick={() => navigate('/inscripcion')}
                   primary={true}
-                />
-                <QuickAction
-                  icon={Play}
-                  title="Ver Seguimiento"
-                  desc="Revisa el estado de tus procesos actuales"
-                  onClick={() => navigate('/seguimiento')}
                 />
                 <QuickAction
                   icon={Upload}

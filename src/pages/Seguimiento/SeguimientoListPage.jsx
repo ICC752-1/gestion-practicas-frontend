@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { getInternshipStatus } from "../../constants/internshipStatus";
 import { useInternships } from "../../context/useInternships";
+import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
 import {
   Building2,
   User,
@@ -39,6 +40,7 @@ const PracticeSummaryCard = ({ internship, index }) => {
   const statusId = internship.status_id;
   const statusStyle = getInternshipStatus(statusId);
   const StatusIcon = STATUS_ICONS[statusStyle.icon];
+  const progress = getInternshipAdministrativeProgress(statusId);
 
   return (
     <motion.div
@@ -106,6 +108,17 @@ const PracticeSummaryCard = ({ internship, index }) => {
           </div>
         </div>
 
+        <div className="mb-6 rounded-2xl border border-gray-100 bg-gray-50/80 p-4">
+          <div className="mb-2 flex items-center justify-between gap-4 text-xs font-bold">
+            <span className="text-gray-600">Avance administrativo</span>
+            <span className="text-gray-500">{progress.percentage}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+            <div className={`h-full rounded-full ${progress.color}`} style={{ width: `${progress.percentage}%` }} />
+          </div>
+          <p className="mt-2 text-xs text-gray-500">{progress.label}</p>
+        </div>
+
         {/* CTA */}
         <div className="flex items-center justify-end text-[#d22864] font-bold text-sm group-hover:gap-3 gap-2 transition-all">
           Ver detalle completo
@@ -158,7 +171,8 @@ export const SeguimientoListPage = () => {
         ) : internships.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-3xl p-8">
             <InboxIcon className="text-gray-300" size={48} />
-            <p className="mt-4 text-gray-500 font-medium text-center">No tienes prácticas inscritas</p>
+            <p className="mt-4 text-gray-700 font-bold text-center">Aún no tienes prácticas inscritas</p>
+            <p className="mt-2 max-w-md text-center text-sm text-gray-500">Registra tu primera práctica para comenzar a visualizar su estado y seguimiento.</p>
             <button
               onClick={() => navigate('/inscripcion')}
               className="mt-4 bg-[#d22864] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#b01e52] transition-colors"
