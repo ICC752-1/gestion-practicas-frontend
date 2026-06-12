@@ -28,18 +28,18 @@ import { internshipService } from "../../services/internshipService";
 // --- Constants ---
 const STATUS_LABELS = {
   1: 'Pendiente',
-  2: 'En revisión',
-  3: 'Aprobada',
-  4: 'Rechazada',
-  5: 'En revisión DIRAE'
+  2: 'En revisión DIRAE',
+  3: 'En revisión',
+  4: 'Aprobada',
+  5: 'Rechazada'
 };
 
 const STATUS_STYLES = {
   1: { color: 'bg-amber-500', text: 'text-amber-600', border: 'border-amber-200', bg: 'bg-amber-50', icon: <Clock size={16} /> },
-  2: { color: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-200', bg: 'bg-blue-50', icon: <Clock size={16} /> },
-  3: { color: 'bg-green-500', text: 'text-green-600', border: 'border-green-200', bg: 'bg-green-50', icon: <CheckCircle2 size={16} /> },
-  4: { color: 'bg-red-500', text: 'text-red-600', border: 'border-red-200', bg: 'bg-red-50', icon: <AlertCircle size={16} /> },
-  5: { color: 'bg-purple-500', text: 'text-purple-600', border: 'border-purple-200', bg: 'bg-purple-50', icon: <Clock size={16} /> },
+  2: { color: 'bg-purple-500', text: 'text-purple-600', border: 'border-purple-200', bg: 'bg-purple-50', icon: <AlertCircle size={16} /> },
+  3: { color: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-200', bg: 'bg-blue-50', icon: <Clock size={16} /> },
+  4: { color: 'bg-green-500', text: 'text-green-600', border: 'border-green-200', bg: 'bg-green-50', icon: <CheckCircle2 size={16} /> },
+  5: { color: 'bg-red-500', text: 'text-red-600', border: 'border-red-200', bg: 'bg-red-50', icon: <AlertCircle size={16} /> },
 };
 
 const formatDate = (dateStr) => {
