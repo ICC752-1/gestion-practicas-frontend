@@ -129,7 +129,7 @@ export const AdminDocumentList = ({
                   </h4>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
                     <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">
-                      {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'Fecha no disponible'}
+                      {doc.uploaded_at || doc.created_at ? new Date(doc.uploaded_at || doc.created_at).toLocaleDateString() : 'Fecha no disponible'}
                     </p>
                     <div className={`px-3 py-0.5 rounded-full flex items-center gap-1.5 ${status.bg} ${status.color}`}>
                       <StatusIcon size={12} />

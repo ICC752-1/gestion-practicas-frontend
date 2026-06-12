@@ -81,6 +81,16 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
       return;
     }
 
+    const isInternshipClosed = (id) => {
+      const internship = internships.find(i => i.id === parseInt(id) || i.id === id);
+      return internship && (internship.status_id === 3 || internship.status_id === 4);
+    };
+
+    if (isInternshipClosed(selectedInternshipId)) {
+      setError('La práctica seleccionada ya está aprobada o rechazada y no permite más documentos.');
+      return;
+    }
+
     setLoading(true);
     try {
       await documentService.uploadDocument(selectedInternshipId, selectedDocumentTypeId, file);
@@ -177,11 +187,18 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
                       className="w-full bg-gray-50 border-2 border-transparent focus:border-[#d22864]/20 focus:bg-white rounded-2xl px-5 py-4 text-gray-900 font-medium appearance-none transition-all outline-none disabled:opacity-50"
                     >
                       <option value="">Selecciona tu práctica</option>
-                      {internships.map((int) => (
-                        <option key={int.id} value={int.id}>
-                          {int.internship_type} — {int.org_name}
-                        </option>
-                      ))}
+                      {internships.map((int) => {
+                        const isDisabled = int.status_id === 3 || int.status_id === 4;
+                        return (
+                          <option 
+                            key={int.id} 
+                            value={int.id}
+                            disabled={isDisabled}
+                          >
+                            {int.internship_type} — {int.org_name} {isDisabled ? '(Finalizada)' : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                     <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
                   </div>
