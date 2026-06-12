@@ -3,13 +3,14 @@ import { Footer } from "../../components/Footer/Footer";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
-import { internshipService } from "../../services/internshipService";
-import { useState, useEffect } from "react";
+import { getInternshipStatus } from "../../constants/internshipStatus";
+import { useInternships } from "../../context/useInternships";
 import {
   Building2,
   User,
   Calendar,
   Clock,
+  CheckCircle2,
   ChevronRight,
   AlertCircle,
   Loader2,
@@ -19,20 +20,10 @@ import {
 } from 'lucide-react';
 
 // --- Constants ---
-const STATUS_LABELS = {
-  1: 'Pendiente',
-  2: 'En revisión',
-  3: 'Aprobada',
-  4: 'Rechazada',
-  5: 'En revisión DIRAE'
-};
-
-const STATUS_STYLES = {
-  1: { color: 'bg-amber-500', text: 'text-amber-600', icon: <Clock size={16} /> },
-  2: { color: 'bg-blue-500', text: 'text-blue-600', icon: <Clock size={16} /> },
-  3: { color: 'bg-green-500', text: 'text-green-600', icon: <Clock size={16} /> },
-  4: { color: 'bg-red-500', text: 'text-red-600', icon: <Clock size={16} /> },
-  5: { color: 'bg-purple-500', text: 'text-purple-600', icon: <Clock size={16} /> },
+const STATUS_ICONS = {
+  clock: Clock,
+  approved: CheckCircle2,
+  rejected: AlertCircle,
 };
 
 const formatDate = (dateStr) => {
@@ -46,8 +37,8 @@ const formatDate = (dateStr) => {
 const PracticeSummaryCard = ({ internship, index }) => {
   const navigate = useNavigate();
   const statusId = internship.status_id;
-  const statusLabel = STATUS_LABELS[statusId] || 'Desconocido';
-  const statusStyle = STATUS_STYLES[statusId] || STATUS_STYLES[1];
+  const statusStyle = getInternshipStatus(statusId);
+  const StatusIcon = STATUS_ICONS[statusStyle.icon];
 
   return (
     <motion.div
@@ -70,8 +61,8 @@ const PracticeSummaryCard = ({ internship, index }) => {
             </div>
           </div>
           <div className={`${statusStyle.color} text-white px-4 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold shadow-lg flex-shrink-0`}>
-            {statusStyle.icon}
-            {statusLabel}
+            <StatusIcon size={16} />
+            {statusStyle.label}
           </div>
         </div>
 
@@ -129,26 +120,7 @@ const PracticeSummaryCard = ({ internship, index }) => {
 export const SeguimientoListPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [internships, setInternships] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchInternships = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await internshipService.getMyInternships();
-      setInternships(data);
-    } catch (err) {
-      setError(err.message || 'Error al cargar las prácticas');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchInternships();
-  }, []);
+  const { internships, loading, error, refreshInternships } = useInternships();
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex flex-col">
@@ -176,7 +148,7 @@ export const SeguimientoListPage = () => {
             <AlertCircle className="text-red-500" size={48} />
             <p className="mt-4 text-red-600 font-medium text-center">{error}</p>
             <button
-              onClick={fetchInternships}
+              onClick={() => refreshInternships()}
               className="mt-4 flex items-center gap-2 bg-red-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors"
             >
               <RefreshCw size={18} />

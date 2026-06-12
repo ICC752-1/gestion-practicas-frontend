@@ -13,9 +13,11 @@ import { User, Building2, UserRound, ClipboardList, FileText } from "lucide-reac
 import api from "../../services/api";
 import { useNotifications } from "../../context/useNotifications";
 import { notificationService } from "../../services/notificationService";
+import { useInternships } from "../../context/useInternships";
 
 export const RegistrationPage = () => {
   const { addNotification, showToast } = useNotifications();
+  const { refreshInternships } = useInternships();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
   const [isFinished, setIsFinished] = useState(false);
@@ -87,6 +89,7 @@ export const RegistrationPage = () => {
           referenceId: result.id,
         }));
         showToast({ type: 'success', message: 'Práctica registrada correctamente' });
+        await refreshInternships({ background: true, queueIfBusy: true });
 
       } catch (err) {
         console.error("Error de red:", err);

@@ -2,6 +2,13 @@ const NOTIFICATIONS_SOURCE =
   import.meta.env.VITE_NOTIFICATIONS_SOURCE || 'simulated';
 
 const STORAGE_PREFIX = 'simulated_notifications';
+const STATUS_SNAPSHOT_PREFIX = 'simulated_internship_status_snapshot';
+
+const STATUS_NOTIFICATION_EVENTS = {
+  2: 'internship_derived',
+  4: 'internship_approved',
+  5: 'internship_rejected',
+};
 
 const EVENT_CONTENT = {
   internship_registered: {
@@ -27,6 +34,7 @@ const EVENT_CONTENT = {
 };
 
 const buildStorageKey = (userId) => `${STORAGE_PREFIX}:${userId}`;
+const buildStatusSnapshotKey = (userId) => `${STATUS_SNAPSHOT_PREFIX}:${userId}`;
 
 const readStoredNotifications = (userId) => {
   if (!userId || NOTIFICATIONS_SOURCE !== 'simulated') return [];
@@ -47,6 +55,27 @@ const persistNotifications = (userId, notifications) => {
     localStorage.setItem(buildStorageKey(userId), JSON.stringify(notifications));
   } catch {
     // The UI remains usable when browser storage is unavailable.
+  }
+};
+
+const readStatusSnapshot = (userId) => {
+  if (!userId || NOTIFICATIONS_SOURCE !== 'simulated') return null;
+
+  try {
+    const storedValue = localStorage.getItem(buildStatusSnapshotKey(userId));
+    return storedValue ? JSON.parse(storedValue) : null;
+  } catch {
+    return null;
+  }
+};
+
+const persistStatusSnapshot = (userId, snapshot) => {
+  if (!userId || NOTIFICATIONS_SOURCE !== 'simulated') return;
+
+  try {
+    localStorage.setItem(buildStatusSnapshotKey(userId), JSON.stringify(snapshot));
+  } catch {
+    // Status synchronization remains usable when browser storage is unavailable.
   }
 };
 
@@ -120,5 +149,37 @@ export const notificationService = {
       referenceType: payload.referenceType || 'internship',
       referenceId: payload.referenceId || null,
     };
+  },
+
+  detectInternshipStatusChanges(userId, internships = []) {
+    if (!userId || NOTIFICATIONS_SOURCE !== 'simulated') return [];
+
+    const previousSnapshot = readStatusSnapshot(userId);
+    const nextSnapshot = Object.fromEntries(
+      internships.map((internship) => [String(internship.id), internship.status_id]),
+    );
+
+    persistStatusSnapshot(userId, nextSnapshot);
+
+    // The first synchronization only establishes a baseline.
+    if (!previousSnapshot) return [];
+
+    return internships.flatMap((internship) => {
+      const previousStatus = previousSnapshot[String(internship.id)];
+      const event = STATUS_NOTIFICATION_EVENTS[internship.status_id];
+
+      if (previousStatus === undefined || previousStatus === internship.status_id || !event) {
+        return [];
+      }
+
+      return [{
+        event,
+        internship,
+        notification: this.createEvent(event, {
+          organization: internship.org_name,
+          referenceId: internship.id,
+        }),
+      }];
+    });
   },
 };

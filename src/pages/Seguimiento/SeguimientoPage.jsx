@@ -4,7 +4,9 @@ import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
-import { useState, useEffect } from "react";
+import { getInternshipStatus } from "../../constants/internshipStatus";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useInternships } from "../../context/useInternships";
 import {
   Building2,
   User,
@@ -25,23 +27,6 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-
-// --- Status Labels ---
-const STATUS_LABELS = {
-  1: 'Pendiente',
-  2: 'En revisión',
-  3: 'Aprobada',
-  4: 'Rechazada',
-  5: 'En revisión DIRAE'
-};
-
-const STATUS_STYLES = {
-  1: { color: 'bg-amber-500', text: 'text-amber-500', border: 'border-amber-200', bg: 'bg-amber-50' },
-  2: { color: 'bg-blue-500', text: 'text-blue-500', border: 'border-blue-200', bg: 'bg-blue-50' },
-  3: { color: 'bg-green-500', text: 'text-green-500', border: 'border-green-200', bg: 'bg-green-50' },
-  4: { color: 'bg-red-500', text: 'text-red-500', border: 'border-red-200', bg: 'bg-red-50' },
-  5: { color: 'bg-purple-500', text: 'text-purple-500', border: 'border-purple-200', bg: 'bg-purple-50' },
-};
 
 // --- Helpers ---
 const formatDate = (dateStr) => {
@@ -107,38 +92,58 @@ export const SeguimientoPage = () => {
   const navigate = useNavigate();
   const { internshipId } = useParams();
   const { user } = useAuth();
+  const { getInternshipById } = useInternships();
+  const globalInternship = getInternshipById(internshipId);
 
-  const [internship, setInternship] = useState(null);
+  const [internshipDetail, setInternshipDetail] = useState(null);
   const [tracking, setTracking] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showOrgDetails, setShowOrgDetails] = useState(false);
   const [showSupervisorDetails, setShowSupervisorDetails] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchData = useCallback(async () => {
+    if (!internshipId) return;
 
-        const [internshipData, trackingData] = await Promise.all([
-          internshipService.getIntershipById(internshipId),
-          internshipService.getInternshipTracking(internshipId)
-        ]);
+    try {
+      setLoading(true);
+      setError(null);
 
-        setInternship(internshipData);
-        setTracking(trackingData);
-      } catch (err) {
-        setError(err.message || 'Error al cargar los datos');
-      } finally {
-        setLoading(false);
-      }
-    };
+      const [internshipData, trackingData] = await Promise.all([
+        internshipService.getIntershipById(internshipId),
+        internshipService.getInternshipTracking(internshipId)
+      ]);
 
-    if (internshipId) {
-      fetchData();
+      setInternshipDetail(internshipData);
+      setTracking(trackingData);
+    } catch (err) {
+      setError(err.message || 'Error al cargar los datos');
+    } finally {
+      setLoading(false);
     }
   }, [internshipId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const detailStatusId = internshipDetail?.status_id;
+  const globalStatusId = globalInternship?.status_id;
+
+  useEffect(() => {
+    if (!internshipId || !globalStatusId || globalStatusId === detailStatusId) return;
+
+    internshipService.getInternshipTracking(internshipId)
+      .then(setTracking)
+      .catch(() => {
+        // The current status can still update when tracking is temporarily unavailable.
+      });
+  }, [internshipId, globalStatusId, detailStatusId]);
+
+  const internship = useMemo(() => {
+    if (!internshipDetail) return globalInternship;
+    return globalInternship ? { ...internshipDetail, ...globalInternship } : internshipDetail;
+  }, [internshipDetail, globalInternship]);
 
   const timelineItems = tracking.map((entry) => ({
     id: entry.id,
@@ -154,25 +159,9 @@ export const SeguimientoPage = () => {
   }));
 
   const currentStatus = internship?.status_id;
-  const statusStyle = STATUS_STYLES[currentStatus] || STATUS_STYLES[1];
+  const statusStyle = getInternshipStatus(currentStatus);
 
   const handleRetry = () => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const [internshipData, trackingData] = await Promise.all([
-          internshipService.getIntershipById(internshipId),
-          internshipService.getInternshipTracking(internshipId)
-        ]);
-        setInternship(internshipData);
-        setTracking(trackingData);
-      } catch (err) {
-        setError(err.message || 'Error al cargar los datos');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   };
 
@@ -215,12 +204,12 @@ export const SeguimientoPage = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-12 h-12 rounded-full ${statusStyle.color} flex items-center justify-center text-white`}>
-                    {getStatusIcon(STATUS_LABELS[currentStatus])}
+                    {getStatusIcon(statusStyle.label)}
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Estado actual</p>
                     <p className={`text-xl font-bold ${statusStyle.text}`}>
-                      {STATUS_LABELS[currentStatus] || 'Desconocido'}
+                      {statusStyle.label || 'Desconocido'}
                     </p>
                   </div>
                 </div>

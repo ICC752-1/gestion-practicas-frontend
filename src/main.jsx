@@ -5,13 +5,16 @@ import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
 import { NotificationProvider } from './context/NotificationContext'
+import { InternshipProvider } from './context/InternshipContext'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <NotificationProvider>
-          <App />
+          <InternshipProvider>
+            <App />
+          </InternshipProvider>
         </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
