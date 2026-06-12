@@ -1,16 +1,54 @@
-# React + Vite
+# Frontend - Gestion de Practicas DCI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React/Vite frontend for the Gestion de Practicas DCI platform.
 
-Currently, two official plugins are available:
+## Local Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm ci
+npm run dev
+```
 
-## React Compiler
+Set the local backend URL in `.env.local`:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```env
+VITE_API_URL=http://localhost:8000
+```
 
-## Expanding the ESLint configuration
+## Verification
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm run lint
+npm run build
+```
+
+## Docker Image
+
+The browser API base URL is baked into the Vite build. For the VPS deployment,
+build the image with same-origin API calls:
+
+```bash
+docker build --build-arg VITE_API_URL=/api -t gestion-practicas-frontend:local .
+```
+
+The runtime Nginx proxy defaults to:
+
+```text
+API_UPSTREAM=http://backend:8000
+```
+
+Override `API_UPSTREAM` only if the backend service name or port changes inside
+the Docker network.
+
+## CI/CD
+
+CI runs lint, build, and a Docker image build check.
+
+CD runs from `main` and temporarily from
+`feature/devops-cicd-vps-deployment`. It does not use a registry. Instead, it:
+
+1. Builds `gestion-practicas-frontend:<commit_sha>`.
+2. Exports the image with `docker save`.
+3. Copies the compressed image to `/srv/team-b/releases` on the VPS.
+4. Loads and retags it on the VPS as `gestion-practicas-frontend:deploy`.
+5. Restarts the `frontend` service from `/srv/team-b/app/compose.prod.yml`.

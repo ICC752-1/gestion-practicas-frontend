@@ -17,6 +17,7 @@ on:
       - "nginx.conf"
       - ".dockerignore"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/cd.yml"
 
   pull_request:
     branches:
@@ -33,6 +34,7 @@ on:
       - "nginx.conf"
       - ".dockerignore"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/cd.yml"
 
 jobs:
   quality:
@@ -74,6 +76,11 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          build-args: |
+            VITE_API_URL=/api
+          labels: |
+            app=gestion-practicas
+            service=frontend
           tags: practicas-dci:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
