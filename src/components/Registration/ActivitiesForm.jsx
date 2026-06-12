@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
-export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
+export const ActivitiesForm = ({ onNext, onBack, initialData = {}, isSubmitting = false }) => {
   const [formData, setFormData] = useState({
     act_description: initialData.act_description || '',
     ben_description: Array.isArray(initialData.ben_description) ? initialData.ben_description : [],
@@ -140,15 +141,24 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {} }) => {
           <button
             type="button"
             onClick={onBack}
+            disabled={isSubmitting}
             className="flex-1 h-16 bg-white text-[#d22864] border border-[#d22864] text-2xl font-bold rounded-[20px] hover:bg-[#f9f4f7] transition-all shadow-sm cursor-pointer"
           >
             Anterior
           </button>
           <button
             type="submit"
-            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+            disabled={isSubmitting}
+            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-300"
           >
-            Finalizar
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="animate-spin" size={22} />
+                Registrando
+              </span>
+            ) : (
+              'Finalizar'
+            )}
           </button>
         </div>
       </form>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { UserHeader } from "../../components/Header/UserHeader";
 import { RegistrationStepper } from "../../components/Registration/RegistrationStepper";
 import { StudentInfoForm } from "../../components/Registration/StudentInfoForm";
@@ -9,16 +10,76 @@ import { ActivitiesForm } from "../../components/Registration/ActivitiesForm";
 import { RegistrationSuccess } from "../../components/Registration/RegistrationSuccess";
 import { RegistrationInfoCard } from "../../components/Registration/RegistrationInfoCard";
 import { Footer } from "../../components/Footer/Footer";
-import { User, Building2, UserRound, ClipboardList, FileText } from "lucide-react";
-import api from "../../services/api";
+import { AlertCircle, Building2, ClipboardList, FileText, Loader2, RefreshCw, User, UserRound } from "lucide-react";
+import { internshipService } from "../../services/internshipService";
+
+const PRE_REGISTRATION_PATH = "/practicas/nueva/preinscripcion";
+
+const canRegisterFromEligibility = (eligibility) => {
+  if (!eligibility) return false;
+  if (typeof eligibility.can_register === "boolean") return eligibility.can_register;
+  return !eligibility.blocked;
+};
+
+const getApiErrorMessage = (error) => {
+  if (!error.response) {
+    return "No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.";
+  }
+
+  const detail = error.response.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (detail?.message) return detail.message;
+  if (Array.isArray(detail)) return detail.map((item) => item.msg).join(", ");
+
+  if (error.response.status === 401) {
+    return "Sesión expirada. Por favor, inicia sesión nuevamente.";
+  }
+
+  if (error.response.status === 409) {
+    return "La inscripción no puede registrarse porque aún existen prerrequisitos pendientes.";
+  }
+
+  return "Hubo un error al registrar la práctica. Por favor, intenta nuevamente.";
+};
 
 export const RegistrationPage = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
   const [isFinished, setIsFinished] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [internshipResult, setInternshipResult] = useState(null);
+  const [eligibilityLoading, setEligibilityLoading] = useState(true);
+  const [eligibilityError, setEligibilityError] = useState(null);
+
+  const validateFormAccess = useCallback(async () => {
+    setEligibilityLoading(true);
+    setEligibilityError(null);
+
+    try {
+      const eligibility = await internshipService.getRegistrationEligibility();
+
+      if (!canRegisterFromEligibility(eligibility)) {
+        navigate(PRE_REGISTRATION_PATH, {
+          replace: true,
+          state: { reason: "eligibility-blocked" },
+        });
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      setEligibilityError(getApiErrorMessage(error));
+      return false;
+    } finally {
+      setEligibilityLoading(false);
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    validateFormAccess();
+  }, [validateFormAccess]);
 
   const handleNext = async (stepData) => {
     const updatedFormData = { ...formData, ...stepData };
@@ -29,6 +90,16 @@ export const RegistrationPage = () => {
       setSubmitError(null);
 
       try {
+        const eligibility = await internshipService.getRegistrationEligibility();
+        if (!canRegisterFromEligibility(eligibility)) {
+          navigate(PRE_REGISTRATION_PATH, {
+            replace: true,
+            state: { reason: "eligibility-blocked" },
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
         const payload = {
           // Paso 2 - Organización
           org_name:   updatedFormData.org_name,
@@ -64,19 +135,11 @@ export const RegistrationPage = () => {
           // Campos del paso 1 (estudiante y práctica)
           internship_period:     updatedFormData.internship_period,
           internship_type:       updatedFormData.internship_type,
-          // Para períodos estivales (Verano/Invierno) el backend exige has_school_insurance=true
-          // Para Semestre se envía true por defecto ya que el checkbox no se muestra
-          has_school_insurance: (updatedFormData.internship_period === 'Semestre')
-            ? true
-            : (updatedFormData.has_school_insurance ?? true),
         };
 
-        console.log("Payload enviado:", JSON.stringify(payload, null, 2));
-
-        const response = await api.post("/internships", payload);
+        const result = await internshipService.createInternship(payload);
         
         // Guardar resultado para mostrar en página de éxito
-        const result = response.data;
         setInternshipResult(result);
         setIsFinished(true);
 
@@ -88,27 +151,13 @@ export const RegistrationPage = () => {
           setSubmitError("No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.");
         } else {
           const status = err.response.status;
-          const errorData = err.response.data;
 
-          if (status === 400) {
-            setSubmitError("Error en los datos enviados. Verifica que todos los campos sean correctos.");
-          } else if (status === 401) {
+          if (status === 401) {
             setSubmitError("Sesión expirada. Por favor, inicia sesión nuevamente.");
             localStorage.removeItem("token");
             window.location.href = "/login";
-          } else if (status === 422) {
-            // Error de validación del backend - mostrar detalles si están disponibles
-            const detail = errorData?.detail;
-            if (Array.isArray(detail)) {
-              const messages = detail.map(d => d.msg).join(", ");
-              setSubmitError(`Error de validación: ${messages}`);
-            } else {
-              setSubmitError("Error de validación. Revisa los campos e intenta nuevamente.");
-            }
-          } else if (status === 500) {
-            setSubmitError("Error interno del servidor. Por favor, intenta más tarde.");
           } else {
-            setSubmitError("Hubo un error al registrar la práctica. Por favor, intenta nuevamente.");
+            setSubmitError(getApiErrorMessage(err));
           }
         }
         setIsSubmitting(false);
@@ -182,7 +231,7 @@ export const RegistrationPage = () => {
             "Marque solo beneficios confirmados",
             "Ingrese $0 si no existe ayuda económica"
           ],
-          form: <ActivitiesForm onNext={handleNext} onBack={handleBack} initialData={formData} />
+          form: <ActivitiesForm onNext={handleNext} onBack={handleBack} initialData={formData} isSubmitting={isSubmitting} />
         };
       default:
         return {
@@ -202,7 +251,35 @@ export const RegistrationPage = () => {
       <UserHeader />
       
       <main className="flex-grow container mx-auto px-4 py-8">
-        {submitError && (
+        {eligibilityLoading && !isFinished ? (
+          <div className="flex min-h-[420px] flex-col items-center justify-center">
+            <Loader2 className="animate-spin text-[#d22864]" size={48} />
+            <p className="mt-4 font-semibold text-gray-600">Validando prerrequisitos...</p>
+          </div>
+        ) : eligibilityError && !isFinished ? (
+          <div className="mx-auto max-w-[640px] rounded-[20px] border border-red-200 bg-red-50 p-8 text-center">
+            <AlertCircle className="mx-auto text-red-500" size={48} />
+            <h2 className="mt-4 text-2xl font-black text-red-900">No se pudo validar la inscripción</h2>
+            <p className="mt-3 text-red-700">{eligibilityError}</p>
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={validateFormAccess}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 font-bold text-white hover:bg-red-700"
+              >
+                <RefreshCw size={18} />
+                Reintentar
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(PRE_REGISTRATION_PATH)}
+                className="rounded-xl border border-red-300 px-6 py-3 font-bold text-red-700 hover:bg-red-100"
+              >
+                Volver a preinscripción
+              </button>
+            </div>
+          </div>
+        ) : submitError && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-[20px] p-6 max-w-[600px] mx-auto">
             <p className="text-red-700 font-bold text-lg mb-2">Error al registrar</p>
             <p className="text-red-600">{submitError}</p>
@@ -215,7 +292,7 @@ export const RegistrationPage = () => {
           </div>
         )}
 
-        {!isFinished && (
+        {!isFinished && !eligibilityLoading && !eligibilityError && (
           <>
             {/* Stepper Section */}
             <RegistrationStepper currentStep={currentStep} />
@@ -262,5 +339,3 @@ export const RegistrationPage = () => {
 };
 
 export default RegistrationPage;
-
-

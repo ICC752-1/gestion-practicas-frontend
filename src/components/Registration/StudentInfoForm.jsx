@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { useAuth } from "../../context/useAuth";
-import { InsuranceRequirementModal } from './InsuranceRequirementModal';
 
 export const StudentInfoForm = ({ onNext, initialData = {} }) => {
   const { user } = useAuth();
@@ -19,11 +18,9 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
     careerName: initialData.careerName || careerOptions[initialData.careerCode || '3095'] || '',
     internship_period: initialData.internship_period || 'Semestre',
     internship_type: initialData.internship_type || 'Práctica de Estudio I',
-    has_school_insurance: initialData.has_school_insurance ?? false,
   });
 
   const [errors, setErrors] = useState({});
-  const [showInsuranceModal, setShowInsuranceModal] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -80,32 +77,9 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Primero validar campos básicos
     if (!validateForm()) return;
 
-    // Validación de seguro escolar para períodos estivales
-    const isSummerPeriod = formData.internship_period === 'Verano' || formData.internship_period === 'Invierno';
-    
-    if (isSummerPeriod && !formData.has_school_insurance) {
-      // Mostrar modal de advertencia y NO continuar
-      setShowInsuranceModal(true);
-      return;
-    }
-
-    // Si todo está correcto (o es Semestre), continuar
     onNext?.(formData);
-  };
-
-  const handleModalConfirm = () => {
-    // Usuario aceptó los requisitos, pero NO avanzamos
-    // Solo cerramos el modal para que pueda marcar el checkbox
-    setShowInsuranceModal(false);
-    // NO llamamos a onNext, el usuario debe marcar el checkbox primero
-  };
-
-  const handleModalClose = () => {
-    // Usuario canceló, cerrar modal
-    setShowInsuranceModal(false);
   };
 
   return (
@@ -183,42 +157,6 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
           {errors.internship_period && <p className="text-sm text-red-600">{errors.internship_period}</p>}
         </div>
 
-        {formData.internship_period === 'Verano' || formData.internship_period === 'Invierno' ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                id="has_school_insurance"
-                role="checkbox"
-                aria-checked={formData.has_school_insurance}
-                onClick={() => {
-                  console.log('Checkbox clicked:', !formData.has_school_insurance);
-                  setFormData((prev) => ({ 
-                    ...prev, 
-                    has_school_insurance: !prev.has_school_insurance 
-                  }));
-                  setErrors((prev) => ({ ...prev, has_school_insurance: '' }));
-                }}
-                className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
-                  formData.has_school_insurance 
-                    ? 'bg-[#d22864] border-[#d22864]' 
-                    : 'bg-white border-[#d22864] hover:bg-gray-50'
-                }`}
-              >
-                {formData.has_school_insurance && (
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </button>
-              <label htmlFor="has_school_insurance" className="text-xl text-gray-700 cursor-pointer select-none">
-                ¿Cuentas con seguro escolar?
-              </label>
-            </div>
-            {errors.has_school_insurance && <p className="text-sm text-red-600">{errors.has_school_insurance}</p>}
-          </div>
-        ) : null}
-
         <div className="space-y-3">
           <label className="block text-2xl font-bold text-black">Tipo de práctica</label>
           <div className="relative">
@@ -254,13 +192,6 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
           </button>
         </div>
       </form>
-
-      {/* Modal de requisito de seguro escolar */}
-      <InsuranceRequirementModal
-        isOpen={showInsuranceModal}
-        onClose={handleModalClose}
-        onConfirm={handleModalConfirm}
-      />
     </div>
   );
 };
