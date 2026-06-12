@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { notificationService } from '../services/notificationService';
 
 const LAST_SEEN_KEY = 'lastSeenNotificationId';
+const DEFAULT_REFRESH_MS = 5000;
 
 export const useNotifications = (limit = 10) => {
   const [notifications, setNotifications] = useState([]);
@@ -27,6 +28,29 @@ export const useNotifications = (limit = 10) => {
 
   useEffect(() => {
     fetchNotifications();
+  }, [fetchNotifications]);
+
+  useEffect(() => {
+    const refreshOnFocus = () => {
+      fetchNotifications();
+    };
+
+    const refreshOnVisible = () => {
+      if (!document.hidden) {
+        fetchNotifications();
+      }
+    };
+
+    const intervalId = window.setInterval(fetchNotifications, DEFAULT_REFRESH_MS);
+
+    window.addEventListener('focus', refreshOnFocus);
+    document.addEventListener('visibilitychange', refreshOnVisible);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refreshOnFocus);
+      document.removeEventListener('visibilitychange', refreshOnVisible);
+    };
   }, [fetchNotifications]);
 
   // Marca como vistas las notificaciones actuales (al abrir el panel)
