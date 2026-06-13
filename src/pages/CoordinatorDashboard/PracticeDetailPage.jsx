@@ -200,7 +200,7 @@ export const PracticeDetailPage = () => {
                   <FileText className="text-ufro-primary" size={24} />
                   <h3 className="text-xl font-bold text-gray-800">Revisión de Documentos</h3>
                 </div>
-                <AdminDocumentList 
+                <AdminDocumentList
                   documents={documents}
                   loading={loadingDocs}
                   error={docsError}

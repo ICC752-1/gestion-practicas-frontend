@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
-  UploadCloud, 
-  Loader2, 
-  CheckCircle2, 
-  AlertCircle, 
-  FileText, 
+import {
+  X,
+  UploadCloud,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  FileText,
   FileCheck,
   ChevronDown,
   Info
@@ -158,7 +158,7 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
 
           <div className="p-8">
             {success ? (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center justify-center py-10 text-center"
@@ -193,8 +193,8 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
                       {internships.map((int) => {
                         const isDisabled = !canUploadDocuments(int);
                         return (
-                          <option 
-                            key={int.id} 
+                          <option
+                            key={int.id}
                             value={int.id}
                             disabled={isDisabled}
                           >
@@ -241,10 +241,10 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
                 {/* File Upload Area */}
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700 ml-1">Archivo</label>
-                  <div 
+                  <div
                     className={`relative border-2 border-dashed rounded-[2rem] p-8 transition-all ${
-                      file 
-                        ? 'border-green-200 bg-green-50/30' 
+                      file
+                        ? 'border-green-200 bg-green-50/30'
                         : 'border-gray-200 bg-gray-50 hover:bg-gray-100/50 hover:border-[#d22864]/30'
                     }`}
                   >
@@ -286,7 +286,7 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
 
                 {/* Error message */}
                 {error && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="flex items-start gap-3 p-4 bg-red-50 rounded-2xl text-red-700 border border-red-100"

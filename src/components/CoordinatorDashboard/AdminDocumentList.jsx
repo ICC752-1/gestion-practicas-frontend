@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/useAuth';
 import { useToast } from '../../context/useToast';
-import { 
-  FileText, 
-  Download, 
-  CheckCircle, 
-  Eye, 
+import {
+  FileText,
+  Download,
+  CheckCircle,
+  Eye,
   Loader2,
   AlertCircle,
   MessageSquare,
@@ -21,12 +21,12 @@ const STATUS_CONFIG = {
   observed: { label: 'Observado', color: 'text-purple-600', bg: 'bg-purple-50', icon: Eye },
 };
 
-export const AdminDocumentList = ({ 
-  documents, 
-  loading, 
+export const AdminDocumentList = ({
+  documents,
+  loading,
   error,
   onStatusUpdated,
-  onDownload 
+  onDownload
 }) => {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -61,7 +61,7 @@ export const AdminDocumentList = ({
     try {
       setUpdatingId(docId);
       setReviewError(null);
-      await documentService.updateDocumentStatus(docId, { 
+      await documentService.updateDocumentStatus(docId, {
         status: selectedStatus,
         comment: normalizedComment || null,
       });
@@ -220,7 +220,7 @@ export const AdminDocumentList = ({
                                 <Eye size={18} /> Observar
                               </button>
                             </div>
-                            
+
                             <div className="border-t border-gray-50 pt-2">
                               <label className="mb-2 block px-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
                                 Comentario {selectedStatus === 'observed' ? '(obligatorio)' : '(opcional)'}

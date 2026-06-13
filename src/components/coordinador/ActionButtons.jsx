@@ -27,7 +27,7 @@ export const ActionButtons = ({ practice, onActionSuccess }) => {
   // There is NO forced sequential chain — either role can approve/reject directly
   // from 'Pendiente' without requiring the other role to act first.
   const userRoles = user?.roles || [];
-  const isEncargadoOrDirector = userRoles.some(role => 
+  const isEncargadoOrDirector = userRoles.some(role =>
     role === 'Encargado de practica' || role === 'Director de carrera'
   );
   const isDirector = userRoles.includes('Director de carrera');

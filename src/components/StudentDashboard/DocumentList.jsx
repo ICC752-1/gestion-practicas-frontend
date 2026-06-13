@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
-import { 
-  FileText, 
-  Download, 
-  Trash2, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
+import {
+  FileText,
+  Download,
+  Trash2,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
   Loader2,
   Inbox
 } from 'lucide-react';
@@ -16,13 +16,13 @@ const STATUS_CONFIG = {
   observed: { label: 'Observado', color: 'text-purple-600', bg: 'bg-purple-50', icon: AlertCircle },
 };
 
-export const DocumentList = ({ 
-  documents, 
-  loading, 
+export const DocumentList = ({
+  documents,
+  loading,
   error,
-  onDownload, 
-  onDelete, 
-  canDelete = false 
+  onDownload,
+  onDelete,
+  canDelete = false
 }) => {
   if (loading) {
     return (
