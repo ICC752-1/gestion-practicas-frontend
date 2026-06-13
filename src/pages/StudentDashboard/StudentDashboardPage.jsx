@@ -26,6 +26,7 @@ import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
 import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
 import { canUploadDocuments } from "../../services/documentService";
+import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
 
 // --- Constants ---
 const STATUS_LABELS = {
@@ -81,6 +82,7 @@ const DetailChip = ({ icon: Icon, label, value }) => (
 
 const PracticeCard = ({ internship }) => {
   const navigate = useNavigate();
+  const progress = getInternshipAdministrativeProgress(internship);
 
   return (
     <motion.div
@@ -134,6 +136,20 @@ const PracticeCard = ({ internship }) => {
           <DetailChip icon={Shield} label="Período" value={internship.internship_period} />
           <DetailChip icon={Clock} label="Horario" value={internship.schedule} />
           <DetailChip icon={MapPin} label="Ubicación" value={internship.internship_address || internship.city} />
+        </div>
+
+        <div className="rounded-2xl border border-gray-100 bg-gray-50/80 p-4">
+          <div className="mb-2 flex items-center justify-between gap-4 text-xs font-bold">
+            <span className="text-gray-600">Avance administrativo</span>
+            <span className="text-gray-500">{progress.percentage}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${progress.color}`}
+              style={{ width: `${progress.percentage}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-gray-500">{progress.label}</p>
         </div>
       </div>
 

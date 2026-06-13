@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
 import { canUploadDocuments, documentService } from "../../services/documentService";
+import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
 import { useState, useEffect } from "react";
 import { DocumentList } from "../../components/StudentDashboard/DocumentList";
 import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
@@ -166,6 +167,7 @@ export const SeguimientoPage = () => {
 
   const currentStatus = internship?.status_id;
   const statusStyle = STATUS_STYLES[currentStatus] || STATUS_STYLES[1];
+  const administrativeProgress = getInternshipAdministrativeProgress(internship);
 
   const handleRetry = () => {
     const fetchData = async () => {
@@ -282,6 +284,18 @@ export const SeguimientoPage = () => {
                 <div className="text-right">
                   <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Tipo</p>
                   <p className="text-sm font-bold text-gray-800">{internship.internship_type}</p>
+                </div>
+              </div>
+              <div className="mt-5">
+                <div className="mb-2 flex items-center justify-between gap-4 text-xs font-bold text-gray-600">
+                  <span>{administrativeProgress.label}</span>
+                  <span>{administrativeProgress.percentage}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/70">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${administrativeProgress.color}`}
+                    style={{ width: `${administrativeProgress.percentage}%` }}
+                  />
                 </div>
               </div>
             </motion.div>

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
+import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
 import { useState, useEffect } from "react";
 import {
   Building2,
@@ -49,6 +50,7 @@ const PracticeSummaryCard = ({ internship, index }) => {
   const statusId = internship.status_id;
   const statusLabel = STATUS_LABELS[statusId] || 'Desconocido';
   const statusStyle = STATUS_STYLES[statusId] || STATUS_STYLES[1];
+  const progress = getInternshipAdministrativeProgress(internship);
 
   return (
     <motion.div
@@ -114,6 +116,20 @@ const PracticeSummaryCard = ({ internship, index }) => {
               <p className="text-sm font-bold text-gray-800 truncate">{internship.schedule || '-'}</p>
             </div>
           </div>
+        </div>
+
+        <div className="mb-6 rounded-2xl border border-gray-100 bg-gray-50/80 p-4">
+          <div className="mb-2 flex items-center justify-between gap-4 text-xs font-bold">
+            <span className="text-gray-600">Avance administrativo</span>
+            <span className="text-gray-500">{progress.percentage}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${progress.color}`}
+              style={{ width: `${progress.percentage}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-gray-500">{progress.label}</p>
         </div>
 
         {/* CTA */}
