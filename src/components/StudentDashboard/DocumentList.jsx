@@ -90,9 +90,8 @@ export const DocumentList = ({
                     Subido el {doc.upload_date ? new Date(doc.upload_date).toLocaleDateString('es-CL') : 'Fecha no disponible'}
                   </p>
                 </div>
-              </div>
-              
-              <div className={`px-3 py-1 rounded-full flex items-center gap-1.5 ${status.bg} ${status.color}`}>
+            </div>
+            <div className={`px-3 py-1 rounded-full flex items-center gap-1.5 ${status.bg} ${status.color}`}>
                 <StatusIcon size={12} />
                 <span className="text-[10px] font-black uppercase tracking-tight">{status.label}</span>
               </div>
@@ -106,7 +105,6 @@ export const DocumentList = ({
                 <Download size={14} />
                 Descargar
               </button>
-              
               {canDelete && doc.status !== 'approved' && (
                 <button
                   onClick={() => onDelete(doc.id)}

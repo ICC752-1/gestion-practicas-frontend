@@ -59,7 +59,7 @@ export const ActionModal = ({
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4">
       <div className="bg-white rounded-[28px] p-8 w-full max-w-[520px] shadow-2xl border border-gray-100 flex flex-col relative animate-fade-up">
-        
+
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -88,7 +88,7 @@ export const ActionModal = ({
           <p className="text-gray-600 text-[15px] leading-relaxed mb-6 font-medium">
             {actionDescriptions[actionType]}
           </p>
-          
+
           {isCommentRequired && (
             <div className="flex flex-col gap-2">
               <label className="text-sm font-bold text-gray-700 flex justify-between">

@@ -101,7 +101,7 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
       const serverMessage = typeof detail === 'string'
         ? detail
         : detail?.message || err.response?.data?.message || err.response?.data?.error;
-      
+
       if (err.response?.status === 403) {
         setError('No tienes permisos para realizar esta acción o la práctica no permite más documentos.');
       } else if (err.response?.status === 413) {
