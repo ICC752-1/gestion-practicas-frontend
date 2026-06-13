@@ -24,6 +24,8 @@ import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
 import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
+import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
+import { canUploadDocuments } from "../../services/documentService";
 
 // --- Constants ---
 const STATUS_LABELS = {
@@ -149,22 +151,23 @@ const PracticeCard = ({ internship }) => {
   );
 };
 
-const QuickAction = ({ icon: Icon, title, desc, onClick, primary }) => (
+const QuickAction = ({ icon: Icon, title, desc, onClick, primary, disabled }) => (
   <motion.button
-    whileHover={{ y: -5, scale: 1.02 }}
-    onClick={onClick}
+    whileHover={!disabled ? { y: -5, scale: 1.02 } : {}}
+    onClick={!disabled ? onClick : undefined}
     className={`p-6 rounded-[2rem] text-left flex flex-col gap-4 transition-all duration-300 ${
+      disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' :
       primary
         ? 'bg-[#d22864] text-white shadow-xl shadow-[#d22864]/20'
         : 'bg-white text-gray-900 shadow-lg shadow-gray-200/50 border border-gray-50 hover:border-[#d22864]/20'
     }`}
   >
-    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${primary ? 'bg-white/20' : 'bg-[#d22864]/10 text-[#d22864]'}`}>
+    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${primary && !disabled ? 'bg-white/20' : 'bg-[#d22864]/10 text-[#d22864]'}`}>
       <Icon size={24} />
     </div>
     <div>
       <h4 className="font-bold text-lg leading-tight">{title}</h4>
-      <p className={`text-sm mt-1 ${primary ? 'text-white/70' : 'text-gray-400'}`}>{desc}</p>
+      <p className={`text-sm mt-1 ${primary && !disabled ? 'text-white/70' : 'text-gray-400'}`}>{desc}</p>
     </div>
   </motion.button>
 );
@@ -177,6 +180,7 @@ export const StudentDashboardPage = () => {
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   const fetchInternships = async () => {
     try {
@@ -191,6 +195,12 @@ export const StudentDashboardPage = () => {
     }
   };
 
+  const handleDocumentUploaded = () => {
+    // Podríamos recargar si mostramos lista de documentos en esta vista,
+    // por ahora solo refrescamos la data general
+    fetchInternships();
+  };
+
   useEffect(() => {
     fetchInternships();
   }, []);
@@ -198,6 +208,8 @@ export const StudentDashboardPage = () => {
   const userName = user
     ? `${user.first_name} ${user.last_name}`
     : "Estudiante";
+
+  const canUpload = internships.some(canUploadDocuments);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans selection:bg-[#d22864]/10 selection:text-[#d22864]">
@@ -247,36 +259,51 @@ export const StudentDashboardPage = () => {
               </div>
 
               {loading && (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <Loader2 className="animate-spin text-[#d22864]" size={48} />
-                  <p className="mt-4 text-gray-500 font-medium">Cargando tus prácticas...</p>
+                <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[2rem] border border-gray-100 shadow-sm">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  >
+                    <Loader2 size={48} className="text-[#d22864]" />
+                  </motion.div>
+                  <p className="mt-6 text-gray-500 font-bold uppercase tracking-widest text-sm">Cargando tus prácticas...</p>
                 </div>
               )}
 
               {error && (
-                <div className="flex flex-col items-center justify-center py-20 bg-red-50 rounded-3xl p-8">
-                  <AlertCircle className="text-red-500" size={48} />
-                  <p className="mt-4 text-red-600 font-medium text-center">{error}</p>
+                <div className="flex flex-col items-center justify-center py-20 bg-red-50 rounded-[3rem] border border-red-100 px-6">
+                  <div className="w-20 h-20 bg-red-100 rounded-3xl flex items-center justify-center text-red-500 mb-6 shadow-lg shadow-red-200/50">
+                    <AlertCircle size={40} />
+                  </div>
+                  <h4 className="text-red-900 font-black text-xl mb-2 uppercase tracking-tight">¡Ups! Algo salió mal</h4>
+                  <p className="text-red-600 text-center max-w-md font-medium mb-8">
+                    {error}
+                  </p>
                   <button
                     onClick={fetchInternships}
-                    className="mt-4 flex items-center gap-2 bg-red-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors"
+                    className="flex items-center gap-2 bg-red-500 text-white px-8 py-3 rounded-2xl font-bold hover:bg-red-600 transition-all shadow-lg shadow-red-500/30 active:scale-95"
                   >
-                    <RefreshCw size={18} />
-                    Reintentar
+                    <RefreshCw size={20} />
+                    Intentar de nuevo
                   </button>
                 </div>
               )}
 
               {!loading && !error && internships.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-3xl p-8">
-                  <ClipboardCheck className="text-gray-300" size={48} />
-                  <p className="mt-4 text-gray-500 font-medium text-center">No tienes prácticas inscritas</p>
+                <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[3rem] border-2 border-dashed border-gray-200 px-10">
+                  <div className="w-24 h-24 bg-gray-50 rounded-[2rem] flex items-center justify-center text-gray-300 mb-8 border border-gray-100">
+                    <Briefcase size={48} />
+                  </div>
+                  <h4 className="text-gray-900 font-black text-2xl mb-3 uppercase tracking-tight text-center">No tienes prácticas registradas</h4>
+                  <p className="text-gray-400 text-center max-w-sm font-medium mb-10 text-lg leading-relaxed">
+                    Comienza inscribiendo tu práctica profesional para realizar el seguimiento.
+                  </p>
                   <button
                     onClick={() => navigate(PRE_REGISTRATION_PATH)}
-                    className="mt-4 flex items-center gap-2 bg-[#d22864] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#b01e52] transition-colors"
+                    className="flex items-center gap-3 bg-[#d22864] text-white px-10 py-4 rounded-[1.5rem] font-bold shadow-2xl shadow-[#d22864]/30 hover:bg-[#b01e52] transition-all transform hover:-translate-y-1 active:scale-95"
                   >
-                    <Plus size={18} />
-                    Inscribirte ahora
+                    <Plus size={24} />
+                    Inscribir Nueva Práctica
                   </button>
                 </div>
               )}
@@ -310,12 +337,14 @@ export const StudentDashboardPage = () => {
                   title="Ver Seguimiento"
                   desc="Revisa el estado de tus procesos actuales"
                   onClick={() => navigate('/seguimiento')}
+                  // disabled={internships.length === 0} // Deshabilitado para agilizar
                 />
                 <QuickAction
                   icon={Upload}
                   title="Subir Documentos"
                   desc="Informes, certificados y evaluaciones"
-                  onClick={() => {}}
+                  onClick={() => setIsUploadModalOpen(true)}
+                  disabled={!canUpload || internships.length === 0}
                 />
               </div>
 
@@ -340,6 +369,13 @@ export const StudentDashboardPage = () => {
       </main>
 
       <Footer />
+
+      <DocumentUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        internships={internships}
+        onDocumentUploaded={handleDocumentUploaded}
+      />
     </div>
   );
 };
