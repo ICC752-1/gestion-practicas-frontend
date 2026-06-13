@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { PrivateRoute } from '../components/PrivateRoute'
 import { Login } from '../components/Login/Login'
 import { RegistrationPage } from '../pages/Registration/RegistrationPage'
+import { PreRegistrationPage } from '../pages/Registration/PreRegistrationPage'
 import { LandingPage } from '../pages/Landing/LandingPage'
 import { FAQPage } from '../pages/FAQ/FAQPage'
 import { StudentDashboardPage } from '../pages/StudentDashboard/StudentDashboardPage'
@@ -33,6 +34,20 @@ export const AppRoutes = () => {
           {/* Rutas protegidas */}
           <Route
               path="/inscripcion"
+              element={<Navigate to="/practicas/nueva/preinscripcion" replace />}
+          />
+
+          <Route
+              path="/practicas/nueva/preinscripcion"
+              element={
+                  <PrivateRoute>
+                      <PreRegistrationPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/practicas/nueva/formulario"
               element={
                   <PrivateRoute>
                       <RegistrationPage />

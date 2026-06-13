@@ -51,6 +51,8 @@ const formatDate = (dateStr) => {
   });
 };
 
+const PRE_REGISTRATION_PATH = '/practicas/nueva/preinscripcion';
+
 // --- Sub-components ---
 
 const StatusBadge = ({ statusId }) => {
@@ -270,7 +272,7 @@ export const StudentDashboardPage = () => {
                   <ClipboardCheck className="text-gray-300" size={48} />
                   <p className="mt-4 text-gray-500 font-medium text-center">No tienes prácticas inscritas</p>
                   <button
-                    onClick={() => navigate('/inscripcion')}
+                    onClick={() => navigate(PRE_REGISTRATION_PATH)}
                     className="mt-4 flex items-center gap-2 bg-[#d22864] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#b01e52] transition-colors"
                   >
                     <Plus size={18} />
@@ -300,7 +302,7 @@ export const StudentDashboardPage = () => {
                   icon={Plus}
                   title="Nueva Inscripción"
                   desc="Comienza el proceso para tu próxima práctica"
-                  onClick={() => navigate('/inscripcion')}
+                  onClick={() => navigate(PRE_REGISTRATION_PATH)}
                   primary={true}
                 />
                 <QuickAction

@@ -6,6 +6,21 @@ export const internshipService = {
     return response.data;
   },
 
+  async getRegistrationEligibility(params = {}) {
+    const response = await api.get('/internships/registration-eligibility', { params });
+    return response.data;
+  },
+
+  async getInductionContent() {
+    const response = await api.get('/internships/induction');
+    return response.data;
+  },
+
+  async submitInductionAttempt(answers) {
+    const response = await api.post('/internships/induction/attempts', { answers });
+    return response.data;
+  },
+
   async getInternships() {
     const response = await api.get('/internships');
     return response.data;

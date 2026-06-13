@@ -18,21 +18,21 @@ export const UserHeader = () => {
     };
 
   return (
-    <header className="flex w-full items-center justify-between px-10 h-20 bg-white border-b-[3px] border-[#d22864] z-50 shadow-sm sticky top-0">
+    <header className="sticky top-0 z-50 flex min-h-16 w-full items-center justify-between gap-3 border-b-[3px] border-[#d22864] bg-white px-3 py-2 shadow-sm sm:min-h-20 sm:px-6 lg:px-10">
       {/* Left Section: Logo and Title */}
-      <div className="flex items-center gap-4">
-        <div className="bg-[#d22864] p-1.5 rounded-xl shadow-sm">
+      <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none sm:gap-4">
+        <div className="flex-shrink-0 bg-[#d22864] p-1.5 rounded-xl shadow-sm">
           <img
-            className="w-12 h-12 object-contain"
+            className="h-10 w-10 object-contain sm:h-12 sm:w-12"
             alt="Universidad de La Frontera"
             src={universityLogo}
           />
         </div>
-        <div className="flex flex-col items-start leading-tight">
-          <h1 className="font-bold text-[#d22864] text-xl tracking-tight">
+        <div className="flex min-w-0 flex-col items-start leading-tight">
+          <h1 className="text-sm font-bold leading-tight tracking-tight text-[#d22864] sm:text-xl">
             Sistema de Gestión de Prácticas
           </h1>
-          <p className="font-semibold text-[#d22864] text-xs">
+          <p className="hidden font-semibold text-[#d22864] text-xs sm:block">
             Facultad de Ingeniería y Ciencias
           </p>
         </div>
@@ -49,20 +49,20 @@ export const UserHeader = () => {
       </nav>
 
       {/* Right Section: User Profile & Actions */}
-      <div className="flex items-center gap-6">
+      <div className="flex flex-shrink-0 items-center gap-2 sm:gap-4 lg:gap-6">
         <NotificationBell />
 
-        <div className="h-8 w-px bg-gray-300 mx-2"></div>
+        <div className="hidden h-8 w-px bg-gray-300 sm:block"></div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col items-end leading-none">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="hidden flex-col items-end leading-none sm:flex">
             <span className="font-bold text-[#d22864] text-base">{userName}</span>
             <span className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider">{userRole}</span>
           </div>
           
           <div className="relative">
 
-              <div className="w-11 h-11 rounded-full bg-blue-100 border-2 border-[#d22864] flex items-center justify-center overflow-hidden">
+              <div className="h-9 w-9 rounded-full bg-blue-100 border-2 border-[#d22864] flex items-center justify-center overflow-hidden sm:h-11 sm:w-11">
                   <img
                           src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`}
                           alt={userName}
@@ -72,7 +72,7 @@ export const UserHeader = () => {
           </div>
         </div>
 
-        <button onClick={handleLogout} className="p-2 text-[#d22864] hover:bg-red-50 hover:text-red-600 rounded-lg transition-all" title="Cerrar Sesión">
+        <button onClick={handleLogout} className="p-1.5 text-[#d22864] hover:bg-red-50 hover:text-red-600 rounded-lg transition-all sm:p-2" title="Cerrar Sesión">
           <LogOut size={22} strokeWidth={2.5} />
         </button>
       </div>

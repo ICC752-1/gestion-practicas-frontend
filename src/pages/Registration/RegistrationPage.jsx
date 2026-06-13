@@ -10,8 +10,29 @@ import { RegistrationSuccess } from "../../components/Registration/RegistrationS
 import { RegistrationInfoCard } from "../../components/Registration/RegistrationInfoCard";
 import { Footer } from "../../components/Footer/Footer";
 import { User, Building2, UserRound, ClipboardList, FileText } from "lucide-react";
-import api from "../../services/api";
 import { useToast } from "../../context/useToast";
+import { internshipService } from "../../services/internshipService";
+
+const getApiErrorMessage = (error) => {
+  if (!error.response) {
+    return "No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.";
+  }
+
+  const detail = error.response.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (detail?.message) return detail.message;
+  if (Array.isArray(detail)) return detail.map((item) => item.msg).join(", ");
+
+  if (error.response.status === 401) {
+    return "Sesión expirada. Por favor, inicia sesión nuevamente.";
+  }
+
+  if (error.response.status === 409) {
+    return "La solicitud entra en conflicto con el estado actual de la práctica o sus datos.";
+  }
+
+  return "Hubo un error al registrar la práctica. Por favor, intenta nuevamente.";
+};
 
 export const RegistrationPage = () => {
   const { showToast } = useToast();
@@ -21,7 +42,6 @@ export const RegistrationPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [internshipResult, setInternshipResult] = useState(null);
-
   const handleNext = async (stepData) => {
     const updatedFormData = { ...formData, ...stepData };
     setFormData(updatedFormData);
@@ -66,19 +86,11 @@ export const RegistrationPage = () => {
           // Campos del paso 1 (estudiante y práctica)
           internship_period:     updatedFormData.internship_period,
           internship_type:       updatedFormData.internship_type,
-          // Para períodos estivales (Verano/Invierno) el backend exige has_school_insurance=true
-          // Para Semestre se envía true por defecto ya que el checkbox no se muestra
-          has_school_insurance: (updatedFormData.internship_period === 'Semestre')
-            ? true
-            : (updatedFormData.has_school_insurance ?? true),
         };
 
-        console.log("Payload enviado:", JSON.stringify(payload, null, 2));
-
-        const response = await api.post("/internships", payload);
+        const result = await internshipService.createInternship(payload);
         
         // Guardar resultado para mostrar en página de éxito
-        const result = response.data;
         setInternshipResult(result);
         setIsFinished(true);
 
@@ -96,27 +108,13 @@ export const RegistrationPage = () => {
           setSubmitError("No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.");
         } else {
           const status = err.response.status;
-          const errorData = err.response.data;
 
-          if (status === 400) {
-            setSubmitError("Error en los datos enviados. Verifica que todos los campos sean correctos.");
-          } else if (status === 401) {
+          if (status === 401) {
             setSubmitError("Sesión expirada. Por favor, inicia sesión nuevamente.");
             localStorage.removeItem("token");
             window.location.href = "/login";
-          } else if (status === 422) {
-            // Error de validación del backend - mostrar detalles si están disponibles
-            const detail = errorData?.detail;
-            if (Array.isArray(detail)) {
-              const messages = detail.map(d => d.msg).join(", ");
-              setSubmitError(`Error de validación: ${messages}`);
-            } else {
-              setSubmitError("Error de validación. Revisa los campos e intenta nuevamente.");
-            }
-          } else if (status === 500) {
-            setSubmitError("Error interno del servidor. Por favor, intenta más tarde.");
           } else {
-            setSubmitError("Hubo un error al registrar la práctica. Por favor, intenta nuevamente.");
+            setSubmitError(getApiErrorMessage(err));
           }
         }
         setIsSubmitting(false);
@@ -190,7 +188,7 @@ export const RegistrationPage = () => {
             "Marque solo beneficios confirmados",
             "Ingrese $0 si no existe ayuda económica"
           ],
-          form: <ActivitiesForm onNext={handleNext} onBack={handleBack} initialData={formData} />
+          form: <ActivitiesForm onNext={handleNext} onBack={handleBack} initialData={formData} isSubmitting={isSubmitting} />
         };
       default:
         return {
@@ -270,5 +268,3 @@ export const RegistrationPage = () => {
 };
 
 export default RegistrationPage;
-
-
