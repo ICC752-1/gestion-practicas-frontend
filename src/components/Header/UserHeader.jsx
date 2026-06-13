@@ -1,7 +1,8 @@
-import { Bell, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import universityLogo from "../../assets/university_logo.webp";
 import { Link } from 'react-router-dom';
 import { useAuth } from "../../context/useAuth";
+import { NotificationBell } from "../Notifications/NotificationBell";
 
 export const UserHeader = () => {
     const { user, logout } = useAuth();
@@ -49,10 +50,7 @@ export const UserHeader = () => {
 
       {/* Right Section: User Profile & Actions */}
       <div className="flex items-center gap-6">
-        <button className="relative p-1 text-[#d22864] hover:bg-gray-50 rounded-full transition-colors">
-          <Bell size={24} strokeWidth={2.5} />
-          <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
-        </button>
+        <NotificationBell />
 
         <div className="h-8 w-px bg-gray-300 mx-2"></div>
 
