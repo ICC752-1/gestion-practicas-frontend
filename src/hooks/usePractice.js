@@ -6,24 +6,24 @@ export const usePractice = (id) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchPractice = async () => {
-      try {
-        setLoading(true);
-        const data = await coordinatorService.getPracticeById(id);
-        setPractice(data);
-        setError(null);
-      } catch (err) {
-        setError(err.response?.data?.message || err.message || 'Error al cargar la práctica');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchPractice = async () => {
+    try {
+      setLoading(true);
+      const data = await coordinatorService.getPracticeById(id);
+      setPractice(data);
+      setError(null);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Error al cargar la práctica');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (id) {
       fetchPractice();
     }
   }, [id]);
 
-  return { practice, loading, error };
+  return { practice, loading, error, refresh: fetchPractice };
 };
