@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { coordinatorService } from '../services/coordinatorService';
 
 export const usePractice = (id) => {
@@ -6,24 +6,30 @@ export const usePractice = (id) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchPractice = async () => {
+  const fetchPractice = useCallback(async () => {
     try {
       setLoading(true);
       const data = await coordinatorService.getPracticeById(id);
       setPractice(data);
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Error al cargar la práctica');
+      if (err.response?.status === 403) {
+        setError('Tu usuario no tiene permiso para consultar este detalle administrativo.');
+      } else if (err.response?.status === 404) {
+        setError('La práctica solicitada no existe.');
+      } else {
+        setError(err.response?.data?.detail || err.message || 'Error al cargar la práctica');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (id) {
       fetchPractice();
     }
-  }, [id]);
+  }, [fetchPractice, id]);
 
   return { practice, loading, error, refresh: fetchPractice };
 };

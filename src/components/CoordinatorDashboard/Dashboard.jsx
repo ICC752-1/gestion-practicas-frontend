@@ -1,86 +1,29 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useCoordinatorState } from '../../hooks/useCoordinatorState';
 import { StatCard } from '../coordinador/StatCard';
 import Management from './Management';
-import { Users, FileText, CheckCircle, Clock, Calendar, AlertCircle, RefreshCcw } from 'lucide-react';
+import { Users, FileText, CheckCircle, Clock, Calendar, AlertCircle } from 'lucide-react';
 
-const DashboardSkeleton = () => (
-  <div className="p-6 space-y-6 animate-pulse">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {[1, 2, 3, 4].map(i => (
-        <div key={i} className="h-32 bg-gray-200 rounded-2xl"></div>
-      ))}
-    </div>
-    <div className="h-24 bg-gray-200 rounded-2xl w-full"></div>
-    <div className="h-64 bg-gray-200 rounded-2xl w-full"></div>
-  </div>
-);
+const getStatusTotal = (stats, titles) => {
+  return (stats?.internships_by_status || [])
+    .filter((item) => titles.includes(item.status))
+    .reduce((total, item) => total + item.total, 0);
+};
 
-const Dashboard = ({ students = [] }) => {
-  const { stats: apiStats, loading, error, refreshData, practices } = useCoordinatorState();
+const Dashboard = ({
+  students = [],
+  stats: apiStats,
+  statusFilter,
+  onStatusFilterChange,
+}) => {
   const navigate = useNavigate();
 
-  // Si la API de stats falla (devuelve 0 por el fallback 403), calculamos desde las prácticas cargadas
-  const calculatedStats = React.useMemo(() => {
-    const list = (practices && practices.length > 0) ? practices : (students || []);
-    if (list.length === 0) return { total: 0, pending: 0, inReview: 0, approved: 0 };
-
-    return {
-      total: list.length,
-      pending: list.filter(s => {
-        const statusValue = typeof s.status === 'object' ? s.status?.title : s.status;
-        const normalizedStatus = String(statusValue || '').toLowerCase();
-        return normalizedStatus === 'pendiente' || normalizedStatus === 'submitted' || normalizedStatus === 'submited' || normalizedStatus === '';
-      }).length,
-      inReview: list.filter(s => {
-        const statusValue = typeof s.status === 'object' ? s.status?.title : s.status;
-        const normalizedStatus = String(statusValue || '').toLowerCase();
-        return normalizedStatus === 'en revisión' || normalizedStatus === 'en revision' || normalizedStatus === 'in_review';
-      }).length,
-      approved: list.filter(s => {
-        const statusValue = typeof s.status === 'object' ? s.status?.title : s.status;
-        const normalizedStatus = String(statusValue || '').toLowerCase();
-        return normalizedStatus === 'aprobada' || normalizedStatus === 'aprobado' || normalizedStatus === 'approved';
-      }).length
-    };
-  }, [practices, students]);
-
-  const stats = (apiStats && apiStats.total_internships > 0) ? {
-    total: apiStats.total_internships,
-    pending: apiStats.internships_by_status?.find(s => {
-      const status = String(s.status || '').toLowerCase();
-      return status === 'pendiente' || status === 'submitted' || status === 'submited';
-    })?.total || 0,
-    inReview: apiStats.internships_by_status?.find(s => {
-      const status = String(s.status || '').toLowerCase();
-      return status === 'en revisión' || status === 'en revision' || status === 'in_review';
-    })?.total || 0,
-    approved: apiStats.internships_by_status?.find(s => {
-      const status = String(s.status || '').toLowerCase();
-      return status === 'aprobada' || status === 'aprobado' || status === 'approved';
-    })?.total || 0,
-  } : calculatedStats;
-
-  if (loading) return <DashboardSkeleton />;
-  
-  if (error) return (
-    <div className="p-12 flex flex-col items-center justify-center space-y-4">
-      <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center">
-        <AlertCircle className="w-8 h-8 text-red-500" />
-      </div>
-      <h2 className="text-xl font-bold text-gray-800">No se pudo cargar el dashboard</h2>
-      <p className="text-gray-500">{error}</p>
-      <button 
-        onClick={refreshData}
-        className="flex items-center gap-2 px-6 py-2 bg-[#B5305F] text-white rounded-xl hover:bg-opacity-90 transition-all"
-      >
-        <RefreshCcw size={18} />
-        Reintentar
-      </button>
-    </div>
-  );
+  const stats = {
+    total: apiStats?.total_internships || 0,
+    pending: getStatusTotal(apiStats, ['Pendiente']),
+    inReview: getStatusTotal(apiStats, ['En revisión', 'En revisión DIRAE']),
+    approved: getStatusTotal(apiStats, ['Aprobada']),
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -142,7 +85,11 @@ const Dashboard = ({ students = [] }) => {
         </motion.button>
       </div>
        
-       <Management students={students} />
+       <Management
+         students={students}
+         statusFilter={statusFilter}
+         onStatusFilterChange={onStatusFilterChange}
+       />
     </div>
   );
 };
