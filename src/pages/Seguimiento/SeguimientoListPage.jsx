@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
+import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
 import { useState, useEffect } from "react";
 import {
   Building2,
@@ -12,6 +13,7 @@ import {
   Clock,
   ChevronRight,
   AlertCircle,
+  CheckCircle2,
   Loader2,
   RefreshCw,
   InboxIcon,
@@ -21,18 +23,18 @@ import {
 // --- Constants ---
 const STATUS_LABELS = {
   1: 'Pendiente',
-  2: 'En revisión',
-  3: 'Aprobada',
-  4: 'Rechazada',
-  5: 'En revisión DIRAE'
+  2: 'En revisión DIRAE',
+  3: 'En revisión',
+  4: 'Aprobada',
+  5: 'Rechazada'
 };
 
 const STATUS_STYLES = {
   1: { color: 'bg-amber-500', text: 'text-amber-600', icon: <Clock size={16} /> },
-  2: { color: 'bg-blue-500', text: 'text-blue-600', icon: <Clock size={16} /> },
-  3: { color: 'bg-green-500', text: 'text-green-600', icon: <Clock size={16} /> },
-  4: { color: 'bg-red-500', text: 'text-red-600', icon: <Clock size={16} /> },
-  5: { color: 'bg-purple-500', text: 'text-purple-600', icon: <Clock size={16} /> },
+  2: { color: 'bg-purple-500', text: 'text-purple-600', icon: <AlertCircle size={16} /> },
+  3: { color: 'bg-blue-500', text: 'text-blue-600', icon: <Clock size={16} /> },
+  4: { color: 'bg-green-500', text: 'text-green-600', icon: <CheckCircle2 size={16} /> },
+  5: { color: 'bg-red-500', text: 'text-red-600', icon: <AlertCircle size={16} /> },
 };
 
 const formatDate = (dateStr) => {
@@ -48,6 +50,7 @@ const PracticeSummaryCard = ({ internship, index }) => {
   const statusId = internship.status_id;
   const statusLabel = STATUS_LABELS[statusId] || 'Desconocido';
   const statusStyle = STATUS_STYLES[statusId] || STATUS_STYLES[1];
+  const progress = getInternshipAdministrativeProgress(internship);
 
   return (
     <motion.div
@@ -113,6 +116,20 @@ const PracticeSummaryCard = ({ internship, index }) => {
               <p className="text-sm font-bold text-gray-800 truncate">{internship.schedule || '-'}</p>
             </div>
           </div>
+        </div>
+
+        <div className="mb-6 rounded-2xl border border-gray-100 bg-gray-50/80 p-4">
+          <div className="mb-2 flex items-center justify-between gap-4 text-xs font-bold">
+            <span className="text-gray-600">Avance administrativo</span>
+            <span className="text-gray-500">{progress.percentage}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${progress.color}`}
+              style={{ width: `${progress.percentage}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-gray-500">{progress.label}</p>
         </div>
 
         {/* CTA */}

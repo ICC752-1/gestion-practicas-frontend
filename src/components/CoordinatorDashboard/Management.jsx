@@ -1,15 +1,34 @@
-import React from 'react';
-import { useCoordinatorState } from '../../hooks/useCoordinatorState';
 import { StudentTable } from '../coordinador/StudentTable';
 
-const Management = ({ students }) => {
+const STATUS_FILTERS = [
+  { value: '', label: 'Todas' },
+  { value: 'submitted', label: 'Pendientes' },
+  { value: 'in_review', label: 'En revisión' },
+  { value: 'approved', label: 'Aprobadas' },
+  { value: 'rejected', label: 'Rechazadas' },
+];
+
+const Management = ({ students, statusFilter, onStatusFilterChange }) => {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] border border-gray-100/50">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col gap-4 mb-6">
         <h2 className="text-xl font-bold text-gray-800">Gestión de Prácticas</h2>
-        <button className="bg-ufro-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-all">
-          Export Report
-        </button>
+        <div className="flex flex-wrap gap-2" aria-label="Filtrar prácticas por estado">
+          {STATUS_FILTERS.map((filter) => (
+            <button
+              key={filter.value || 'all'}
+              type="button"
+              onClick={() => onStatusFilterChange(filter.value)}
+              className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                statusFilter === filter.value
+                  ? 'bg-ufro-primary text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
       </div>
       <StudentTable students={students} />
     </div>

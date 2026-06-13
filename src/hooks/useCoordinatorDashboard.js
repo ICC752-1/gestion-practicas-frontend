@@ -1,45 +1,48 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { coordinatorService } from '../services/coordinatorService';
 
-export const useCoordinatorDashboard = () => {
+const getErrorMessage = (error) => {
+  if (error.response?.status === 403) {
+    return 'Tu usuario no tiene permiso para consultar el dashboard administrativo.';
+  }
+  if (error.response?.status === 401) {
+    return 'La sesión expiró. Inicia sesión nuevamente.';
+  }
+  return error.response?.data?.detail || error.message || 'Error al cargar el dashboard.';
+};
+
+export const useCoordinatorDashboard = (statusFilter = '') => {
+  const [stats, setStats] = useState(null);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchStudents = async () => {
+  const fetchDashboard = useCallback(async () => {
     try {
       setLoading(true);
-      // Según la tarea: GET /internships?status=submitted
-      const data = await coordinatorService.getPractices('submitted');
-      setStudents(data);
+      const [statsData, practicesData] = await Promise.all([
+        coordinatorService.getDashboardStats(),
+        coordinatorService.getPractices(statusFilter),
+      ]);
+      setStats(statsData);
+      setStudents(practicesData);
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Error al cargar estudiantes');
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
 
   useEffect(() => {
-    fetchStudents();
-  }, []);
-
-  const updateStudentStatus = async (studentId, status) => {
-    try {
-      // Nota: internshipService no tiene update status aún en la descripción, 
-      // pero usaremos el existente si es necesario o uno nuevo.
-      // Por ahora mantengo la lógica de refresco.
-      await fetchStudents();
-    } catch (err) {
-      setError(err.message || 'Error al actualizar estado');
-    }
-  };
+    fetchDashboard();
+  }, [fetchDashboard]);
 
   return {
+    stats,
     students,
     loading,
     error,
-    updateStudentStatus,
-    refreshData: fetchStudents
+    refreshData: fetchDashboard,
   };
 };

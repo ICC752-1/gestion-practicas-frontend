@@ -1,5 +1,15 @@
 import api from "./api";
 
+const buildApiUrl = (path) => {
+    const baseUrl = api.defaults.baseURL || "";
+
+    if (!baseUrl) {
+        return path;
+    }
+
+    return `${baseUrl.replace(/\/+$/, "")}${path}`;
+};
+
 export const authService = {
     async login(email, password) {
         const response = await api.post("/auth/login", {
@@ -17,5 +27,9 @@ export const authService = {
 
     logout() {
         localStorage.removeItem("token");
+    },
+
+    getGoogleLoginUrl() {
+        return buildApiUrl("/auth/google/login");
     },
 };

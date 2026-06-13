@@ -1,10 +1,17 @@
 import {
+    useCallback,
     useEffect,
     useState,
 } from "react";
 
 import { authService } from "../services/authService";
 import { AuthContext } from "./auth-context";
+
+const createOAuthError = (code) => {
+    const error = new Error(code);
+    error.code = code;
+    return error;
+};
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -78,25 +85,44 @@ export const AuthProvider = ({ children }) => {
         window.location.href = "/landing";
     };
 
-    const handleOAuthCallback = async () => {
+    const handleOAuthCallback = useCallback(async () => {
 
         const params = new URLSearchParams(window.location.search);
+        const oauthError = params.get("error");
+
+        if (oauthError) {
+            throw createOAuthError(oauthError);
+        }
 
         const accessToken = params.get("token");
 
         if (!accessToken) {
-            throw new Error("No se recibió un token.");
+            throw createOAuthError("missing_token");
         }
 
         localStorage.setItem("token", accessToken);
         setToken(accessToken);
 
-        const userData = await authService.getMe();
+        let userData;
+
+        try {
+            userData = await authService.getMe();
+        } catch (err) {
+            localStorage.removeItem("token");
+            setToken(null);
+            setUser(null);
+
+            if (!err?.response) {
+                throw createOAuthError("server_unavailable");
+            }
+
+            throw createOAuthError("invalid_callback");
+        }
 
         setUser(userData);
 
         return userData;
-    };
+    }, []);
 
     return (
         <AuthContext.Provider

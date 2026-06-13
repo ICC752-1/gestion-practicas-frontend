@@ -1,19 +1,16 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import Dashboard from '../../components/CoordinatorDashboard/Dashboard';
-import Management from '../../components/CoordinatorDashboard/Management';
 import { useCoordinatorDashboard } from '../../hooks/useCoordinatorDashboard';
 
 import { useAuth } from '../../context/useAuth';
 
 export const CoordinatorDashboardPage = () => {
-  const [view, setView] = useState('dashboard');
-  const navigate = useNavigate();
+  const [statusFilter, setStatusFilter] = useState('');
   const { user } = useAuth();
-  const { students, loading, error, updateStudentStatus, refreshData } = useCoordinatorDashboard();
+  const { stats, students, loading, error, refreshData } = useCoordinatorDashboard(statusFilter);
 
   const userName = user ? `${user.first_name} ${user.last_name}` : "Coordinador";
   
@@ -46,19 +43,12 @@ export const CoordinatorDashboardPage = () => {
             </button>
           </div>
         ) : (
-          view === 'dashboard' ? (
-            <Dashboard 
-              students={students} 
-              onNavigateToManagement={() => setView('management')} 
-              onNavigateToScheduling={() => navigate('/entrevistas')}
-            />
-          ) : (
-            <Management 
-              students={students} 
-              onUpdateStatus={updateStudentStatus} 
-              onBack={() => setView('dashboard')} 
-            />
-          )
+          <Dashboard
+            stats={stats}
+            students={students}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+          />
         )}
       </main>
 

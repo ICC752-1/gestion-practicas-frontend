@@ -4,7 +4,11 @@ import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
+import { canUploadDocuments, documentService } from "../../services/documentService";
+import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
 import { useState, useEffect } from "react";
+import { DocumentList } from "../../components/StudentDashboard/DocumentList";
+import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
 import {
   Building2,
   User,
@@ -29,18 +33,18 @@ import {
 // --- Status Labels ---
 const STATUS_LABELS = {
   1: 'Pendiente',
-  2: 'En revisión',
-  3: 'Aprobada',
-  4: 'Rechazada',
-  5: 'En revisión DIRAE'
+  2: 'En revisión DIRAE',
+  3: 'En revisión',
+  4: 'Aprobada',
+  5: 'Rechazada'
 };
 
 const STATUS_STYLES = {
   1: { color: 'bg-amber-500', text: 'text-amber-500', border: 'border-amber-200', bg: 'bg-amber-50' },
-  2: { color: 'bg-blue-500', text: 'text-blue-500', border: 'border-blue-200', bg: 'bg-blue-50' },
-  3: { color: 'bg-green-500', text: 'text-green-500', border: 'border-green-200', bg: 'bg-green-50' },
-  4: { color: 'bg-red-500', text: 'text-red-500', border: 'border-red-200', bg: 'bg-red-50' },
-  5: { color: 'bg-purple-500', text: 'text-purple-500', border: 'border-purple-200', bg: 'bg-purple-50' },
+  2: { color: 'bg-purple-500', text: 'text-purple-500', border: 'border-purple-200', bg: 'bg-purple-50' },
+  3: { color: 'bg-blue-500', text: 'text-blue-500', border: 'border-blue-200', bg: 'bg-blue-50' },
+  4: { color: 'bg-green-500', text: 'text-green-500', border: 'border-green-200', bg: 'bg-green-50' },
+  5: { color: 'bg-red-500', text: 'text-red-500', border: 'border-red-200', bg: 'bg-red-50' },
 };
 
 // --- Helpers ---
@@ -114,22 +118,30 @@ export const SeguimientoPage = () => {
   const [error, setError] = useState(null);
   const [showOrgDetails, setShowOrgDetails] = useState(false);
   const [showSupervisorDetails, setShowSupervisorDetails] = useState(false);
+  const [documents, setDocuments] = useState([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [docsError, setDocsError] = useState(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
+        setDocsError(null);
 
-        const [internshipData, trackingData] = await Promise.all([
+        const [internshipData, trackingData, documentsData] = await Promise.all([
           internshipService.getIntershipById(internshipId),
-          internshipService.getInternshipTracking(internshipId)
+          internshipService.getInternshipTracking(internshipId),
+          documentService.getInternshipDocuments(internshipId)
         ]);
 
         setInternship(internshipData);
         setTracking(trackingData);
+        setDocuments(documentsData);
       } catch (err) {
         setError(err.message || 'Error al cargar los datos');
+        setDocsError(err.message || 'Error al cargar los documentos');
       } finally {
         setLoading(false);
       }
@@ -155,25 +167,70 @@ export const SeguimientoPage = () => {
 
   const currentStatus = internship?.status_id;
   const statusStyle = STATUS_STYLES[currentStatus] || STATUS_STYLES[1];
+  const administrativeProgress = getInternshipAdministrativeProgress(internship);
 
   const handleRetry = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const [internshipData, trackingData] = await Promise.all([
+        setDocsError(null);
+        const [internshipData, trackingData, documentsData] = await Promise.all([
           internshipService.getIntershipById(internshipId),
-          internshipService.getInternshipTracking(internshipId)
+          internshipService.getInternshipTracking(internshipId),
+          documentService.getInternshipDocuments(internshipId)
         ]);
         setInternship(internshipData);
         setTracking(trackingData);
+        setDocuments(documentsData);
       } catch (err) {
         setError(err.message || 'Error al cargar los datos');
+        setDocsError(err.message || 'Error al cargar los documentos');
       } finally {
         setLoading(false);
       }
     };
     fetchData();
+  };
+
+  const fetchDocuments = async () => {
+    try {
+      setLoadingDocs(true);
+      setDocsError(null);
+      const data = await documentService.getInternshipDocuments(internshipId);
+      setDocuments(data);
+    } catch (err) {
+      console.error("Error fetching documents:", err);
+      setDocsError('No se pudieron cargar los documentos. Intenta de nuevo.');
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
+
+  const handleDownload = async (doc) => {
+    try {
+      const blob = await documentService.downloadDocument(doc.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.file_name || `${doc.document_type?.name || 'documento'}.${doc.extension || 'pdf'}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Error downloading document:", err);
+    }
+  };
+
+  const handleDelete = async (docId) => {
+    if (!window.confirm("¿Estás seguro de que quieres eliminar este documento?")) return;
+    try {
+      await documentService.deleteDocument(docId);
+      fetchDocuments();
+    } catch (err) {
+      console.error("Error deleting document:", err);
+    }
   };
 
   return (
@@ -227,6 +284,18 @@ export const SeguimientoPage = () => {
                 <div className="text-right">
                   <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Tipo</p>
                   <p className="text-sm font-bold text-gray-800">{internship.internship_type}</p>
+                </div>
+              </div>
+              <div className="mt-5">
+                <div className="mb-2 flex items-center justify-between gap-4 text-xs font-bold text-gray-600">
+                  <span>{administrativeProgress.label}</span>
+                  <span>{administrativeProgress.percentage}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/70">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${administrativeProgress.color}`}
+                    style={{ width: `${administrativeProgress.percentage}%` }}
+                  />
                 </div>
               </div>
             </motion.div>
@@ -342,6 +411,42 @@ export const SeguimientoPage = () => {
               )}
             </motion.div>
 
+            {/* Documents */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 mb-8 border border-gray-100"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <FileText size={20} className="text-[#d22864]" />
+                  Documentos de la Práctica
+                </h3>
+                <button
+                  onClick={() => setIsUploadModalOpen(true)}
+                  disabled={!canUploadDocuments(internship)}
+                  className={`px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors ${
+                    !canUploadDocuments(internship)
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-[#d22864] text-white hover:bg-[#b01e52]'
+                  }`}
+                >
+                  <FileText size={16} />
+                  Subir nuevo
+                </button>
+              </div>
+
+              <DocumentList
+                documents={documents}
+                loading={loadingDocs}
+                error={docsError}
+                onDownload={handleDownload}
+                onDelete={handleDelete}
+                canDelete={true}
+              />
+            </motion.div>
+
             {/* Timeline */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -392,6 +497,13 @@ export const SeguimientoPage = () => {
       </main>
 
       <Footer />
+
+      <DocumentUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        internships={internship ? [internship] : []}
+        onDocumentUploaded={fetchDocuments}
+      />
     </div>
   );
 };
