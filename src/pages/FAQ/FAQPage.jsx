@@ -2,16 +2,19 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ChevronDown } from "lucide-react";
 import { Header } from "../../components/Header/Header";
+import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
+import { useAuth } from "../../context/useAuth";
 
 export const FAQPage = () => {
   const [openIndex, setOpenIndex] = useState(null);
+  const { isAuthenticated } = useAuth();
 
   const categories = ["Requisitos", "Proceso", "Documentos", "Duración", "Modalidad"];
   
   return (
     <div className="bg-[#f3f3f3] min-h-screen flex flex-col relative overflow-x-hidden">
-      <Header />
+      {isAuthenticated ? <UserHeader /> : <Header />}
       <main className="flex-grow flex flex-col w-full bg-white">
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
