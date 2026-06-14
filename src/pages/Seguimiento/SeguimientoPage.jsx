@@ -6,9 +6,10 @@ import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
 import { canUploadDocuments, documentService } from "../../services/documentService";
 import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { DocumentList } from "../../components/StudentDashboard/DocumentList";
 import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
+import { StudentRequestActions } from "../../components/StudentDashboard/StudentRequestActions";
 import {
   Building2,
   User,
@@ -40,6 +41,7 @@ const STATUS_LABELS = {
 };
 
 const STATUS_STYLES = {
+  cancelled: { color: 'bg-gray-500', text: 'text-gray-500', border: 'border-gray-200', bg: 'bg-gray-50' },
   1: { color: 'bg-amber-500', text: 'text-amber-500', border: 'border-amber-200', bg: 'bg-amber-50' },
   2: { color: 'bg-purple-500', text: 'text-purple-500', border: 'border-purple-200', bg: 'bg-purple-50' },
   3: { color: 'bg-blue-500', text: 'text-blue-500', border: 'border-blue-200', bg: 'bg-blue-50' },
@@ -55,6 +57,60 @@ const formatDate = (dateStr) => {
     month: 'short',
     year: 'numeric'
   });
+};
+
+const HISTORY_ACTION_TITLES = {
+  admin_update: 'Corrección administrativa',
+  cancel: 'Solicitud anulada',
+  student_cancel: 'Solicitud anulada',
+  student_update: 'Solicitud corregida',
+};
+
+const HISTORY_EVENT_TITLES = {
+  internship_created: 'Solicitud registrada',
+};
+
+const HISTORY_DEFAULT_SUBTITLES = {
+  admin_update: 'Corrección registrada por administración',
+  internship_created: 'Creación inicial de solicitud de práctica',
+  student_cancel: 'Anulación solicitada por el estudiante',
+  student_update: 'Corrección enviada por el estudiante',
+};
+
+const getHistoryMetadata = (entry) => entry.metadata || entry.metadata_json || {};
+
+const buildHistoryTitle = (entry) => {
+  const metadata = getHistoryMetadata(entry);
+
+  if (metadata.action && HISTORY_ACTION_TITLES[metadata.action]) {
+    return HISTORY_ACTION_TITLES[metadata.action];
+  }
+
+  if (metadata.event && HISTORY_EVENT_TITLES[metadata.event]) {
+    return HISTORY_EVENT_TITLES[metadata.event];
+  }
+
+  return entry.new_status?.title || 'Cambio de estado';
+};
+
+const buildHistorySubtitle = (entry) => {
+  const metadata = getHistoryMetadata(entry);
+  const reason = entry.reason?.trim();
+
+  if (metadata.event) {
+    return reason || HISTORY_DEFAULT_SUBTITLES[metadata.event] || null;
+  }
+
+  if (reason && metadata.action) {
+    return `Motivo: ${reason}`;
+  }
+
+  if (reason) {
+    return reason;
+  }
+
+  return HISTORY_DEFAULT_SUBTITLES[metadata.action]
+    || null;
 };
 
 // --- Timeline Item ---
@@ -88,7 +144,8 @@ const TimelineItem = ({ step, index, isLast }) => {
 const getStatusIcon = (statusTitle) => {
   const title = (statusTitle || '').toLowerCase();
   if (title.includes('aprobad') || title.includes('completad')) return <CheckCircle2 className="w-5 h-5" />;
-  if (title.includes('rechazad')) return <XCircle className="w-5 h-5" />;
+  if (title.includes('rechazad') || title.includes('anulad')) return <XCircle className="w-5 h-5" />;
+  if (title.includes('correcci') || title.includes('corregid') || title.includes('registrad')) return <FileText className="w-5 h-5" />;
   if (title.includes('revisión') || title.includes('revision') || title.includes('revis')) return <Eye className="w-5 h-5" />;
   return <Clock className="w-5 h-5" />;
 };
@@ -122,74 +179,73 @@ export const SeguimientoPage = () => {
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [docsError, setDocsError] = useState(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [studentActions, setStudentActions] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        setDocsError(null);
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setDocsError(null);
 
-        const [internshipData, trackingData, documentsData] = await Promise.all([
-          internshipService.getIntershipById(internshipId),
-          internshipService.getInternshipTracking(internshipId),
-          documentService.getInternshipDocuments(internshipId)
-        ]);
+      const [
+        internshipData,
+        trackingData,
+        documentsData,
+        actionData,
+      ] = await Promise.all([
+        internshipService.getInternshipById(internshipId),
+        internshipService.getInternshipTracking(internshipId),
+        documentService.getInternshipDocuments(internshipId),
+        internshipService.getStudentActions(internshipId),
+      ]);
 
-        setInternship(internshipData);
-        setTracking(trackingData);
-        setDocuments(documentsData);
-      } catch (err) {
-        setError(err.message || 'Error al cargar los datos');
-        setDocsError(err.message || 'Error al cargar los documentos');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (internshipId) {
-      fetchData();
+      setInternship(internshipData);
+      setTracking(trackingData);
+      setDocuments(documentsData);
+      setStudentActions(actionData);
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      const message = typeof detail === 'string'
+        ? detail
+        : detail?.message || err.message || 'Error al cargar los datos';
+      setError(message);
+      setDocsError(message);
+    } finally {
+      setLoading(false);
     }
   }, [internshipId]);
 
-  const timelineItems = tracking.map((entry) => ({
-    id: entry.id,
-    title: entry.new_status?.title || 'Cambio de estado',
-    subtitle: entry.reason,
-    isMajor: true,
-    icon: getStatusIcon(entry.new_status?.title),
-    actor: entry.actor ? `${entry.actor.first_name} ${entry.actor.last_name}` : 'Sistema',
-    date: new Date(entry.changed_at).toLocaleDateString('es-CL', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    })
-  }));
+  useEffect(() => {
+    if (internshipId) {
+      fetchData();
+    }
+  }, [fetchData, internshipId]);
 
-  const currentStatus = internship?.status_id;
+  const timelineItems = tracking.map((entry) => {
+    const title = buildHistoryTitle(entry);
+
+    return {
+      id: entry.id,
+      title,
+      subtitle: buildHistorySubtitle(entry),
+      isMajor: true,
+      icon: getStatusIcon(title),
+      actor: entry.actor ? `${entry.actor.first_name} ${entry.actor.last_name}` : 'Sistema',
+      date: new Date(entry.changed_at).toLocaleDateString('es-CL', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      })
+    };
+  });
+
+  const currentStatus = internship?.is_cancelled ? 'cancelled' : internship?.status_id;
+  const currentStatusLabel = internship?.is_cancelled
+    ? 'Anulada'
+    : STATUS_LABELS[currentStatus] || 'Desconocido';
   const statusStyle = STATUS_STYLES[currentStatus] || STATUS_STYLES[1];
   const administrativeProgress = getInternshipAdministrativeProgress(internship);
 
   const handleRetry = () => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        setDocsError(null);
-        const [internshipData, trackingData, documentsData] = await Promise.all([
-          internshipService.getIntershipById(internshipId),
-          internshipService.getInternshipTracking(internshipId),
-          documentService.getInternshipDocuments(internshipId)
-        ]);
-        setInternship(internshipData);
-        setTracking(trackingData);
-        setDocuments(documentsData);
-      } catch (err) {
-        setError(err.message || 'Error al cargar los datos');
-        setDocsError(err.message || 'Error al cargar los documentos');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   };
 
@@ -272,12 +328,12 @@ export const SeguimientoPage = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-12 h-12 rounded-full ${statusStyle.color} flex items-center justify-center text-white`}>
-                    {getStatusIcon(STATUS_LABELS[currentStatus])}
+                    {getStatusIcon(currentStatusLabel)}
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Estado actual</p>
                     <p className={`text-xl font-bold ${statusStyle.text}`}>
-                      {STATUS_LABELS[currentStatus] || 'Desconocido'}
+                      {currentStatusLabel}
                     </p>
                   </div>
                 </div>
@@ -299,6 +355,12 @@ export const SeguimientoPage = () => {
                 </div>
               </div>
             </motion.div>
+
+            <StudentRequestActions
+              internship={internship}
+              actions={studentActions}
+              onUpdated={fetchData}
+            />
 
             {/* Practice Details */}
             <motion.div
@@ -502,7 +564,7 @@ export const SeguimientoPage = () => {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         internships={internship ? [internship] : []}
-        onDocumentUploaded={fetchDocuments}
+        onDocumentUploaded={fetchData}
       />
     </div>
   );

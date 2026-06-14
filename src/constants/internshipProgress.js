@@ -1,4 +1,9 @@
 const PROGRESS_BY_STATUS = {
+  Anulada: {
+    percentage: 100,
+    label: 'Solicitud anulada',
+    color: 'bg-gray-500',
+  },
   Pendiente: {
     percentage: 25,
     label: 'Solicitud registrada',
@@ -40,6 +45,10 @@ const STATUS_TITLE_BY_ID = {
 };
 
 export const getInternshipAdministrativeProgress = (internship) => {
+  if (internship?.is_cancelled) {
+    return PROGRESS_BY_STATUS.Anulada;
+  }
+
   const statusTitle = internship?.status?.title
     || internship?.status
     || STATUS_TITLE_BY_ID[internship?.status_id]

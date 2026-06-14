@@ -38,6 +38,7 @@ const STATUS_LABELS = {
 };
 
 const STATUS_STYLES = {
+  cancelled: { color: 'bg-gray-500', text: 'text-gray-600', border: 'border-gray-200', bg: 'bg-gray-50', icon: <AlertCircle size={16} /> },
   1: { color: 'bg-amber-500', text: 'text-amber-600', border: 'border-amber-200', bg: 'bg-amber-50', icon: <Clock size={16} /> },
   2: { color: 'bg-purple-500', text: 'text-purple-600', border: 'border-purple-200', bg: 'bg-purple-50', icon: <AlertCircle size={16} /> },
   3: { color: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-200', bg: 'bg-blue-50', icon: <Clock size={16} /> },
@@ -58,9 +59,12 @@ const PRE_REGISTRATION_PATH = '/practicas/nueva/preinscripcion';
 
 // --- Sub-components ---
 
-const StatusBadge = ({ statusId }) => {
-  const label = STATUS_LABELS[statusId] || 'Desconocido';
-  const style = STATUS_STYLES[statusId] || STATUS_STYLES[1];
+const StatusBadge = ({ internship }) => {
+  const statusKey = internship?.is_cancelled ? 'cancelled' : internship?.status_id;
+  const label = internship?.is_cancelled
+    ? 'Anulada'
+    : STATUS_LABELS[statusKey] || 'Desconocido';
+  const style = STATUS_STYLES[statusKey] || STATUS_STYLES[1];
 
   return (
     <div className={`${style.color} text-white px-4 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold shadow-lg`}>
@@ -102,7 +106,7 @@ const PracticeCard = ({ internship }) => {
               <span>{formatDate(internship.start_date)} — {formatDate(internship.end_date)}</span>
             </div>
           </div>
-          <StatusBadge statusId={internship.status_id} />
+          <StatusBadge internship={internship} />
         </div>
       </div>
 

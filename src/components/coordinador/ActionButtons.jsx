@@ -14,8 +14,10 @@ export const ActionButtons = ({ practice, onActionSuccess }) => {
   const [actionError, setActionError] = useState(null);
 
   // Normalize status title
-  const currentStatus = practice?.status?.title || practice?.status || 'Pendiente';
-  const terminalStates = ['Aprobada', 'Rechazada', 'Reprobada'];
+  const currentStatus = practice?.is_cancelled
+    ? 'Anulada'
+    : practice?.status?.title || practice?.status || 'Pendiente';
+  const terminalStates = ['Anulada', 'Aprobada', 'Rechazada', 'Reprobada'];
 
   // Return null if status is terminal
   if (terminalStates.includes(currentStatus)) {

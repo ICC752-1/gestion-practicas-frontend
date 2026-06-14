@@ -30,6 +30,7 @@ const STATUS_LABELS = {
 };
 
 const STATUS_STYLES = {
+  cancelled: { color: 'bg-gray-500', text: 'text-gray-600', icon: <AlertCircle size={16} /> },
   1: { color: 'bg-amber-500', text: 'text-amber-600', icon: <Clock size={16} /> },
   2: { color: 'bg-purple-500', text: 'text-purple-600', icon: <AlertCircle size={16} /> },
   3: { color: 'bg-blue-500', text: 'text-blue-600', icon: <Clock size={16} /> },
@@ -47,9 +48,11 @@ const formatDate = (dateStr) => {
 // --- Practice Card ---
 const PracticeSummaryCard = ({ internship, index }) => {
   const navigate = useNavigate();
-  const statusId = internship.status_id;
-  const statusLabel = STATUS_LABELS[statusId] || 'Desconocido';
-  const statusStyle = STATUS_STYLES[statusId] || STATUS_STYLES[1];
+  const statusKey = internship.is_cancelled ? 'cancelled' : internship.status_id;
+  const statusLabel = internship.is_cancelled
+    ? 'Anulada'
+    : STATUS_LABELS[statusKey] || 'Desconocido';
+  const statusStyle = STATUS_STYLES[statusKey] || STATUS_STYLES[1];
   const progress = getInternshipAdministrativeProgress(internship);
 
   return (
