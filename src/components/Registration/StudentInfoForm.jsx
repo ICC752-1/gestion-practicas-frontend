@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
+import { AlertCircle, ChevronDown, Loader2 } from 'lucide-react';
 import { useAuth } from "../../context/useAuth";
+import { internshipService } from "../../services/internshipService";
 
 export const StudentInfoForm = ({ onNext, initialData = {} }) => {
   const { user } = useAuth();
@@ -21,6 +22,9 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [eligibilityError, setEligibilityError] = useState(null);
+  const [duplicateBlock, setDuplicateBlock] = useState(null);
+  const [checkingEligibility, setCheckingEligibility] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -43,6 +47,8 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
 
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
+    setEligibilityError(null);
+    setDuplicateBlock(null);
   };
 
   const validateForm = () => {
@@ -74,10 +80,38 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
+
+    setCheckingEligibility(true);
+    setEligibilityError(null);
+    setDuplicateBlock(null);
+
+    try {
+      const eligibility = await internshipService.getRegistrationEligibility({
+        internship_period: formData.internship_period,
+        internship_type: formData.internship_type,
+      });
+
+      if (eligibility.can_create_request === false) {
+        setDuplicateBlock(eligibility);
+        return;
+      }
+    } catch (error) {
+      const detail = error.response?.data?.detail;
+      if (typeof detail === 'string') {
+        setEligibilityError(detail);
+      } else if (detail?.message) {
+        setEligibilityError(detail.message);
+      } else {
+        setEligibilityError('No se pudo validar si ya existe una solicitud para este tipo de práctica.');
+      }
+      return;
+    } finally {
+      setCheckingEligibility(false);
+    }
 
     onNext?.(formData);
   };
@@ -176,6 +210,38 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
           {errors.internship_type && <p className="text-sm text-red-600">{errors.internship_type}</p>}
         </div>
 
+        {duplicateBlock && (
+          <div className="rounded-[20px] border border-amber-200 bg-amber-50 p-4 text-amber-900">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-1 flex-shrink-0" size={22} />
+              <div>
+                <p className="font-bold">Ya existe una solicitud vigente para este tipo de práctica.</p>
+                <p className="mt-1 text-sm">
+                  Estado actual: {duplicateBlock.blocking_internship_status || 'Pendiente'}.
+                </p>
+                {duplicateBlock.blocking_internship_id && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/seguimiento/${duplicateBlock.blocking_internship_id}`)}
+                    className="mt-3 rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-700"
+                  >
+                    Ver solicitud existente
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {eligibilityError && (
+          <div className="rounded-[20px] border border-red-200 bg-red-50 p-4 text-red-700">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-1 flex-shrink-0" size={22} />
+              <p className="text-sm font-semibold">{eligibilityError}</p>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-4 mt-8">
           <button
             type="button"
@@ -186,9 +252,17 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
           </button>
           <button
             type="submit"
-            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+            disabled={checkingEligibility}
+            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Siguiente
+            {checkingEligibility ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="animate-spin" size={24} />
+                Validando
+              </span>
+            ) : (
+              'Siguiente'
+            )}
           </button>
         </div>
       </form>
