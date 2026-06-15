@@ -11,6 +11,7 @@ import { PracticeDetailPage } from '../pages/CoordinatorDashboard/PracticeDetail
 import { SeguimientoPage } from '../pages/Seguimiento/SeguimientoPage'
 import { SeguimientoListPage } from '../pages/Seguimiento/SeguimientoListPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
+import { SupervisorEvaluationPage } from '../pages/Supervisor/SupervisorEvaluationPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
 import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
@@ -57,6 +58,7 @@ export const AppRoutes = () => {
               element={<AuthCallbackPage />}
           />
           <Route path="/faq" element={<FAQPage />} />
+          <Route path="/supervisor/evaluacion/:token" element={<SupervisorEvaluationPage />} />
 
           {/* Rutas protegidas */}
           <Route
