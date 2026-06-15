@@ -36,6 +36,7 @@ export const AuthProvider = ({ children }) => {
                 setUser(userData);
             } catch {
                 localStorage.removeItem("token");
+                localStorage.removeItem("refresh_token");
                 setUser(null);
             } finally {
                 setLoading(false);
@@ -53,6 +54,7 @@ export const AuthProvider = ({ children }) => {
             const data = await authService.login(email, password);
 
             localStorage.setItem("token", data.access_token);
+            localStorage.setItem("refresh_token", data.refresh_token);
 
             setToken(data.access_token);
 
@@ -76,8 +78,8 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
-        authService.logout();
+    const logout = async () => {
+        await authService.logout();
 
         setUser(null);
         setToken(null);
@@ -109,6 +111,7 @@ export const AuthProvider = ({ children }) => {
             userData = await authService.getMe();
         } catch (err) {
             localStorage.removeItem("token");
+            localStorage.removeItem("refresh_token");
             setToken(null);
             setUser(null);
 

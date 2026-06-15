@@ -25,8 +25,21 @@ export const authService = {
         return response.data;
     },
 
-    logout() {
+    async logout() {
+        const refreshToken = localStorage.getItem("refresh_token");
+
+        if (refreshToken) {
+            try {
+                await api.post("/auth/logout", {
+                    refresh_token: refreshToken,
+                });
+            } catch {
+                // El cierre local debe completarse aunque el token ya no sea valido.
+            }
+        }
+
         localStorage.removeItem("token");
+        localStorage.removeItem("refresh_token");
     },
 
     getGoogleLoginUrl() {

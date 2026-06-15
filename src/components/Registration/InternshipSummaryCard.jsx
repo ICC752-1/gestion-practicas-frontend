@@ -1,13 +1,36 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export const InternshipSummaryCard = ({ internshipData, onClose }) => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
   
   if (!internshipData) return null;
 
+  const handleEdit = () => {
+    if (internshipData.id) {
+      navigate(`/seguimiento/${internshipData.id}`);
+      return;
+    }
+
+    onClose?.();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-[40px] shadow-[0px_4px_30px_#00000015] p-10 w-full max-w-[750px] max-h-[85vh] overflow-y-auto space-y-8">
+      <div
+        className="bg-white rounded-[40px] shadow-[0px_4px_30px_#00000015] p-10 w-full max-w-[750px] max-h-[85vh] overflow-y-auto overscroll-contain space-y-8"
+        onWheel={(event) => event.stopPropagation()}
+        onTouchMove={(event) => event.stopPropagation()}
+      >
         
         {/* Header con botón cerrar */}
         <div className="flex items-center justify-between">
@@ -102,7 +125,7 @@ export const InternshipSummaryCard = ({ internshipData, onClose }) => {
 
         <div className="flex gap-4 pt-4">
           <button
-            onClick={() => {/* pendiente */}}
+            onClick={handleEdit}
             className="flex-1 h-14 bg-white text-[#d22864] border border-[#d22864] text-lg font-bold rounded-[20px] hover:bg-[#f9f4f7] transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
           >
             Editar registro

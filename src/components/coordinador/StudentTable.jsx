@@ -10,13 +10,19 @@ export const StudentTable = ({ students = [] }) => {
   const [companyFilter, setCompanyFilter] = useState('');
 
   // FE4: Normalizar estado
-  const getNormalizedStatus = (status) => {
-    const statusStr = String(status?.title || status || '').toLowerCase();
+  const getNormalizedStatus = (internship) => {
+    if (internship?.is_cancelled) {
+      return { label: 'Anulada', color: 'bg-gray-500', value: 'Anulada' };
+    }
+
+    const status = internship?.status;
+    const statusLabel = status?.title || status || '';
+    const statusStr = String(statusLabel).toLowerCase();
     if (statusStr.includes('revisi') || status === 'in_review') return { label: 'En Revisión', color: 'bg-blue-500', value: 'En Revisión' };
     if (statusStr.includes('aprob') || status === 'approved') return { label: 'Aprobado', color: 'bg-emerald-500', value: 'Aprobado' };
     if (statusStr.includes('rechaz') || status === 'rejected') return { label: 'Rechazado', color: 'bg-red-500', value: 'Rechazado' };
     if (!status || statusStr === 'pendiente' || status === 'submitted' || status === 'submited') return { label: 'Pendiente', color: 'bg-amber-500', value: 'Pendiente' };
-    return { label: status || 'Pendiente', color: 'bg-gray-500', value: status || 'Pendiente' };
+    return { label: statusLabel || 'Pendiente', color: 'bg-gray-500', value: statusLabel || 'Pendiente' };
   };
 
   const uniqueDegrees = useMemo(() => {
@@ -28,7 +34,7 @@ export const StudentTable = ({ students = [] }) => {
   }, [students]);
 
   const uniqueStatuses = useMemo(() => {
-    return [...new Set(students.map(s => getNormalizedStatus(s.status).value).filter(Boolean))];
+    return [...new Set(students.map(s => getNormalizedStatus(s).value).filter(Boolean))];
   }, [students]);
 
   const filteredStudents = students.filter(s => {
@@ -59,7 +65,7 @@ export const StudentTable = ({ students = [] }) => {
       endDate.includes(term)
     );
 
-    const normalizedStatus = getNormalizedStatus(s.status).value;
+    const normalizedStatus = getNormalizedStatus(s).value;
 
     const matchesStatus = statusFilter === '' || normalizedStatus === statusFilter;
     const matchesDegree = degreeFilter === '' || s.student?.degree === degreeFilter;
@@ -164,7 +170,7 @@ export const StudentTable = ({ students = [] }) => {
           <tbody className="divide-y divide-gray-50">
             {filteredStudents.length > 0 ? (
               filteredStudents.map((student) => {
-                const normalizedStatus = getNormalizedStatus(student.status);
+                const normalizedStatus = getNormalizedStatus(student);
 
                 return (
                   <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">

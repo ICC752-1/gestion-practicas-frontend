@@ -1,11 +1,13 @@
 import universityLogo from "../../assets/university_logo.webp";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 export const Header = () => {
+  const location = useLocation();
+
   const navItems = [
-    { label: "Preguntas Frecuentes", to: "/faq", active: false },
+    { label: "Preguntas Frecuentes", to: "/faq", active: location.pathname === "/faq" },
     { label: "Requisitos", to: "#", active: false },
-    { label: "Iniciar Sesión", to: "/login", active: true },
+    { label: "Iniciar Sesión", to: "/login", active: location.pathname === "/login" },
   ];
 
   return (

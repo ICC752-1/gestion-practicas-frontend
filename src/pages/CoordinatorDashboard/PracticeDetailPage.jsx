@@ -22,6 +22,59 @@ const DetailItem = ({ icon: Icon, label, value, subValue }) => (
   </div>
 );
 
+const HISTORY_ACTION_TITLES = {
+  admin_update: 'Corrección administrativa',
+  cancel: 'Solicitud anulada',
+  student_cancel: 'Solicitud anulada',
+  student_update: 'Solicitud corregida',
+};
+
+const HISTORY_EVENT_TITLES = {
+  internship_created: 'Solicitud registrada',
+};
+
+const HISTORY_DEFAULT_SUBTITLES = {
+  admin_update: 'Corrección registrada por administración',
+  internship_created: 'Creación inicial de solicitud de práctica',
+  student_cancel: 'Anulación solicitada por el estudiante',
+  student_update: 'Corrección enviada por el estudiante',
+};
+
+const getHistoryMetadata = (entry) => entry.metadata || entry.metadata_json || {};
+
+const buildHistoryTitle = (entry) => {
+  const metadata = getHistoryMetadata(entry);
+
+  if (metadata.action && HISTORY_ACTION_TITLES[metadata.action]) {
+    return HISTORY_ACTION_TITLES[metadata.action];
+  }
+
+  if (metadata.event && HISTORY_EVENT_TITLES[metadata.event]) {
+    return HISTORY_EVENT_TITLES[metadata.event];
+  }
+
+  return entry.new_status?.title || 'Estado desconocido';
+};
+
+const buildHistorySubtitle = (entry) => {
+  const metadata = getHistoryMetadata(entry);
+  const reason = entry.reason?.trim();
+
+  if (metadata.event) {
+    return reason || HISTORY_DEFAULT_SUBTITLES[metadata.event] || null;
+  }
+
+  if (reason && metadata.action) {
+    return `Motivo: ${reason}`;
+  }
+
+  if (reason) {
+    return reason;
+  }
+
+  return HISTORY_DEFAULT_SUBTITLES[metadata.action] || null;
+};
+
 export const PracticeDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -102,11 +155,15 @@ export const PracticeDetailPage = () => {
   const studentDegree = studentData?.degree;
 
   const companyAddress = [practice?.address, practice?.city, practice?.region].filter(Boolean).join(', ');
+  const currentStatusLabel = practice?.is_cancelled
+    ? 'Anulada'
+    : practice?.status?.title || practice?.status || 'Pendiente';
 
   const getBadgeColor = (title) => {
     const t = (title || '').toLowerCase();
     if (t.includes('aprobad')) return 'bg-emerald-50 text-emerald-700 border-emerald-100';
     if (t.includes('rechazad') || t.includes('reprobad')) return 'bg-red-50 text-red-700 border-red-100';
+    if (t.includes('anulad')) return 'bg-gray-50 text-gray-700 border-gray-200';
     if (t.includes('dirae')) return 'bg-blue-50 text-blue-700 border-blue-100';
     return 'bg-gray-50 text-gray-700 border-gray-100';
   };
@@ -114,7 +171,8 @@ export const PracticeDetailPage = () => {
   const getTimelineCircleColor = (title) => {
     const t = (title || '').toLowerCase();
     if (t.includes('aprobad')) return 'border-emerald-500 bg-emerald-500';
-    if (t.includes('rechazad') || t.includes('reprobad')) return 'border-red-500 bg-red-500';
+    if (t.includes('rechazad') || t.includes('reprobad') || t.includes('anulad')) return 'border-red-500 bg-red-500';
+    if (t.includes('correcci') || t.includes('corregid') || t.includes('registrad')) return 'border-[#d22864] bg-[#d22864]';
     if (t.includes('dirae')) return 'border-blue-500 bg-blue-500';
     return 'border-gray-400 bg-gray-400';
   };
@@ -169,8 +227,8 @@ export const PracticeDetailPage = () => {
               <div className="border-t border-gray-100 pt-8 mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Estado</h3>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${getBadgeColor(practice.status?.title || practice.status)}`}>
-                    {practice.status?.title || practice.status || 'Pendiente'}
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${getBadgeColor(currentStatusLabel)}`}>
+                    {currentStatusLabel}
                   </span>
                 </div>
                 <div>
@@ -229,6 +287,8 @@ export const PracticeDetailPage = () => {
                 ) : (
                   <div className="relative pl-6 border-l-2 border-gray-100 ml-3 space-y-6">
                     {tracking.map((entry) => {
+                      const historyTitle = buildHistoryTitle(entry);
+                      const historySubtitle = buildHistorySubtitle(entry);
                       const dateStr = new Date(entry.changed_at).toLocaleDateString('es-CL', {
                         day: '2-digit',
                         month: 'short',
@@ -240,11 +300,11 @@ export const PracticeDetailPage = () => {
                       return (
                         <div key={entry.id} className="relative group">
                           {/* Circle on the left line */}
-                          <div className={`absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white shadow-sm transition-transform group-hover:scale-110 ${getTimelineCircleColor(entry.new_status?.title)}`} />
+                          <div className={`absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white shadow-sm transition-transform group-hover:scale-110 ${getTimelineCircleColor(historyTitle)}`} />
 
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-4">
                             <span className="font-bold text-gray-800 text-[15px]">
-                              {entry.new_status?.title || 'Estado desconocido'}
+                              {historyTitle}
                             </span>
                             <span className="text-gray-400 text-xs font-semibold">
                               {dateStr}
@@ -257,10 +317,10 @@ export const PracticeDetailPage = () => {
                             </p>
                           )}
 
-                          {entry.reason && (
+                          {historySubtitle && (
                             <div className="mt-2 bg-gray-50/70 border border-gray-100 rounded-2xl p-4 flex gap-3 text-gray-600 text-sm font-medium italic shadow-inner">
                               <MessageSquare className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
-                              <p>"{entry.reason}"</p>
+                              <p>{historySubtitle}</p>
                             </div>
                           )}
                         </div>
