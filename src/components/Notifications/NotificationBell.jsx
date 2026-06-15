@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, CheckCircle2, XCircle, Send, FileText, RefreshCw } from 'lucide-react';
+import { Bell, Check, CheckCircle2, XCircle, Send, FileText, RefreshCw } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useAuth } from '../../context/useAuth';
 
@@ -26,7 +26,7 @@ const formatDate = (isoDate) => {
 export const NotificationBell = () => {
   const { isAuthenticated, token } = useAuth();
   const notificationsEnabled = isAuthenticated && Boolean(token);
-  const { notifications, loading, error, unseenCount, markAsSeen, refresh } = useNotifications(10, notificationsEnabled);
+  const { notifications, loading, error, unreadCount, markAllAsRead, markAsRead, refresh } = useNotifications(10, notificationsEnabled);
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef(null);
 
@@ -46,7 +46,6 @@ export const NotificationBell = () => {
 
   const handleToggle = () => {
     if (!isOpen) {
-      markAsSeen();
       refresh();
     }
     setIsOpen((prev) => !prev);
@@ -60,9 +59,9 @@ export const NotificationBell = () => {
         aria-label="Notificaciones"
       >
         <Bell size={24} strokeWidth={2.5} />
-        {unseenCount > 0 && (
+        {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[10px] font-bold leading-none">
-            {unseenCount > 9 ? '9+' : unseenCount}
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
@@ -76,15 +75,30 @@ export const NotificationBell = () => {
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="absolute right-0 mt-3 w-[360px] bg-white rounded-[20px] shadow-xl border border-gray-100 overflow-hidden z-50"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h3 className="font-bold text-[#d22864] text-base">Notificaciones</h3>
-              <button
-                onClick={refresh}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer text-gray-500"
-                aria-label="Actualizar notificaciones"
-              >
-                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-              </button>
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-bold text-[#d22864] text-base">Notificaciones</h3>
+                <p className="text-xs font-semibold text-gray-400">
+                  {unreadCount === 0 ? 'Sin pendientes de lectura' : `${unreadCount} sin leer`}
+                </p>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={markAllAsRead}
+                  disabled={unreadCount === 0}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer text-gray-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-label="Marcar todas como leídas"
+                >
+                  <Check size={16} />
+                </button>
+                <button
+                  onClick={refresh}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer text-gray-500"
+                  aria-label="Actualizar notificaciones"
+                >
+                  <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                </button>
+              </div>
             </div>
 
             <div className="max-h-[340px] overflow-y-auto">
@@ -117,7 +131,7 @@ export const NotificationBell = () => {
                 return (
                   <div
                     key={notification.id}
-                    className="flex items-start gap-3 px-5 py-3.5 border-b border-gray-50 last:border-b-0 hover:bg-gray-50 transition-colors"
+                    className={`flex items-start gap-3 px-5 py-3.5 border-b border-gray-50 last:border-b-0 hover:bg-gray-50 transition-colors ${notification.is_read ? 'bg-white' : 'bg-[#fff8fb]'}`}
                   >
                     <div className={`w-9 h-9 shrink-0 ${meta.bg} rounded-full flex items-center justify-center`}>
                       <Icon className={meta.color} size={18} />
@@ -127,11 +141,22 @@ export const NotificationBell = () => {
                       <p className="text-sm text-gray-800 font-semibold truncate">{notification.subject}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{formatDate(notification.created_at)}</p>
                     </div>
-                    {notification.status === 'failed' && (
-                      <span className="shrink-0 text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
-                        Fallida
-                      </span>
-                    )}
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      {notification.status === 'failed' && (
+                        <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                          Fallida
+                        </span>
+                      )}
+                      {!notification.is_read && (
+                        <button
+                          type="button"
+                          onClick={() => markAsRead(notification.id)}
+                          className="text-[10px] font-bold text-[#d22864] hover:underline"
+                        >
+                          Marcar leída
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
