@@ -14,14 +14,21 @@ import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
 import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
+import { FicaDashboardPage } from '../pages/Fica/FicaDashboardPage'
+import { SuperadminUsersPage } from '../pages/Superadmin/SuperadminUsersPage'
+import {
+    adminRoles,
+    FICA_ROLE,
+    STUDENT_ROLE,
+    SUPERADMIN_ROLE,
+    SUPERVISOR_ROLE,
+} from '../services/roleRouting'
 
-const STUDENT_ROLES = ['Estudiante']
-const ADMIN_ROLES = [
-    'Encargado de practica',
-    'Director de carrera',
-    'Secretaria de Carrera',
-]
-const SUPERVISOR_ROLES = ['Supervisor de practica']
+const STUDENT_ROLES = [STUDENT_ROLE]
+const ADMIN_ROLES = adminRoles
+const SUPERVISOR_ROLES = [SUPERVISOR_ROLE]
+const FICA_ROLES = [FICA_ROLE]
+const SUPERADMIN_ROLES = [SUPERADMIN_ROLE]
 
 export const AppRoutes = () => {
   return (
@@ -131,6 +138,24 @@ export const AppRoutes = () => {
               element={
                   <PrivateRoute allowedRoles={STUDENT_ROLES}>
                       <InterviewSchedulingPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/fica"
+              element={
+                  <PrivateRoute allowedRoles={FICA_ROLES}>
+                      <FicaDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/superadmin/usuarios"
+              element={
+                  <PrivateRoute allowedRoles={SUPERADMIN_ROLES}>
+                      <SuperadminUsersPage />
                   </PrivateRoute>
               }
           />

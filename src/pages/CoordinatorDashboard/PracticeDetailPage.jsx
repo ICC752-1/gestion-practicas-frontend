@@ -9,6 +9,7 @@ import { useAuth } from '../../context/useAuth';
 import { documentService } from '../../services/documentService';
 import { AdminDocumentList } from '../../components/CoordinatorDashboard/AdminDocumentList';
 import { internshipService } from '../../services/internshipService';
+import { getDisplayRoleForRoles } from '../../services/roleRouting';
 
 // Componente para mostrar un detalle con ícono
 const DetailItem = ({ icon: Icon, label, value, subValue }) => (
@@ -143,7 +144,7 @@ export const PracticeDetailPage = () => {
   };
 
   const userName = user ? `${user.first_name} ${user.last_name}` : "Coordinador";
-  const userRole = "Coordinador";
+  const userRole = getDisplayRoleForRoles(user?.roles);
 
   // Usamos el estudiante que pasamos en la navegación desde StudentTable como fuente principal.
   // Si no está (ej. si el usuario entra directo a la URL), intentamos buscarlo en el practice.

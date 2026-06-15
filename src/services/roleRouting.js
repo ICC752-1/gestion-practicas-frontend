@@ -1,21 +1,49 @@
-const coordinatorRoles = [
+export const STUDENT_ROLE = "Estudiante";
+export const PRACTICE_MANAGER_ROLE = "Encargado de practica";
+export const CAREER_DIRECTOR_ROLE = "Director de carrera";
+export const SECRETARY_ROLE = "Secretaria de Carrera";
+export const SUPERVISOR_ROLE = "Supervisor de practica";
+export const FICA_ROLE = "FICA";
+export const SUPERADMIN_ROLE = "Superadmin";
+
+export const adminRoles = [
     "Encargado de practica",
     "Director de carrera",
-    "Coordinador",
-    "Coordinador FICA",
     "Secretaria de Carrera",
 ];
 
+const rolePriority = [
+    SUPERADMIN_ROLE,
+    FICA_ROLE,
+    PRACTICE_MANAGER_ROLE,
+    CAREER_DIRECTOR_ROLE,
+    SECRETARY_ROLE,
+    SUPERVISOR_ROLE,
+    STUDENT_ROLE,
+];
+
+export const getDisplayRoleForRoles = (roles = []) => {
+    return rolePriority.find((role) => roles.includes(role)) || roles[0] || "Sin rol";
+};
+
 export const getRedirectPathForRoles = (roles = []) => {
-    if (roles.includes("Estudiante")) {
+    if (roles.includes(SUPERADMIN_ROLE)) {
+        return "/superadmin/usuarios";
+    }
+
+    if (roles.includes(FICA_ROLE)) {
+        return "/fica";
+    }
+
+    if (roles.includes(STUDENT_ROLE)) {
         return "/dashboard";
     }
 
-    if (coordinatorRoles.some((role) => roles.includes(role))) {
+    if (adminRoles.some((role) => roles.includes(role))) {
         return "/coordinador";
     }
 
-    if (roles.includes("Supervisor de practica")) {
+    if (roles.includes(SUPERVISOR_ROLE)) {
         return "/supervisor";
     }
 
