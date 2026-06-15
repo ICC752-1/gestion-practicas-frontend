@@ -9,7 +9,7 @@ import { useAuth } from '../../context/useAuth';
 import { documentService } from '../../services/documentService';
 import { AdminDocumentList } from '../../components/CoordinatorDashboard/AdminDocumentList';
 import { internshipService } from '../../services/internshipService';
-import { getDisplayRoleForRoles } from '../../services/roleRouting';
+import { getAdminBasePathForRoles, getDisplayRoleForRoles } from '../../services/roleRouting';
 
 // Componente para mostrar un detalle con ícono
 const DetailItem = ({ icon: Icon, label, value, subValue }) => (
@@ -145,6 +145,7 @@ export const PracticeDetailPage = () => {
 
   const userName = user ? `${user.first_name} ${user.last_name}` : "Coordinador";
   const userRole = getDisplayRoleForRoles(user?.roles);
+  const adminBasePath = getAdminBasePathForRoles(user?.roles);
 
   // Usamos el estudiante que pasamos en la navegación desde StudentTable como fuente principal.
   // Si no está (ej. si el usuario entra directo a la URL), intentamos buscarlo en el practice.
@@ -184,7 +185,7 @@ export const PracticeDetailPage = () => {
 
       <main className="flex-grow container mx-auto px-4 py-12 max-w-4xl animate-fade-in">
         <button
-          onClick={() => navigate('/coordinador')}
+          onClick={() => navigate(adminBasePath)}
           className="flex items-center text-ufro-primary hover:underline mb-6 font-medium cursor-pointer"
         >
           <ArrowLeft className="mr-2" size={20} />

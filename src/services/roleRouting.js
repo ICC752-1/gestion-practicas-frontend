@@ -7,9 +7,14 @@ export const FICA_ROLE = "FICA";
 export const SUPERADMIN_ROLE = "Superadmin";
 
 export const adminRoles = [
-    "Encargado de practica",
-    "Director de carrera",
-    "Secretaria de Carrera",
+    PRACTICE_MANAGER_ROLE,
+    CAREER_DIRECTOR_ROLE,
+    SECRETARY_ROLE,
+];
+
+export const decisionRoles = [
+    PRACTICE_MANAGER_ROLE,
+    CAREER_DIRECTOR_ROLE,
 ];
 
 const rolePriority = [
@@ -26,6 +31,22 @@ export const getDisplayRoleForRoles = (roles = []) => {
     return rolePriority.find((role) => roles.includes(role)) || roles[0] || "Sin rol";
 };
 
+export const getAdminBasePathForRoles = (roles = []) => {
+    if (roles.includes(PRACTICE_MANAGER_ROLE)) {
+        return "/encargado";
+    }
+
+    if (roles.includes(CAREER_DIRECTOR_ROLE)) {
+        return "/director";
+    }
+
+    if (roles.includes(SECRETARY_ROLE)) {
+        return "/secretaria";
+    }
+
+    return "/landing";
+};
+
 export const getRedirectPathForRoles = (roles = []) => {
     if (roles.includes(SUPERADMIN_ROLE)) {
         return "/superadmin/usuarios";
@@ -40,7 +61,7 @@ export const getRedirectPathForRoles = (roles = []) => {
     }
 
     if (adminRoles.some((role) => roles.includes(role))) {
-        return "/coordinador";
+        return getAdminBasePathForRoles(roles);
     }
 
     if (roles.includes(SUPERVISOR_ROLE)) {
