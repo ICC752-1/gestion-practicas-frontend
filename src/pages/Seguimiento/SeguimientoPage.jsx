@@ -42,11 +42,37 @@ const STATUS_LABELS = {
 
 const STATUS_STYLES = {
   cancelled: { color: 'bg-gray-500', text: 'text-gray-500', border: 'border-gray-200', bg: 'bg-gray-50' },
+  final_passed: { color: 'bg-green-600', text: 'text-green-700', border: 'border-green-200', bg: 'bg-green-50' },
+  final_failed: { color: 'bg-red-600', text: 'text-red-700', border: 'border-red-200', bg: 'bg-red-50' },
+  in_progress: { color: 'bg-blue-500', text: 'text-blue-500', border: 'border-blue-200', bg: 'bg-blue-50' },
   1: { color: 'bg-amber-500', text: 'text-amber-500', border: 'border-amber-200', bg: 'bg-amber-50' },
   2: { color: 'bg-purple-500', text: 'text-purple-500', border: 'border-purple-200', bg: 'bg-purple-50' },
   3: { color: 'bg-blue-500', text: 'text-blue-500', border: 'border-blue-200', bg: 'bg-blue-50' },
   4: { color: 'bg-green-500', text: 'text-green-500', border: 'border-green-200', bg: 'bg-green-50' },
   5: { color: 'bg-red-500', text: 'text-red-500', border: 'border-red-200', bg: 'bg-red-50' },
+};
+
+const getStatusDisplay = (internship) => {
+  if (internship?.is_cancelled) {
+    return { key: 'cancelled', label: 'Anulada' };
+  }
+
+  if (internship?.completion_status === 'finalized') {
+    if (internship?.final_result === 'failed') {
+      return { key: 'final_failed', label: 'Finalizada reprobada' };
+    }
+
+    if (internship?.final_result === 'passed') {
+      return { key: 'final_passed', label: 'Finalizada aprobada' };
+    }
+  }
+
+  if (internship?.completion_status && internship.completion_status !== 'not_started') {
+    return { key: 'in_progress', label: 'En ejecución' };
+  }
+
+  const key = internship?.status_id;
+  return { key, label: STATUS_LABELS[key] || 'Desconocido' };
 };
 
 // --- Helpers ---
@@ -144,7 +170,7 @@ const TimelineItem = ({ step, index, isLast }) => {
 const getStatusIcon = (statusTitle) => {
   const title = (statusTitle || '').toLowerCase();
   if (title.includes('aprobad') || title.includes('completad')) return <CheckCircle2 className="w-5 h-5" />;
-  if (title.includes('rechazad') || title.includes('anulad')) return <XCircle className="w-5 h-5" />;
+  if (title.includes('rechazad') || title.includes('anulad') || title.includes('reprobad')) return <XCircle className="w-5 h-5" />;
   if (title.includes('correcci') || title.includes('corregid') || title.includes('registrad')) return <FileText className="w-5 h-5" />;
   if (title.includes('revisión') || title.includes('revision') || title.includes('revis')) return <Eye className="w-5 h-5" />;
   return <Clock className="w-5 h-5" />;
@@ -238,10 +264,7 @@ export const SeguimientoPage = () => {
     };
   });
 
-  const currentStatus = internship?.is_cancelled ? 'cancelled' : internship?.status_id;
-  const currentStatusLabel = internship?.is_cancelled
-    ? 'Anulada'
-    : STATUS_LABELS[currentStatus] || 'Desconocido';
+  const { key: currentStatus, label: currentStatusLabel } = getStatusDisplay(internship);
   const statusStyle = STATUS_STYLES[currentStatus] || STATUS_STYLES[1];
   const administrativeProgress = getInternshipAdministrativeProgress(internship);
 

@@ -2,6 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
+    withCredentials: true,
 });
 
 let refreshRequest = null;
@@ -40,19 +41,18 @@ const clearSessionAndRedirect = () => {
 
 const refreshAccessToken = async () => {
     const refreshToken = localStorage.getItem("refresh_token");
-
-    if (!refreshToken) {
-        throw new Error("missing_refresh_token");
-    }
+    const payload = refreshToken ? { refresh_token: refreshToken } : {};
 
     if (!refreshRequest) {
         refreshRequest = axios
-            .post(`${api.defaults.baseURL || ""}/auth/refresh`, {
-                refresh_token: refreshToken,
+            .post(`${api.defaults.baseURL || ""}/auth/refresh`, payload, {
+                withCredentials: true,
             })
             .then((response) => {
                 localStorage.setItem("token", response.data.access_token);
-                localStorage.setItem("refresh_token", response.data.refresh_token);
+                if (refreshToken && response.data.refresh_token) {
+                    localStorage.setItem("refresh_token", response.data.refresh_token);
+                }
                 return response.data.access_token;
             })
             .finally(() => {

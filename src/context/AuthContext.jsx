@@ -103,6 +103,7 @@ export const AuthProvider = ({ children }) => {
         }
 
         localStorage.setItem("token", accessToken);
+        localStorage.removeItem("refresh_token");
         setToken(accessToken);
 
         let userData;
