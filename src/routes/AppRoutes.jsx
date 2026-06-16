@@ -31,6 +31,7 @@ import {
 
 const STUDENT_ROLES = [STUDENT_ROLE]
 const DECISION_ADMIN_ROLES = [PRACTICE_MANAGER_ROLE, CAREER_DIRECTOR_ROLE]
+const REPORT_ROLES = [PRACTICE_MANAGER_ROLE, CAREER_DIRECTOR_ROLE, FICA_ROLE]
 const PRACTICE_MANAGER_ROLES = [PRACTICE_MANAGER_ROLE]
 const CAREER_DIRECTOR_ROLES = [CAREER_DIRECTOR_ROLE]
 const SECRETARY_ROLES = [SECRETARY_ROLE]
@@ -145,6 +146,15 @@ export const AppRoutes = () => {
               element={
                   <PrivateRoute allowedRoles={DECISION_ADMIN_ROLES}>
                       <InductionAdminPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/reportes/admin"
+              element={
+                  <PrivateRoute allowedRoles={REPORT_ROLES}>
+                      <FicaDashboardPage />
                   </PrivateRoute>
               }
           />
