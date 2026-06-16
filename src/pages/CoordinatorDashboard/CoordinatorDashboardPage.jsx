@@ -13,7 +13,7 @@ export const CoordinatorDashboardPage = () => {
   const { user } = useAuth();
   const { stats, students, loading, error, refreshData } = useCoordinatorDashboard(statusFilter);
 
-  const userName = user ? `${user.first_name} ${user.last_name}` : "Coordinador";
+  const userName = user ? `${user.first_name} ${user.last_name}` : "Encargado";
   const userRole = getDisplayRoleForRoles(user?.roles);
 
   return (

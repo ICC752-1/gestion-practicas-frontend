@@ -300,7 +300,7 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
                 <div className="flex items-start gap-3 px-4 py-3 bg-blue-50/50 rounded-2xl text-blue-700/80">
                   <Info className="flex-shrink-0 mt-0.5" size={16} />
                   <p className="text-[11px] font-medium leading-relaxed">
-                    Recuerda que los documentos deben ser legibles. Una vez aprobados por el coordinador, no podrán ser modificados.
+                    Recuerda que los documentos deben ser legibles. Una vez aprobados por el encargado, no podrán ser modificados.
                   </p>
                 </div>
 

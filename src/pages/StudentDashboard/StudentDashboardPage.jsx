@@ -373,7 +373,7 @@ export const StudentDashboardPage = () => {
                 <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
                 <h4 className="text-xl font-bold mb-2">¿Necesitas ayuda?</h4>
                 <p className="text-white/80 text-sm mb-6 leading-relaxed">
-                  Revisa nuestra sección de preguntas frecuentes o contacta a tu coordinador.
+                  Revisa nuestra sección de preguntas frecuentes o contacta a tu encargado de prácticas.
                 </p>
                 <button
                   onClick={() => navigate('/faq')}

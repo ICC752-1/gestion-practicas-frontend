@@ -164,7 +164,7 @@ export const PracticeDetailPage = () => {
     }
   };
 
-  const userName = user ? `${user.first_name} ${user.last_name}` : "Coordinador";
+  const userName = user ? `${user.first_name} ${user.last_name}` : "Encargado";
   const userRole = getDisplayRoleForRoles(user?.roles);
   const adminBasePath = getAdminBasePathForRoles(user?.roles);
   const canInviteSupervisor = user?.roles?.some((role) => (

@@ -31,7 +31,7 @@ export default function Dashboard({ students, onNavigateToManagement, onNavigate
   return (
     <div className="space-y-10 lg:px-12 py-8">
       <header>
-        <h2 className="text-3xl font-bold text-[#B5305F] mb-1">Panel Coordinador</h2>
+        <h2 className="text-3xl font-bold text-[#B5305F] mb-1">Panel Encargado</h2>
           <p className="text-xl text-gray-400 font-medium italic">
               Bienvenido/a, {userName}
           </p>
