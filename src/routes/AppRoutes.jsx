@@ -14,6 +14,7 @@ import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
 import { SupervisorEvaluationPage } from '../pages/Supervisor/SupervisorEvaluationPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
+import { InductionAdminPage } from '../pages/Induction/InductionAdminPage'
 import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
 import { FicaDashboardPage } from '../pages/Fica/FicaDashboardPage'
 import { SuperadminUsersPage } from '../pages/Superadmin/SuperadminUsersPage'
@@ -135,6 +136,15 @@ export const AppRoutes = () => {
               element={
                   <PrivateRoute allowedRoles={DECISION_ADMIN_ROLES}>
                       <PracticeDetailPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/induccion/admin"
+              element={
+                  <PrivateRoute allowedRoles={DECISION_ADMIN_ROLES}>
+                      <InductionAdminPage />
                   </PrivateRoute>
               }
           />
