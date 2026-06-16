@@ -27,15 +27,12 @@ export const authService = {
 
     async logout() {
         const refreshToken = localStorage.getItem("refresh_token");
+        const payload = refreshToken ? { refresh_token: refreshToken } : {};
 
-        if (refreshToken) {
-            try {
-                await api.post("/auth/logout", {
-                    refresh_token: refreshToken,
-                });
-            } catch {
-                // El cierre local debe completarse aunque el token ya no sea valido.
-            }
+        try {
+            await api.post("/auth/logout", payload);
+        } catch {
+            // El cierre local debe completarse aunque el token ya no sea valido.
         }
 
         localStorage.removeItem("token");
