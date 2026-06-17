@@ -237,35 +237,30 @@ export const StudentDashboardPage = () => {
 
       <main className="flex-grow">
         {/* Welcome Section */}
-        <div className="bg-white border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-6 py-12">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex flex-col md:flex-row justify-between items-end md:items-center gap-6"
-            >
-              <div>
-                <h2 className="text-4xl font-black text-gray-900 tracking-tight leading-none mb-3">
-                  Hola, {userName} <span className="inline-block animate-bounce-slow">👋</span>
-                </h2>
-                <p className="text-gray-500 font-medium text-lg">
-                  {internships.length > 0
-                    ? `Tienes ${internships.length} práctica${internships.length > 1 ? 's' : ''} registrada${internships.length > 1 ? 's' : ''}.`
-                    : 'No tienes prácticas inscritas aún.'}
-                </p>
-              </div>
-              <div className="flex gap-4">
-                <div className="text-right">
-                  <p className="text-[10px] uppercase tracking-widest font-black text-gray-400 mb-1">Prácticas</p>
-                  <div className="flex items-center gap-3">
-                    <span className="font-black text-3xl text-gray-900">{internships.length}</span>
-                  </div>
+          <div className="bg-white border-b border-gray-100">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex flex-row justify-between items-center"
+              >
+                <div>
+                  <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-none mb-2">
+                    Hola, {userName} <span className="inline-block animate-bounce-slow">👋</span>
+                  </h2>
+                  <p className="text-gray-500 font-medium text-base">
+                    {internships.length > 0
+                      ? `Tienes ${internships.length} práctica${internships.length > 1 ? 's' : ''} registrada${internships.length > 1 ? 's' : ''}.`
+                      : 'No tienes prácticas inscritas aún.'}
+                  </p>
                 </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-
+                <div className="text-right">
+                  <p className="text-[10px] uppercase tracking-widest font-black text-gray-400 mb-0.5">Prácticas</p>
+                  <span className="font-black text-3xl text-gray-900">{internships.length}</span>
+                </div>
+              </motion.div>
+            </div>
+</div>
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
 

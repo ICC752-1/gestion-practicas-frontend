@@ -47,81 +47,92 @@ export const UserHeader = () => {
     ].join(" ");
 
   return (
-    <header className="sticky top-0 z-50 flex min-h-16 w-full items-center justify-between gap-3 border-b-[3px] border-[#d22864] bg-white px-3 py-2 shadow-sm sm:min-h-20 sm:px-6 lg:px-10">
-      {/* Left Section: Logo and Title */}
-      <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none sm:gap-4">
-        <div className="flex-shrink-0 bg-[#d22864] p-1.5 rounded-xl shadow-sm">
+    <header style={{ minHeight: '4rem' }} className="sticky top-0 z-50 flex w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm overflow-hidden"
+      style={{ padding: '0.5rem clamp(0.75rem, 3vw, 2.5rem)' }}
+    >
+      {/* Left: Logo + Title */}
+      <div className="flex items-center gap-[clamp(0.5rem,1.5vw,1rem)] flex-shrink-0 min-w-0">
+        <div className="bg-[#d22864] rounded-xl shadow-sm flex-shrink-0" style={{ padding: 'clamp(4px, 0.8vw, 8px)' }}>
           <img
-            className="h-10 w-10 object-contain sm:h-12 sm:w-12"
+            style={{ width: 'clamp(28px, 4vw, 48px)', height: 'clamp(28px, 4vw, 48px)' }}
+            className="object-contain"
             alt="Universidad de La Frontera"
             src={universityLogo}
           />
         </div>
-        <div className="flex min-w-0 flex-col items-start leading-tight">
-          <h1 className="text-sm font-bold leading-tight tracking-tight text-[#d22864] sm:text-xl">
+        <div className="flex flex-col leading-tight min-w-0">
+          <h1 className="font-bold tracking-tight text-[#d22864] truncate"
+            style={{ fontSize: 'clamp(0.7rem, 2.5vw, 1.25rem)' }}
+          >
             Sistema de Gestión de Prácticas
           </h1>
-          <p className="hidden font-semibold text-[#d22864] text-xs sm:block">
+          <p className="font-semibold text-[#d22864] truncate"
+            style={{ fontSize: 'clamp(0.6rem, 1vw, 0.75rem)' }}
+          >
             Facultad de Ingeniería y Ciencias
           </p>
         </div>
       </div>
 
-      {/* Center Section: Navigation */}
-      <nav aria-label="Principal" className="hidden items-center gap-3 md:flex">
+      {/* Center: Nav */}
+      <nav aria-label="Principal" className="hidden items-center gap-3 md:flex flex-shrink-0">
         {navItems.map((item) => (
           <Link
             key={item.label}
             to={item.to}
             aria-current={item.active ? "page" : undefined}
             className={getNavLinkClass(item.active)}
+            style={{ fontSize: 'clamp(0.7rem, 1.2vw, 0.875rem)' }}
           >
             <span>{item.label}</span>
           </Link>
         ))}
       </nav>
 
-      {/* Right Section: User Profile & Actions */}
-      <div className="flex flex-shrink-0 items-center gap-2 sm:gap-4 lg:gap-6">
+      {/* Right: Actions */}
+      <div className="flex items-center flex-shrink-0" style={{ gap: 'clamp(0.4rem, 1.5vw, 1.5rem)' }}>
         <Link
           to={dashboardPath}
-          aria-label="Volver al dashboard"
-          title="Volver al dashboard"
           aria-current={navItems[0].active ? "page" : undefined}
           className={[
-            "inline-flex rounded-lg px-2 py-1.5 text-xs font-bold transition-colors md:hidden sm:px-3 sm:py-2",
-            navItems[0].active
-              ? "bg-[#d22864] text-white"
-              : "text-[#d22864] hover:bg-[#d22864] hover:text-white",
+            "inline-flex rounded-lg font-bold transition-colors md:hidden",
+            navItems[0].active ? "bg-[#d22864] text-white" : "text-[#d22864] hover:bg-[#d22864] hover:text-white",
           ].join(" ")}
+          style={{ padding: 'clamp(4px, 0.8vw, 8px) clamp(6px, 1vw, 12px)', fontSize: 'clamp(0.65rem, 1vw, 0.75rem)' }}
         >
           Dashboard
         </Link>
 
         <NotificationBell />
 
-        <div className="hidden h-8 w-px bg-gray-300 sm:block"></div>
+        <div className="h-8 w-px bg-gray-300 flex-shrink-0"></div>
 
-        <div className="flex items-center gap-2 sm:gap-4">
-          <div className="hidden flex-col items-end leading-none sm:flex">
-            <span className="font-bold text-[#d22864] text-base">{userName}</span>
-            <span className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider">{userRole}</span>
-          </div>
-          
-          <div className="relative">
-
-              <div className="h-9 w-9 rounded-full bg-blue-100 border-2 border-[#d22864] flex items-center justify-center overflow-hidden sm:h-11 sm:w-11">
-                  <img
-                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`}
-                          alt={userName}
-                          className="w-full h-full"
-                  />
-              </div>
-          </div>
+        <div className="flex flex-col items-end leading-none min-w-0" style={{ maxWidth: 'clamp(80px, 15vw, 220px)' }}>
+          <span className="font-bold text-[#d22864] truncate w-full text-right"
+            style={{ fontSize: 'clamp(0.65rem, 1.3vw, 0.9rem)' }}
+          >{userName}</span>
+          <span className="text-gray-500 font-semibold uppercase tracking-wider"
+            style={{ fontSize: 'clamp(0.55rem, 0.8vw, 0.625rem)' }}
+          >{userRole}</span>
         </div>
 
-        <button onClick={handleLogout} className="p-1.5 text-[#d22864] hover:bg-red-50 hover:text-red-600 rounded-lg transition-all sm:p-2" title="Cerrar Sesión">
-          <LogOut size={22} strokeWidth={2.5} />
+        <div className="rounded-full bg-blue-100 border-2 border-[#d22864] flex items-center justify-center overflow-hidden flex-shrink-0"
+          style={{ width: 'clamp(32px, 4vw, 44px)', height: 'clamp(32px, 4vw, 44px)' }}
+        >
+          <img
+            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`}
+            alt={userName}
+            className="w-full h-full"
+          />
+        </div>
+
+        <button
+          onClick={handleLogout}
+          className="text-[#d22864] hover:bg-red-50 hover:text-red-600 rounded-lg transition-all flex-shrink-0"
+          style={{ padding: 'clamp(4px, 0.5vw, 8px)' }}
+          title="Cerrar Sesión"
+        >
+          <LogOut size={20} strokeWidth={2.5} />
         </button>
       </div>
     </header>
