@@ -44,6 +44,14 @@ export const schedulingService = {
     return response.data;
   },
 
+  async registerAppointmentOutcome(appointmentId, data) {
+    const response = await api.patch(
+      `/scheduling/appointments/${appointmentId}/outcome`,
+      data,
+    );
+    return response.data;
+  },
+
   async closeAvailability(slotId, reason) {
     const response = await api.post(`/scheduling/availability/${slotId}/close`, {
       reason: reason || null,
