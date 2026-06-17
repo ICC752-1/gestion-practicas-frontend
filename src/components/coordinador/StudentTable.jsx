@@ -1,9 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Inbox, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/useAuth';
+import { getAdminBasePathForRoles } from '../../services/roleRouting';
 
 export const StudentTable = ({ students = [] }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const adminBasePath = getAdminBasePathForRoles(user?.roles);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [degreeFilter, setDegreeFilter] = useState('');
@@ -202,7 +206,7 @@ export const StudentTable = ({ students = [] }) => {
 
                     <td className="py-5 px-4 text-right">
                       <button
-                        onClick={() => navigate(`/coordinador/practica/${student.id}`, { state: { student: student.student } })}
+                        onClick={() => navigate(`${adminBasePath}/practica/${student.id}`, { state: { student: student.student } })}
                         className="text-ufro-primary font-bold hover:underline text-sm transition-all"
                       >
                         Ver detalles

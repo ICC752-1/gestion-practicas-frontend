@@ -6,17 +6,15 @@ import Dashboard from '../../components/CoordinatorDashboard/Dashboard';
 import { useCoordinatorDashboard } from '../../hooks/useCoordinatorDashboard';
 
 import { useAuth } from '../../context/useAuth';
+import { getDisplayRoleForRoles } from '../../services/roleRouting';
 
 export const CoordinatorDashboardPage = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const { user } = useAuth();
   const { stats, students, loading, error, refreshData } = useCoordinatorDashboard(statusFilter);
 
-  const userName = user ? `${user.first_name} ${user.last_name}` : "Coordinador";
-  
-  // Forzamos el rol a "Coordinador" para la visualización, independientemente de cómo venga del backend,
-  // ya que el usuario solicitó mantener este nombre de rol específicamente.
-  const userRole = "Coordinador";
+  const userName = user ? `${user.first_name} ${user.last_name}` : "Encargado";
+  const userRole = getDisplayRoleForRoles(user?.roles);
 
   return (
     <div className="min-h-screen flex flex-col bg-ufro-bg">

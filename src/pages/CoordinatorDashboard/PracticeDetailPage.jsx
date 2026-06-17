@@ -9,6 +9,8 @@ import { useAuth } from '../../context/useAuth';
 import { documentService } from '../../services/documentService';
 import { AdminDocumentList } from '../../components/CoordinatorDashboard/AdminDocumentList';
 import { internshipService } from '../../services/internshipService';
+import { getAdminBasePathForRoles, getDisplayRoleForRoles } from '../../services/roleRouting';
+import { supervisorEvaluationService } from '../../services/supervisorEvaluationService';
 
 // Componente para mostrar un detalle con ícono
 const DetailItem = ({ icon: Icon, label, value, subValue }) => (
@@ -87,6 +89,9 @@ export const PracticeDetailPage = () => {
   const [docsError, setDocsError] = useState(null);
   const [tracking, setTracking] = useState([]);
   const [trackingLoading, setTrackingLoading] = useState(true);
+  const [supervisorInvite, setSupervisorInvite] = useState(null);
+  const [supervisorInviteError, setSupervisorInviteError] = useState('');
+  const [supervisorInviteLoading, setSupervisorInviteLoading] = useState(false);
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -142,8 +147,29 @@ export const PracticeDetailPage = () => {
     await fetchTracking();
   };
 
-  const userName = user ? `${user.first_name} ${user.last_name}` : "Coordinador";
-  const userRole = "Coordinador";
+  const handleGenerateSupervisorInvitation = async () => {
+    setSupervisorInviteLoading(true);
+    setSupervisorInvite(null);
+    setSupervisorInviteError('');
+
+    try {
+      const data = await supervisorEvaluationService.generateInvitation(id);
+      setSupervisorInvite(data);
+    } catch (err) {
+      setSupervisorInviteError(
+        err.response?.data?.detail || 'No se pudo generar la invitación del supervisor.'
+      );
+    } finally {
+      setSupervisorInviteLoading(false);
+    }
+  };
+
+  const userName = user ? `${user.first_name} ${user.last_name}` : "Encargado";
+  const userRole = getDisplayRoleForRoles(user?.roles);
+  const adminBasePath = getAdminBasePathForRoles(user?.roles);
+  const canInviteSupervisor = user?.roles?.some((role) => (
+    role === 'Encargado de practica' || role === 'Director de carrera'
+  ));
 
   // Usamos el estudiante que pasamos en la navegación desde StudentTable como fuente principal.
   // Si no está (ej. si el usuario entra directo a la URL), intentamos buscarlo en el practice.
@@ -183,7 +209,7 @@ export const PracticeDetailPage = () => {
 
       <main className="flex-grow container mx-auto px-4 py-12 max-w-4xl animate-fade-in">
         <button
-          onClick={() => navigate('/coordinador')}
+          onClick={() => navigate(adminBasePath)}
           className="flex items-center text-ufro-primary hover:underline mb-6 font-medium cursor-pointer"
         >
           <ArrowLeft className="mr-2" size={20} />
@@ -251,6 +277,40 @@ export const PracticeDetailPage = () => {
                 practice={practice}
                 onActionSuccess={handleActionSuccess}
               />
+
+              {canInviteSupervisor && (
+                <div className="rounded-2xl border border-[#ffd6e5] bg-[#fff8fb] p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h3 className="font-bold text-gray-900">Evaluación del supervisor</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Genera o reenvía un enlace de un solo uso al correo registrado del supervisor.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleGenerateSupervisorInvitation}
+                      disabled={supervisorInviteLoading || practice.is_cancelled}
+                      className="rounded-xl bg-[#d22864] px-4 py-3 text-sm font-bold text-white hover:bg-[#b01e52] disabled:opacity-50"
+                    >
+                      {supervisorInviteLoading ? 'Generando...' : 'Generar invitación'}
+                    </button>
+                  </div>
+                  {supervisorInviteError && (
+                    <p className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                      {supervisorInviteError}
+                    </p>
+                  )}
+                  {supervisorInvite?.demo_url && (
+                    <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                      <p className="font-bold">Invitación generada en modo demo.</p>
+                      <a className="mt-1 block break-all font-semibold underline" href={supervisorInvite.demo_url} target="_blank" rel="noreferrer">
+                        {supervisorInvite.demo_url}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Sección de Documentos */}
               <div className="border-t border-gray-100 pt-8 mt-8">

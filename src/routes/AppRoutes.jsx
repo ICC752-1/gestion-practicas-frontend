@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { PrivateRoute } from '../components/PrivateRoute'
 import { Login } from '../components/Login/Login'
 import { RegistrationPage } from '../pages/Registration/RegistrationPage'
@@ -11,17 +11,39 @@ import { PracticeDetailPage } from '../pages/CoordinatorDashboard/PracticeDetail
 import { SeguimientoPage } from '../pages/Seguimiento/SeguimientoPage'
 import { SeguimientoListPage } from '../pages/Seguimiento/SeguimientoListPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
+import { SupervisorEvaluationPage } from '../pages/Supervisor/SupervisorEvaluationPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
+import { InductionAdminPage } from '../pages/Induction/InductionAdminPage'
 import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
+import { FicaDashboardPage } from '../pages/Fica/FicaDashboardPage'
+import { SuperadminUsersPage } from '../pages/Superadmin/SuperadminUsersPage'
+import { SecretaryDashboardPage } from '../pages/Secretary/SecretaryDashboardPage'
+import {
+    CAREER_DIRECTOR_ROLE,
+    PRACTICE_MANAGER_ROLE,
+    FICA_ROLE,
+    SECRETARY_ROLE,
+    STUDENT_ROLE,
+    SUPERADMIN_ROLE,
+    SUPERVISOR_ROLE,
+} from '../services/roleRouting'
 
-const STUDENT_ROLES = ['Estudiante']
-const ADMIN_ROLES = [
-    'Encargado de practica',
-    'Director de carrera',
-    'Secretaria de Carrera',
-]
-const SUPERVISOR_ROLES = ['Supervisor de practica']
+const STUDENT_ROLES = [STUDENT_ROLE]
+const DECISION_ADMIN_ROLES = [PRACTICE_MANAGER_ROLE, CAREER_DIRECTOR_ROLE]
+const REPORT_ROLES = [PRACTICE_MANAGER_ROLE, CAREER_DIRECTOR_ROLE, FICA_ROLE]
+const PRACTICE_MANAGER_ROLES = [PRACTICE_MANAGER_ROLE]
+const CAREER_DIRECTOR_ROLES = [CAREER_DIRECTOR_ROLE]
+const SECRETARY_ROLES = [SECRETARY_ROLE]
+const SUPERVISOR_ROLES = [SUPERVISOR_ROLE]
+const FICA_ROLES = [FICA_ROLE]
+const SUPERADMIN_ROLES = [SUPERADMIN_ROLE]
+
+const LegacyCoordinatorDetailRedirect = () => {
+    const { id } = useParams()
+
+    return <Navigate to={`/encargado/practica/${id}`} replace />
+}
 
 export const AppRoutes = () => {
   return (
@@ -38,6 +60,7 @@ export const AppRoutes = () => {
               element={<AuthCallbackPage />}
           />
           <Route path="/faq" element={<FAQPage />} />
+          <Route path="/supervisor/evaluacion/:token" element={<SupervisorEvaluationPage />} />
 
           {/* Rutas protegidas */}
           <Route
@@ -74,18 +97,73 @@ export const AppRoutes = () => {
 
           <Route
               path="/coordinador"
+              element={<Navigate to="/encargado" replace />}
+          />
+
+          <Route
+              path="/coordinador/practica/:id"
+              element={<LegacyCoordinatorDetailRedirect />}
+          />
+
+          <Route
+              path="/encargado"
               element={
-                  <PrivateRoute allowedRoles={ADMIN_ROLES}>
+                  <PrivateRoute allowedRoles={PRACTICE_MANAGER_ROLES}>
                       <CoordinatorDashboardPage />
                   </PrivateRoute>
               }
           />
 
           <Route
-              path="/coordinador/practica/:id"
+              path="/encargado/practica/:id"
               element={
-                  <PrivateRoute allowedRoles={ADMIN_ROLES}>
+                  <PrivateRoute allowedRoles={DECISION_ADMIN_ROLES}>
                       <PracticeDetailPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/director"
+              element={
+                  <PrivateRoute allowedRoles={CAREER_DIRECTOR_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/director/practica/:id"
+              element={
+                  <PrivateRoute allowedRoles={DECISION_ADMIN_ROLES}>
+                      <PracticeDetailPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/induccion/admin"
+              element={
+                  <PrivateRoute allowedRoles={DECISION_ADMIN_ROLES}>
+                      <InductionAdminPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/reportes/admin"
+              element={
+                  <PrivateRoute allowedRoles={REPORT_ROLES}>
+                      <FicaDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/secretaria"
+              element={
+                  <PrivateRoute allowedRoles={SECRETARY_ROLES}>
+                      <SecretaryDashboardPage />
                   </PrivateRoute>
               }
           />
@@ -131,6 +209,24 @@ export const AppRoutes = () => {
               element={
                   <PrivateRoute allowedRoles={STUDENT_ROLES}>
                       <InterviewSchedulingPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/fica"
+              element={
+                  <PrivateRoute allowedRoles={FICA_ROLES}>
+                      <FicaDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/superadmin/usuarios"
+              element={
+                  <PrivateRoute allowedRoles={SUPERADMIN_ROLES}>
+                      <SuperadminUsersPage />
                   </PrivateRoute>
               }
           />

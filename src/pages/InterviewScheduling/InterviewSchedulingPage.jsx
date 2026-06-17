@@ -62,7 +62,7 @@ export const InterviewSchedulingPage = () => {
 
     return (
         <div className="min-h-screen bg-ufro-bg flex flex-col">
-            <UserHeader userName="Coordinador FICA" userRole="Coordinador" />
+            <UserHeader userName="Encargado FICA" userRole="Encargado de practica" />
 
             <main className="flex-1 max-w-6xl mx-auto w-full px-8 py-10">
                 <h2 className="text-4xl font-bold text-brand-medium mb-8">

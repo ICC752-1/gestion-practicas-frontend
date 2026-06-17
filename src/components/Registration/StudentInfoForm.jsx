@@ -95,6 +95,15 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
         internship_type: formData.internship_type,
       });
 
+      if (eligibility.has_induction !== true) {
+        setEligibilityError(
+          eligibility.requires_retake
+            ? 'Debes repetir y aprobar la inducción vigente antes de continuar.'
+            : 'Debes aprobar la inducción obligatoria antes de continuar al formulario.'
+        );
+        return;
+      }
+
       if (eligibility.can_create_request === false) {
         setDuplicateBlock(eligibility);
         return;

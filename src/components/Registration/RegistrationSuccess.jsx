@@ -26,7 +26,7 @@ export const RegistrationSuccess = ({ internshipId, uploadDate, status = 'Pendie
         </h2>
 
         <p className="text-gray-600 text-xl text-center mb-10">
-          Tu solicitud de práctica ha sido recibida y será revisada por el coordinador de prácticas
+          Tu solicitud de práctica ha sido recibida y será revisada por el encargado de prácticas
         </p>
 
         {/* Datos de la práctica */}
@@ -77,7 +77,7 @@ export const RegistrationSuccess = ({ internshipId, uploadDate, status = 'Pendie
             <div className="flex items-start gap-5">
               <div className="mt-1"><FileText className="text-[#d22864]" size={32} /></div>
               <div>
-                <h4 className="text-xl font-bold text-black">2. Revisión del coordinador</h4>
+                <h4 className="text-xl font-bold text-black">2. Revisión del encargado</h4>
                 <p className="text-gray-700 text-lg">Te notificaremos cuando sea revisada</p>
               </div>
             </div>
