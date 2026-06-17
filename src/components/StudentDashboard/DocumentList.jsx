@@ -14,6 +14,7 @@ const STATUS_CONFIG = {
   uploaded: { label: 'Cargado', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock },
   approved: { label: 'Aprobado', color: 'text-green-600', bg: 'bg-green-50', icon: CheckCircle2 },
   observed: { label: 'Observado', color: 'text-purple-600', bg: 'bg-purple-50', icon: AlertCircle },
+  deleted: { label: 'Eliminado', color: 'text-gray-600', bg: 'bg-gray-50', icon: AlertCircle },
 };
 
 export const DocumentList = ({

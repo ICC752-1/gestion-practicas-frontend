@@ -31,6 +31,11 @@ export const internshipService = {
     return response.data;
   },
 
+  async getInternshipById(id) {
+    const response = await api.get(`/internships/${id}`);
+    return response.data;
+  },
+
   async getMyInternships() {
     const response = await api.get('/internships/me');
     return response.data;
@@ -38,6 +43,21 @@ export const internshipService = {
 
   async getInternshipTracking(internshipId) {
     const response = await api.get(`/internships/${internshipId}/tracking`);
+    return response.data;
+  },
+
+  async getStudentActions(internshipId) {
+    const response = await api.get(`/internships/${internshipId}/student-actions`);
+    return response.data;
+  },
+
+  async updateStudentInternship(internshipId, data) {
+    const response = await api.patch(`/internships/${internshipId}/student`, data);
+    return response.data;
+  },
+
+  async cancelStudentInternship(internshipId, reason) {
+    const response = await api.post(`/internships/${internshipId}/student/cancel`, { reason });
     return response.data;
   },
 

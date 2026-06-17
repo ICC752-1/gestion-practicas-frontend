@@ -20,6 +20,9 @@ const getApiErrorMessage = (error) => {
 
   const detail = error.response.data?.detail;
   if (typeof detail === "string") return detail;
+  if (detail?.code === "duplicate_internship_type") {
+    return "Ya existe una solicitud vigente para este tipo de práctica. Revisa el registro existente antes de crear una nueva solicitud.";
+  }
   if (detail?.message) return detail.message;
   if (Array.isArray(detail)) return detail.map((item) => item.msg).join(", ");
 
