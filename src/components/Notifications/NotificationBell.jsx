@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, CheckCircle2, XCircle, Send, FileText, RefreshCw } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
+import { useAuth } from '../../context/useAuth';
 
 // Etiquetas e iconos por tipo de evento según contrato del backend
 const EVENT_META = {
@@ -23,7 +24,9 @@ const formatDate = (isoDate) => {
 };
 
 export const NotificationBell = () => {
-  const { notifications, loading, error, unseenCount, markAsSeen, refresh } = useNotifications();
+  const { isAuthenticated, token } = useAuth();
+  const notificationsEnabled = isAuthenticated && Boolean(token);
+  const { notifications, loading, error, unseenCount, markAsSeen, refresh } = useNotifications(10, notificationsEnabled);
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef(null);
 

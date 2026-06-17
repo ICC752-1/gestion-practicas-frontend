@@ -38,11 +38,38 @@ const STATUS_LABELS = {
 };
 
 const STATUS_STYLES = {
+  cancelled: { color: 'bg-gray-500', text: 'text-gray-600', border: 'border-gray-200', bg: 'bg-gray-50', icon: <AlertCircle size={16} /> },
+  final_passed: { color: 'bg-green-600', text: 'text-green-700', border: 'border-green-200', bg: 'bg-green-50', icon: <CheckCircle2 size={16} /> },
+  final_failed: { color: 'bg-red-600', text: 'text-red-700', border: 'border-red-200', bg: 'bg-red-50', icon: <AlertCircle size={16} /> },
+  in_progress: { color: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-200', bg: 'bg-blue-50', icon: <Play size={16} /> },
   1: { color: 'bg-amber-500', text: 'text-amber-600', border: 'border-amber-200', bg: 'bg-amber-50', icon: <Clock size={16} /> },
   2: { color: 'bg-purple-500', text: 'text-purple-600', border: 'border-purple-200', bg: 'bg-purple-50', icon: <AlertCircle size={16} /> },
   3: { color: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-200', bg: 'bg-blue-50', icon: <Clock size={16} /> },
   4: { color: 'bg-green-500', text: 'text-green-600', border: 'border-green-200', bg: 'bg-green-50', icon: <CheckCircle2 size={16} /> },
   5: { color: 'bg-red-500', text: 'text-red-600', border: 'border-red-200', bg: 'bg-red-50', icon: <AlertCircle size={16} /> },
+};
+
+const getStatusDisplay = (internship) => {
+  if (internship?.is_cancelled) {
+    return { key: 'cancelled', label: 'Anulada' };
+  }
+
+  if (internship?.completion_status === 'finalized') {
+    if (internship?.final_result === 'failed') {
+      return { key: 'final_failed', label: 'Finalizada reprobada' };
+    }
+
+    if (internship?.final_result === 'passed') {
+      return { key: 'final_passed', label: 'Finalizada aprobada' };
+    }
+  }
+
+  if (internship?.completion_status && internship.completion_status !== 'not_started') {
+    return { key: 'in_progress', label: 'En ejecución' };
+  }
+
+  const key = internship?.status_id;
+  return { key, label: STATUS_LABELS[key] || 'Desconocido' };
 };
 
 const formatDate = (dateStr) => {
@@ -58,9 +85,9 @@ const PRE_REGISTRATION_PATH = '/practicas/nueva/preinscripcion';
 
 // --- Sub-components ---
 
-const StatusBadge = ({ statusId }) => {
-  const label = STATUS_LABELS[statusId] || 'Desconocido';
-  const style = STATUS_STYLES[statusId] || STATUS_STYLES[1];
+const StatusBadge = ({ internship }) => {
+  const { key: statusKey, label } = getStatusDisplay(internship);
+  const style = STATUS_STYLES[statusKey] || STATUS_STYLES[1];
 
   return (
     <div className={`${style.color} text-white px-4 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold shadow-lg`}>
@@ -102,7 +129,7 @@ const PracticeCard = ({ internship }) => {
               <span>{formatDate(internship.start_date)} — {formatDate(internship.end_date)}</span>
             </div>
           </div>
-          <StatusBadge statusId={internship.status_id} />
+          <StatusBadge internship={internship} />
         </div>
       </div>
 
@@ -354,6 +381,13 @@ export const StudentDashboardPage = () => {
                   desc="Revisa el estado de tus procesos actuales"
                   onClick={() => navigate('/seguimiento')}
                   // disabled={internships.length === 0} // Deshabilitado para agilizar
+                />
+                <QuickAction
+                  icon={Calendar}
+                  title="Agendar Entrevista"
+                  desc="Reserva o reprograma horarios disponibles"
+                  onClick={() => navigate('/entrevistas')}
+                  disabled={internships.length === 0}
                 />
                 <QuickAction
                   icon={Upload}

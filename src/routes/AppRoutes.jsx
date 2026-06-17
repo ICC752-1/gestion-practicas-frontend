@@ -15,6 +15,14 @@ import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
 import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
 
+const STUDENT_ROLES = ['Estudiante']
+const ADMIN_ROLES = [
+    'Encargado de practica',
+    'Director de carrera',
+    'Secretaria de Carrera',
+]
+const SUPERVISOR_ROLES = ['Supervisor de practica']
+
 export const AppRoutes = () => {
   return (
       <Routes>
@@ -40,7 +48,7 @@ export const AppRoutes = () => {
           <Route
               path="/practicas/nueva/preinscripcion"
               element={
-                  <PrivateRoute>
+                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
                       <PreRegistrationPage />
                   </PrivateRoute>
               }
@@ -49,7 +57,7 @@ export const AppRoutes = () => {
           <Route
               path="/practicas/nueva/formulario"
               element={
-                  <PrivateRoute>
+                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
                       <RegistrationPage />
                   </PrivateRoute>
               }
@@ -58,7 +66,7 @@ export const AppRoutes = () => {
           <Route
               path="/dashboard"
               element={
-                  <PrivateRoute>
+                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
                       <StudentDashboardPage />
                   </PrivateRoute>
               }
@@ -67,7 +75,7 @@ export const AppRoutes = () => {
           <Route
               path="/coordinador"
               element={
-                  <PrivateRoute>
+                  <PrivateRoute allowedRoles={ADMIN_ROLES}>
                       <CoordinatorDashboardPage />
                   </PrivateRoute>
               }
@@ -76,7 +84,7 @@ export const AppRoutes = () => {
           <Route
               path="/coordinador/practica/:id"
               element={
-                  <PrivateRoute>
+                  <PrivateRoute allowedRoles={ADMIN_ROLES}>
                       <PracticeDetailPage />
                   </PrivateRoute>
               }
@@ -85,7 +93,7 @@ export const AppRoutes = () => {
           <Route
               path="/seguimiento"
               element={
-                  <PrivateRoute>
+                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
                       <SeguimientoListPage />
                   </PrivateRoute>
               }
@@ -94,7 +102,7 @@ export const AppRoutes = () => {
           <Route
               path="/seguimiento/:internshipId"
               element={
-                  <PrivateRoute>
+                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
                       <SeguimientoPage />
                   </PrivateRoute>
               }
@@ -103,7 +111,7 @@ export const AppRoutes = () => {
           <Route
               path="/supervisor"
               element={
-                  <PrivateRoute>
+                  <PrivateRoute allowedRoles={SUPERVISOR_ROLES}>
                       <SupervisorPage />
                   </PrivateRoute>
               }
@@ -112,7 +120,7 @@ export const AppRoutes = () => {
           <Route
               path="/autoevaluacion"
               element={
-                  <PrivateRoute>
+                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
                       <SelfEvaluationPage />
                   </PrivateRoute>
               }
@@ -121,7 +129,7 @@ export const AppRoutes = () => {
           <Route
               path="/entrevistas"
               element={
-                  <PrivateRoute>
+                  <PrivateRoute allowedRoles={[...STUDENT_ROLES, ...ADMIN_ROLES]}>
                       <InterviewSchedulingPage />
                   </PrivateRoute>
               }

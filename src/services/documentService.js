@@ -3,6 +3,10 @@ import api from './api';
 const TERMINAL_INTERNSHIP_STATES = new Set(['Aprobada', 'Rechazada', 'Reprobada']);
 
 export const canUploadDocuments = (internship) => {
+  if (internship?.is_cancelled) {
+    return false;
+  }
+
   const statusTitle = internship?.status?.title || internship?.status;
   if (typeof statusTitle === 'string') {
     return !TERMINAL_INTERNSHIP_STATES.has(statusTitle);
