@@ -6,8 +6,10 @@ import {
     CheckCircle2,
     Clock,
     MapPin,
+    Pencil,
     RefreshCw,
     Send,
+    Trash2,
     XCircle,
 } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
@@ -34,6 +36,16 @@ const PURPOSE_OPTIONS = [
 ];
 
 const MODALITY_OPTIONS = ['Presencial', 'Remoto', 'Híbrido'];
+
+const DEFAULT_AVAILABILITY_FORM = {
+    start_time: '09:00',
+    end_time: '12:00',
+    duration_minutes: 30,
+    modality: 'Presencial',
+    purpose: 'initial_interview',
+    location: '',
+    comments: '',
+};
 
 const toDateKey = (year, month, day) =>
     `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -66,6 +78,15 @@ const formatDisplayDate = (dateValue) => {
 
 const formatSlotTime = (slot) =>
     `${slot.start_time.slice(0, 5)} - ${slot.end_time.slice(0, 5)}`;
+
+const getDurationMinutes = (startTime, endTime) => {
+    if (!startTime || !endTime) return 0;
+
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
+
+    return (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+};
 
 const getErrorMessage = (error) => {
     const detail = error?.response?.data?.detail;
@@ -258,15 +279,10 @@ export const InterviewSchedulingPage = () => {
     const [message, setMessage] = useState(null);
     const [confirmedAppointment, setConfirmedAppointment] = useState(null);
     const [reschedulingAppointmentId, setReschedulingAppointmentId] = useState(null);
+    const [editingSlotId, setEditingSlotId] = useState(null);
     const [cancelReasons, setCancelReasons] = useState({});
     const [availabilityForm, setAvailabilityForm] = useState({
-        start_time: '09:00',
-        end_time: '12:00',
-        duration_minutes: 30,
-        modality: 'Presencial',
-        purpose: 'initial_interview',
-        location: '',
-        comments: '',
+        ...DEFAULT_AVAILABILITY_FORM,
     });
 
     const selectedDateKey = toDateKey(
@@ -376,8 +392,29 @@ export const InterviewSchedulingPage = () => {
     }, [hasAutoSelectedDate, selectedDateKey, upcomingSlots]);
 
     const handleAvailabilityChange = (field, value) => {
-        setAvailabilityForm((current) => ({ ...current, [field]: value }));
+        setAvailabilityForm((current) => {
+            const next = { ...current, [field]: value };
+
+            if (
+                editingSlotId &&
+                (field === 'start_time' || field === 'end_time') &&
+                next.start_time &&
+                next.end_time
+            ) {
+                next.duration_minutes = getDurationMinutes(
+                    next.start_time,
+                    next.end_time,
+                );
+            }
+
+            return next;
+        });
     };
+
+    const resetAvailabilityForm = useCallback(() => {
+        setEditingSlotId(null);
+        setAvailabilityForm({ ...DEFAULT_AVAILABILITY_FORM });
+    }, []);
 
     const handleCreateAvailability = async (event) => {
         event.preventDefault();
@@ -385,17 +422,37 @@ export const InterviewSchedulingPage = () => {
         setMessage(null);
 
         try {
-            await schedulingService.createAvailability({
+            const payload = {
                 ...availabilityForm,
                 date: selectedDateKey,
                 duration_minutes: Number(availabilityForm.duration_minutes),
                 location: availabilityForm.location || null,
                 comments: availabilityForm.comments || null,
-            });
-            setMessage({
-                type: 'success',
-                text: 'Disponibilidad publicada correctamente.',
-            });
+            };
+
+            if (editingSlotId) {
+                await schedulingService.updateAvailability(editingSlotId, {
+                    date: payload.date,
+                    start_time: payload.start_time,
+                    end_time: payload.end_time,
+                    modality: payload.modality,
+                    purpose: payload.purpose,
+                    location: payload.location,
+                    timezone: 'America/Santiago',
+                    comments: payload.comments,
+                });
+                setMessage({
+                    type: 'success',
+                    text: 'Horario actualizado correctamente.',
+                });
+                resetAvailabilityForm();
+            } else {
+                await schedulingService.createAvailability(payload);
+                setMessage({
+                    type: 'success',
+                    text: 'Disponibilidad publicada correctamente.',
+                });
+            }
             await loadSchedulingData({ clearMessage: false });
         } catch (error) {
             setMessage({ type: 'error', text: getErrorMessage(error) });
@@ -495,6 +552,44 @@ export const InterviewSchedulingPage = () => {
         }
     };
 
+    const handleStartEditAvailability = (slot) => {
+        setEditingSlotId(slot.id);
+        setSelectedDate(dateKeyToCalendarValue(slot.date));
+        setAvailabilityForm({
+            start_time: slot.start_time.slice(0, 5),
+            end_time: slot.end_time.slice(0, 5),
+            duration_minutes: slot.duration_minutes,
+            modality: slot.modality,
+            purpose: slot.purpose,
+            location: slot.location || '',
+            comments: slot.comments || '',
+        });
+        setMessage(null);
+    };
+
+    const handleDeleteAvailability = async (slotId) => {
+        const confirmed = window.confirm(
+            '¿Eliminar este horario disponible? Esta acción no se puede deshacer.',
+        );
+        if (!confirmed) return;
+
+        setSubmitting(true);
+        setMessage(null);
+
+        try {
+            await schedulingService.deleteAvailability(slotId);
+            if (editingSlotId === slotId) {
+                resetAvailabilityForm();
+            }
+            setMessage({ type: 'success', text: 'Horario eliminado.' });
+            await loadSchedulingData({ clearMessage: false });
+        } catch (error) {
+            setMessage({ type: 'error', text: getErrorMessage(error) });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     const setCancelReason = (appointmentId, reason) => {
         setCancelReasons((current) => ({ ...current, [appointmentId]: reason }));
     };
@@ -567,7 +662,9 @@ export const InterviewSchedulingPage = () => {
                                 <div className="mb-5 flex items-center justify-between gap-3">
                                     <div>
                                         <h3 className="font-bold text-lg">
-                                            Publicar disponibilidad
+                                            {editingSlotId
+                                                ? 'Editar disponibilidad'
+                                                : 'Publicar disponibilidad'}
                                         </h3>
                                         <p className="text-sm text-slate-500">
                                             {selectedDate.day} de {MONTHS[selectedDate.month]}
@@ -625,6 +722,7 @@ export const InterviewSchedulingPage = () => {
                                             }
                                             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand-medium"
                                             required
+                                            disabled={Boolean(editingSlotId)}
                                         />
                                     </label>
 
@@ -685,16 +783,42 @@ export const InterviewSchedulingPage = () => {
                                             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand-medium"
                                         />
                                     </label>
+
+                                    <label className="text-sm font-semibold text-slate-700 sm:col-span-2">
+                                        Comentarios
+                                        <textarea
+                                            rows={3}
+                                            value={availabilityForm.comments}
+                                            onChange={(event) =>
+                                                handleAvailabilityChange(
+                                                    'comments',
+                                                    event.target.value,
+                                                )
+                                            }
+                                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand-medium"
+                                        />
+                                    </label>
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-medium px-4 py-3 font-bold text-white transition hover:bg-brand-dark disabled:opacity-60"
-                                >
-                                    <CalendarCheck size={18} />
-                                    Publicar bloques
-                                </button>
+                                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                                    <button
+                                        type="submit"
+                                        disabled={submitting}
+                                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-medium px-4 py-3 font-bold text-white transition hover:bg-brand-dark disabled:opacity-60"
+                                    >
+                                        <CalendarCheck size={18} />
+                                        {editingSlotId ? 'Guardar cambios' : 'Publicar bloques'}
+                                    </button>
+                                    {editingSlotId && (
+                                        <button
+                                            type="button"
+                                            onClick={resetAvailabilityForm}
+                                            className="rounded-xl bg-slate-100 px-4 py-3 font-bold text-slate-700 transition hover:bg-slate-200"
+                                        >
+                                            Cancelar edición
+                                        </button>
+                                    )}
+                                </div>
                             </form>
                         )}
 
@@ -826,16 +950,40 @@ export const InterviewSchedulingPage = () => {
                                                 onClick={() => handleReserveSlot(slot.id)}
                                             />
                                             {isAdmin && (
-                                                <button
-                                                    type="button"
-                                                    disabled={submitting}
-                                                    onClick={() =>
-                                                        handleCloseAvailability(slot.id)
-                                                    }
-                                                    className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-200 disabled:opacity-60"
-                                                >
-                                                    Cerrar
-                                                </button>
+                                                <div className="grid grid-cols-3 gap-2 md:w-[320px]">
+                                                    <button
+                                                        type="button"
+                                                        disabled={submitting}
+                                                        onClick={() =>
+                                                            handleStartEditAvailability(slot)
+                                                        }
+                                                        className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-brand-medium shadow-sm ring-1 ring-brand-medium/20 transition hover:bg-brand-medium/5 disabled:opacity-60"
+                                                    >
+                                                        <Pencil size={16} />
+                                                        Editar
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={submitting}
+                                                        onClick={() =>
+                                                            handleCloseAvailability(slot.id)
+                                                        }
+                                                        className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-200 disabled:opacity-60"
+                                                    >
+                                                        Cerrar
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={submitting}
+                                                        onClick={() =>
+                                                            handleDeleteAvailability(slot.id)
+                                                        }
+                                                        className="flex items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100 disabled:opacity-60"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                        Eliminar
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                     ))}

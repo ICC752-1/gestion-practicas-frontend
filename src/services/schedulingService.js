@@ -6,6 +6,11 @@ export const schedulingService = {
     return response.data;
   },
 
+  async updateAvailability(slotId, data) {
+    const response = await api.put(`/scheduling/availability/${slotId}`, data);
+    return response.data;
+  },
+
   async getAvailableSlots(params = {}) {
     const response = await api.get('/scheduling/slots', { params });
     return response.data;
@@ -44,5 +49,9 @@ export const schedulingService = {
       reason: reason || null,
     });
     return response.data;
+  },
+
+  async deleteAvailability(slotId) {
+    await api.delete(`/scheduling/availability/${slotId}`);
   },
 };
