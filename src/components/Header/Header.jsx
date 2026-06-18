@@ -11,33 +11,45 @@ export const Header = () => {
   ];
 
   return (
-    <header className="flex w-full items-center justify-between px-10 h-20 bg-white border-b-[3px] border-[#d22864] z-10 shadow-sm relative">
-      <div className="flex items-center gap-4">
-        <img
-          className="w-16 h-16 object-contain p-1.5 bg-[#d22864] rounded-xl shadow-sm"
-          alt="Logo personal para médico azul rojo"
-          src={universityLogo}
-        />
-        <div className="flex flex-col items-start gap-0.5">
-          <p className="font-bold text-[#d22864] text-xl tracking-[0] leading-[normal] whitespace-nowrap">
+    <header className="sticky top-0 z-50 flex w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm"
+      style={{ padding: '0.5rem clamp(0.5rem, 2vw, 2.5rem)', gap: 'clamp(0.5rem, 2vw, 1.5rem)' }}
+    >
+      {/* Logo + Título */}
+      <div className="flex items-center flex-shrink-0" style={{ gap: 'clamp(0.4rem, 1vw, 0.75rem)' }}>
+        <div className="bg-[#d22864] rounded-xl shadow-sm flex-shrink-0" style={{ padding: 'clamp(3px, 0.5vw, 6px)' }}>
+          <img
+            style={{ width: 'clamp(44px, 4vw, 56px)', height: 'clamp(44px, 4vw, 56px)' }}
+            className="object-contain"
+            alt="Universidad de La Frontera"
+            src={universityLogo}
+          />
+        </div>
+        <div className="flex flex-col items-start">
+          <p className="font-bold text-[#d22864] leading-tight whitespace-nowrap"
+            style={{ fontSize: 'clamp(0.64rem, 1.3vw, 1.25rem)' }}>
             Sistema de Gestión de Prácticas
           </p>
-          <p className="font-bold text-[#d22864] text-sm tracking-[0] leading-[normal]">
+          <p className="font-bold text-[#d22864] leading-tight"
+            style={{ fontSize: 'clamp(0.55rem, 0.9vw, 0.875rem)' }}>
             Facultad de Ingeniería y Ciencias
           </p>
         </div>
       </div>
-      
-      <nav aria-label="Principal" className="flex items-center gap-4">
+
+      {/* Nav siempre visible */}
+      <nav aria-label="Principal" className="flex items-center flex-shrink-0"
+        style={{ gap: 'clamp(0.25rem, 1vw, 2rem)' }}
+      >
         {navItems.map((item) =>
           item.active ? (
             <Link
               key={item.label}
               to={item.to}
               aria-current="page"
-              className="flex items-center justify-center px-4 py-1.5 bg-[#d22864] rounded-lg border-2 border-[#d22864] transition-opacity hover:opacity-90"
+              className="flex items-center justify-center bg-[#d22864] rounded-lg border-2 border-[#d22864] transition-opacity hover:opacity-90 whitespace-nowrap"
+              style={{ padding: 'clamp(2px, 0.4vw, 6px) clamp(6px, 1vw, 16px)', fontSize: 'clamp(0.6rem, 1vw, 1rem)' }}
             >
-              <span className="font-bold text-white text-base text-center whitespace-nowrap">
+              <span className="font-bold text-white text-center">
                 {item.label}
               </span>
             </Link>
@@ -45,9 +57,10 @@ export const Header = () => {
             <Link
               key={item.label}
               to={item.to}
-              className="flex items-center justify-center px-4 py-1.5 bg-transparent rounded-lg border-2 border-[#d22864] transition-colors hover:bg-[#d22864] group"
+              className="flex items-center justify-center rounded-lg border-2 border-[#d22864] transition-colors hover:bg-[#d22864] group whitespace-nowrap"
+              style={{ padding: 'clamp(2px, 0.4vw, 6px) clamp(6px, 1vw, 16px)', fontSize: 'clamp(0.6rem, 1vw, 1rem)' }}
             >
-              <span className="font-bold text-[#d22864] text-base text-center whitespace-nowrap transition-colors group-hover:text-white">
+              <span className="font-bold text-[#d22864] text-center transition-colors group-hover:text-white">
                 {item.label}
               </span>
             </Link>
