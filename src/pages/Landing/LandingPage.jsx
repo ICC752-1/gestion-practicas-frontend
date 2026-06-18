@@ -103,7 +103,7 @@ export const LandingPage = () => {
                 <ul className="space-y-6">
                   {["Inscribe tu práctica de forma rápida y sencilla", "Sube y gestiona todos tus documentos en un solo lugar", "Recibe notificaciones sobre el estado de tu práctica", "Accede a preguntas frecuentes y soporte"].map((item, idx) => (
                     <li key={idx} className="flex items-start gap-4">
-                      <div className="mt-1 bg-white rounded-full p-1 text-brand-medium shrink-0"><CheckCircle2 size={16} fill="currentColor" className="text-white" /></div>
+                      <div className="mt-1 bg-white rounded-full p-1 text-brand-medium shrink-0"><CheckCircle2 size={12} fill="currentColor" className="text-white" /></div>
                       <span className="text-lg opacity-90">{item}</span>
                     </li>
                   ))}
@@ -114,7 +114,7 @@ export const LandingPage = () => {
                 <ul className="space-y-6">
                   {["Gestiona todas las prácticas desde un panel centralizado", "Revisa y aprueba documentos de manera eficiente", "Completa evaluaciones directamente en la plataforma", "Genera reportes y estadísticas en tiempo real"].map((item, idx) => (
                     <li key={idx} className="flex items-start gap-4">
-                      <div className="mt-1 bg-white rounded-full p-1 text-brand-medium shrink-0"><CheckCircle2 size={16} fill="currentColor" className="text-white" /></div>
+                      <div className="mt-1 bg-white rounded-full p-1 text-brand-medium shrink-0"><CheckCircle2 size={12} fill="currentColor" className="text-white" /></div>
                       <span className="text-lg opacity-90">{item}</span>
                     </li>
                   ))}
