@@ -11,26 +11,26 @@ export const Header = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-50 flex w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm"
+    <header className="sticky top-0 z-50 flex min-h-[72px] w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm"
       style={{ padding: '0.5rem clamp(0.5rem, 2vw, 2.5rem)', gap: 'clamp(0.5rem, 2vw, 1.5rem)' }}
     >
       {/* Logo + Título */}
-      <div className="flex items-center flex-shrink-0" style={{ gap: 'clamp(0.4rem, 1vw, 0.75rem)' }}>
-        <div className="bg-[#d22864] rounded-xl shadow-sm flex-shrink-0" style={{ padding: 'clamp(3px, 0.5vw, 6px)' }}>
+      <div className="flex items-center gap-[clamp(0.5rem,1.5vw,1rem)] flex-shrink-0 min-w-0">
+        <div className="bg-[#d22864] rounded-xl shadow-sm flex-shrink-0" style={{ padding: 'clamp(4px, 0.8vw, 8px)' }}>
           <img
-            style={{ width: 'clamp(44px, 4vw, 56px)', height: 'clamp(44px, 4vw, 56px)' }}
+            style={{ width: 'clamp(48px, 5vw, 64px)', height: 'clamp(48px, 5vw, 64px)' }}
             className="object-contain"
             alt="Universidad de La Frontera"
             src={universityLogo}
           />
         </div>
-        <div className="flex flex-col items-start">
-          <p className="font-bold text-[#d22864] leading-tight whitespace-nowrap"
-            style={{ fontSize: 'clamp(0.64rem, 1.3vw, 1.25rem)' }}>
+        <div className="flex flex-col leading-tight min-w-0">
+          <h1 className="font-bold tracking-tight text-[#d22864] truncate"
+            style={{ fontSize: 'clamp(0.65rem, 2.0vw, 1.25rem)' }}>
             Sistema de Gestión de Prácticas
-          </p>
-          <p className="font-bold text-[#d22864] leading-tight"
-            style={{ fontSize: 'clamp(0.55rem, 0.9vw, 0.875rem)' }}>
+          </h1>
+          <p className="font-semibold text-[#d22864] truncate"
+            style={{ fontSize: 'clamp(0.6rem, 1vw, 0.75rem)' }}>
             Facultad de Ingeniería y Ciencias
           </p>
         </div>

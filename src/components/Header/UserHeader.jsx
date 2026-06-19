@@ -49,7 +49,7 @@ export const UserHeader = () => {
   return (
 
     <header
-      className="sticky top-0 z-50 flex min-h-16 w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm overflow-hidden"
+      className="sticky top-0 z-50 flex min-h-[72px] w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm overflow-hidden"
       style={{ padding: '0.5rem clamp(0.5rem, 2vw, 2.5rem)', gap: 'clamp(0.25rem, 1vw, 1rem)'  }}
     >
       {/* Left: Logo + Title */}
