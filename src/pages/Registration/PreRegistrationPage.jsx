@@ -350,6 +350,14 @@ export const PreRegistrationPage = () => {
                     <p className="mt-2 text-sm leading-relaxed text-gray-600">
                       La carta de presentación es un antecedente opcional en esta etapa y no bloquea el avance al formulario.
                     </p>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/cartas-presentacion')}
+                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white transition hover:bg-[#b01e52]"
+                    >
+                      Gestionar carta
+                      <ExternalLink size={16} />
+                    </button>
                   </div>
                 </div>
               </div>
