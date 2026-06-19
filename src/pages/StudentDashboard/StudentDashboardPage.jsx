@@ -6,7 +6,6 @@ import {
   Upload,
   CheckCircle2,
   Clock,
-  ArrowRight,
   ClipboardCheck,
   Calendar,
   Building2,
@@ -18,6 +17,7 @@ import {
   Briefcase,
   Shield,
   ChevronRight,
+  Download,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { UserHeader } from "../../components/Header/UserHeader";
@@ -26,7 +26,9 @@ import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
 import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
 import { canUploadDocuments } from "../../services/documentService";
+import { dataPortabilityService } from "../../services/dataPortabilityService";
 import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
+import { useToast } from "../../context/useToast";
 
 // --- Constants ---
 const STATUS_LABELS = {
@@ -82,6 +84,52 @@ const formatDate = (dateStr) => {
 };
 
 const PRE_REGISTRATION_PATH = '/practicas/nueva/preinscripcion';
+const SELF_EVALUATION_ENABLED_STATUSES = new Set([
+  'pending_evaluations',
+  'pending_presentation',
+  'finalized',
+]);
+const SELF_EVALUATION_BUSINESS_DAYS_BEFORE_END = 5;
+
+const parseLocalDate = (dateStr) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const businessWindowStart = (endDateStr, businessDays) => {
+  const cursor = parseLocalDate(endDateStr);
+  if (!cursor) return null;
+
+  let remaining = businessDays;
+  while (remaining > 0) {
+    const day = cursor.getDay();
+    if (day !== 0 && day !== 6) {
+      remaining -= 1;
+      if (remaining === 0) {
+        return cursor;
+      }
+    }
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return cursor;
+};
+
+const isSelfEvaluationAvailable = (internship) => {
+  if (!internship || internship.is_cancelled) return false;
+  if (SELF_EVALUATION_ENABLED_STATUSES.has(internship.completion_status)) return true;
+  if (internship.status_id !== 4) return false;
+
+  const start = businessWindowStart(
+    internship.end_date,
+    SELF_EVALUATION_BUSINESS_DAYS_BEFORE_END,
+  );
+  if (!start) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today >= start;
+};
 
 // --- Sub-components ---
 
@@ -110,6 +158,7 @@ const DetailChip = ({ icon: Icon, label, value }) => (
 const PracticeCard = ({ internship }) => {
   const navigate = useNavigate();
   const progress = getInternshipAdministrativeProgress(internship);
+  const canSelfEvaluate = isSelfEvaluationAvailable(internship);
 
   return (
     <motion.div
@@ -182,13 +231,26 @@ const PracticeCard = ({ internship }) => {
 
       {/* Footer */}
       <div className="px-6 pb-6 pt-2">
-        <button
-          onClick={() => navigate(`/seguimiento/${internship.id}`)}
-          className="w-full bg-[#d22864] text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#d22864]/20 hover:bg-[#b01e52] transition-all group"
-        >
-          Ver Seguimiento
-          <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-        </button>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <button
+            onClick={() => navigate(`/seguimiento/${internship.id}`)}
+            className="w-full bg-[#d22864] text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#d22864]/20 hover:bg-[#b01e52] transition-all group"
+          >
+            Ver Seguimiento
+            <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+          </button>
+          <button
+            onClick={() => navigate(`/autoevaluacion/${internship.id}`)}
+            className={`w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border transition-all ${
+              canSelfEvaluate
+                ? 'border-[#d22864]/20 bg-[#fff0f6] text-[#d22864] hover:bg-[#ffe3ee]'
+                : 'border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100'
+            }`}
+          >
+            Autoevaluación
+            <ClipboardCheck size={18} />
+          </button>
+        </div>
       </div>
     </motion.div>
   );
@@ -220,6 +282,7 @@ const QuickAction = ({ icon: Icon, title, desc, onClick, primary, disabled }) =>
 export const StudentDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -242,6 +305,34 @@ export const StudentDashboardPage = () => {
     // Podríamos recargar si mostramos lista de documentos en esta vista,
     // por ahora solo refrescamos la data general
     fetchInternships();
+  };
+
+  const handleDataPortabilityDownload = async () => {
+    try {
+      const { blob, filename } = await dataPortabilityService.downloadMyData({
+        format: 'zip',
+        includeDocuments: true,
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast({
+        type: 'success',
+        title: 'Descarga iniciada',
+        message: 'Se generó tu copia estructurada de datos y documentos.',
+      });
+    } catch (err) {
+      showToast({
+        type: 'error',
+        title: 'No se pudo generar la portabilidad',
+        message: err?.response?.data?.detail || 'Intenta nuevamente.',
+      });
+    }
   };
 
   useEffect(() => {
@@ -395,6 +486,20 @@ export const StudentDashboardPage = () => {
                   desc="Informes, certificados y evaluaciones"
                   onClick={() => setIsUploadModalOpen(true)}
                   disabled={!canUpload || internships.length === 0}
+                />
+                <QuickAction
+                  icon={ClipboardCheck}
+                  title="Autoevaluación"
+                  desc="Completa o revisa tu evaluación final"
+                  onClick={() => navigate('/autoevaluacion')}
+                  disabled={internships.length === 0}
+                />
+                <QuickAction
+                  icon={Download}
+                  title="Portabilidad"
+                  desc="Descarga tus datos y documentos"
+                  onClick={handleDataPortabilityDownload}
+                  disabled={internships.length === 0}
                 />
               </div>
 
