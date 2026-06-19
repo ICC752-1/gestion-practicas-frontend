@@ -2,7 +2,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { Footer } from '../../components/Footer/Footer';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { useAuth } from '../../context/useAuth';
-import { getDisplayRoleForRoles } from '../../services/roleRouting';
+import {
+  CAREER_DIRECTOR_ROLE,
+  FICA_ROLE,
+  PRACTICE_MANAGER_ROLE,
+  SECRETARY_ROLE,
+  STUDENT_ROLE,
+  SUPERADMIN_ROLE,
+  SUPERVISOR_ROLE,
+  getDisplayRoleForRoles,
+} from '../../services/roleRouting';
 import { inductionAdminService } from '../../services/inductionAdminService';
 
 const emptyVideo = { title: '', video_url: '', order: 1 };
@@ -35,6 +44,20 @@ const normalizeDetailToForm = (version) => ({
 
 const getErrorMessage = (error) => error?.response?.data?.detail || 'No se pudo completar la acción.';
 
+const roleEvidence = [
+  { role: PRACTICE_MANAGER_ROLE, access: 'permitido', note: 'Crea, edita y publica versiones.' },
+  { role: CAREER_DIRECTOR_ROLE, access: 'permitido', note: 'Crea, edita y publica versiones.' },
+  { role: SECRETARY_ROLE, access: 'bloqueado', note: 'No administra inducción.' },
+  { role: STUDENT_ROLE, access: 'bloqueado', note: 'Solo rinde inducción publicada.' },
+  { role: SUPERVISOR_ROLE, access: 'bloqueado', note: 'No opera este módulo.' },
+  { role: FICA_ROLE, access: 'bloqueado', note: 'Sin contrato de administración.' },
+  { role: SUPERADMIN_ROLE, access: 'bloqueado', note: 'Gestión de usuarios, no inducción.' },
+];
+
+const countByStatus = (versions, status) => (
+  versions.filter((version) => version.status === status).length
+);
+
 export const InductionAdminPage = () => {
   const { user } = useAuth();
   const userName = user ? `${user.first_name} ${user.last_name}` : 'Administrador';
@@ -49,6 +72,9 @@ export const InductionAdminPage = () => {
 
   const selectedVersion = versions.find((version) => version.id === selectedVersionId);
   const isEditingDraft = selectedVersion?.status === 'draft';
+  const activeVersion = versions.find((version) => version.is_active);
+  const draftCount = countByStatus(versions, 'draft');
+  const publishedCount = countByStatus(versions, 'published');
 
   const loadVersions = useCallback(async () => {
     setLoading(true);
@@ -195,6 +221,51 @@ export const InductionAdminPage = () => {
           <p className="mt-3 max-w-3xl text-gray-600">
             Crea borradores, valida preguntas y publica una única versión activa para nuevos intentos.
           </p>
+          <div className="mt-6 grid gap-3 md:grid-cols-4">
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Acceso actual</p>
+              <p className="mt-2 text-sm font-black text-gray-900">{userRole}</p>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Borradores</p>
+              <p className="mt-2 text-2xl font-black text-gray-900">{draftCount}</p>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Publicadas</p>
+              <p className="mt-2 text-2xl font-black text-gray-900">{publishedCount}</p>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Repetición activa</p>
+              <p className="mt-2 text-sm font-black text-gray-900">
+                {activeVersion?.requires_retake ? 'Sí, estudiantes deben repetir' : 'No exigida'}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Evidencia de acceso</p>
+              <h2 className="mt-1 text-xl font-black text-gray-900">Roles autorizados para administrar inducción</h2>
+            </div>
+            <p className="text-sm font-semibold text-gray-500">
+              La ruta frontend permite solo Encargado y Director; backend mantiene el 403 para el resto.
+            </p>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {roleEvidence.map((item) => (
+              <div key={item.role} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-black text-gray-900">{item.role}</p>
+                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${item.access === 'permitido' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                    {item.access}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs font-semibold text-gray-500">{item.note}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         {error && <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
@@ -221,6 +292,11 @@ export const InductionAdminPage = () => {
                   <p className="font-black text-gray-900">{version.title}</p>
                   <p className="mt-1 text-xs font-bold uppercase text-gray-400">{version.status}{version.is_active ? ' · activa' : ''}</p>
                   <p className="mt-2 text-xs text-gray-500">Puntaje mínimo: {version.min_score}</p>
+                  {version.requires_retake && (
+                    <p className="mt-2 rounded-full bg-[#fff0f6] px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#d22864]">
+                      requires_retake=true
+                    </p>
+                  )}
                 </button>
               ))}
             </div>
@@ -231,6 +307,21 @@ export const InductionAdminPage = () => {
               <div>
                 <h2 className="text-xl font-black text-gray-900">{isEditingDraft ? 'Editar borrador' : selectedVersion ? 'Vista publicada' : 'Nuevo borrador'}</h2>
                 {selectedVersion && selectedVersion.status !== 'draft' && <p className="mt-1 text-sm text-gray-500">Las versiones publicadas no se editan. Crea un nuevo borrador para cambios.</p>}
+                {selectedVersion && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="rounded-full bg-gray-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-gray-600">
+                      {selectedVersion.status}
+                    </span>
+                    {selectedVersion.is_active && (
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
+                        versión activa
+                      </span>
+                    )}
+                    <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${form.requires_retake ? 'bg-[#fff0f6] text-[#d22864]' : 'bg-gray-100 text-gray-500'}`}>
+                      requires_retake={String(form.requires_retake)}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 {isEditingDraft && <button type="button" onClick={handlePublish} disabled={saving} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Publicar</button>}
