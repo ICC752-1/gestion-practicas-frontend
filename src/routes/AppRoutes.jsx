@@ -13,6 +13,7 @@ import { SeguimientoListPage } from '../pages/Seguimiento/SeguimientoListPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
+import { PresentationLettersPage } from '../pages/PresentationLetters/PresentationLettersPage'
 import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
 
 const STUDENT_ROLES = ['Estudiante']
@@ -131,6 +132,15 @@ export const AppRoutes = () => {
               element={
                   <PrivateRoute allowedRoles={[...STUDENT_ROLES, ...ADMIN_ROLES]}>
                       <InterviewSchedulingPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/cartas-presentacion"
+              element={
+                  <PrivateRoute allowedRoles={[...STUDENT_ROLES, ...ADMIN_ROLES]}>
+                      <PresentationLettersPage />
                   </PrivateRoute>
               }
           />
