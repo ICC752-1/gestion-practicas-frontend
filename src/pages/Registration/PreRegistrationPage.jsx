@@ -74,7 +74,14 @@ const getEmbedUrl = (videoUrl) => {
 const normalizeOptions = (options) => {
   if (Array.isArray(options)) {
     return options.map((option, index) => ({
-      key: String(index),
+      key: String(option || index),
+      label: String(option),
+    }));
+  }
+
+  if (Array.isArray(options?.choices)) {
+    return options.choices.map((option, index) => ({
+      key: String(option || index),
       label: String(option),
     }));
   }
@@ -228,9 +235,16 @@ export const PreRegistrationPage = () => {
   };
 
   const handleContinue = async () => {
+    if (eligibility?.has_induction !== true || eligibility?.can_create_request === false) {
+      return;
+    }
+
     setContinuing(true);
     navigate(FORM_PATH);
   };
+
+  const canContinue = eligibility?.has_induction === true
+    && eligibility?.can_create_request !== false;
 
   const insuranceStatus = eligibility?.has_school_insurance
     ? {
@@ -257,13 +271,20 @@ export const PreRegistrationPage = () => {
     ? {
       icon: CheckCircle2,
       title: 'Inducción aprobada',
-      description: 'Este prerrequisito está cumplido para la futura aprobación de la práctica.',
+      description: 'Este prerrequisito está cumplido y puedes continuar al formulario.',
       tone: 'green',
     }
+    : eligibility?.requires_retake
+      ? {
+        icon: ClipboardList,
+        title: 'Inducción por repetir',
+        description: 'La versión activa exige aprobar nuevamente el cuestionario antes de continuar.',
+        tone: 'amber',
+      }
     : {
       icon: ClipboardList,
       title: 'Inducción pendiente',
-      description: 'Puedes registrar la solicitud, pero debe aprobarse antes de formalizar la práctica.',
+      description: 'Debes aprobar el cuestionario antes de acceder al formulario de solicitud.',
       tone: 'amber',
     };
 
@@ -280,8 +301,8 @@ export const PreRegistrationPage = () => {
             Preinscripción de práctica
           </h1>
           <p className="mt-3 max-w-3xl text-base leading-relaxed text-gray-600">
-            Revisa los prerrequisitos institucionales y completa la inducción. Los requisitos
-            pendientes no impiden crear una solicitud, pero sí pueden bloquear su aprobación.
+            Revisa los prerrequisitos institucionales y completa la inducción. La inducción
+            aprobada habilita el acceso al formulario de solicitud.
           </p>
         </div>
 
@@ -290,8 +311,8 @@ export const PreRegistrationPage = () => {
             <div className="flex items-start gap-3">
               <AlertCircle className="mt-0.5 flex-shrink-0" size={22} />
               <p className="text-sm font-semibold">
-                Existen prerrequisitos pendientes. Puedes registrar la solicitud, pero deberán
-                resolverse antes de su aprobación administrativa.
+                Existen prerrequisitos pendientes. Completa la inducción antes de continuar
+                al formulario.
               </p>
             </div>
           </div>
@@ -439,7 +460,7 @@ export const PreRegistrationPage = () => {
                       <AlertCircle className="mt-0.5 flex-shrink-0" size={24} />
                       <div>
                         <p className="font-black">No hay inducción publicada</p>
-                        <p className="mt-1 text-sm">Puedes continuar al formulario mientras la institución publica el contenido.</p>
+                        <p className="mt-1 text-sm">No es posible continuar al formulario hasta que exista contenido publicado y aprobado.</p>
                       </div>
                     </div>
                   </div>
@@ -469,14 +490,20 @@ export const PreRegistrationPage = () => {
                 <button
                   type="button"
                   onClick={handleContinue}
-                  disabled={continuing}
+                  disabled={continuing || !canContinue}
                   className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-4 font-black text-white shadow-lg shadow-[#d22864]/20 hover:bg-[#b01e52] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
                 >
                   {continuing ? <Loader2 className="animate-spin" size={20} /> : <ArrowRight size={20} />}
                   Continuar al formulario
                 </button>
 
-                {eligibility?.blocked && (
+                {!canContinue && (
+                  <p className="mt-3 text-center text-xs font-semibold text-amber-700">
+                    Aprueba la inducción para habilitar este paso.
+                  </p>
+                )}
+
+                {eligibility?.blocked && canContinue && (
                   <p className="mt-3 text-center text-xs font-semibold text-gray-500">
                     Los bloqueos informados se aplicarán al aprobar o formalizar la práctica.
                   </p>
