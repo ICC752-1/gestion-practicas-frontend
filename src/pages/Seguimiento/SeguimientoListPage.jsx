@@ -31,11 +31,37 @@ const STATUS_LABELS = {
 
 const STATUS_STYLES = {
   cancelled: { color: 'bg-gray-500', text: 'text-gray-600', icon: <AlertCircle size={16} /> },
+  final_passed: { color: 'bg-green-600', text: 'text-green-700', icon: <CheckCircle2 size={16} /> },
+  final_failed: { color: 'bg-red-600', text: 'text-red-700', icon: <AlertCircle size={16} /> },
+  in_progress: { color: 'bg-blue-500', text: 'text-blue-600', icon: <Clock size={16} /> },
   1: { color: 'bg-amber-500', text: 'text-amber-600', icon: <Clock size={16} /> },
   2: { color: 'bg-purple-500', text: 'text-purple-600', icon: <AlertCircle size={16} /> },
   3: { color: 'bg-blue-500', text: 'text-blue-600', icon: <Clock size={16} /> },
   4: { color: 'bg-green-500', text: 'text-green-600', icon: <CheckCircle2 size={16} /> },
   5: { color: 'bg-red-500', text: 'text-red-600', icon: <AlertCircle size={16} /> },
+};
+
+const getStatusDisplay = (internship) => {
+  if (internship?.is_cancelled) {
+    return { key: 'cancelled', label: 'Anulada' };
+  }
+
+  if (internship?.completion_status === 'finalized') {
+    if (internship?.final_result === 'failed') {
+      return { key: 'final_failed', label: 'Finalizada reprobada' };
+    }
+
+    if (internship?.final_result === 'passed') {
+      return { key: 'final_passed', label: 'Finalizada aprobada' };
+    }
+  }
+
+  if (internship?.completion_status && internship.completion_status !== 'not_started') {
+    return { key: 'in_progress', label: 'En ejecución' };
+  }
+
+  const key = internship?.status_id;
+  return { key, label: STATUS_LABELS[key] || 'Desconocido' };
 };
 
 const formatDate = (dateStr) => {
@@ -48,10 +74,7 @@ const formatDate = (dateStr) => {
 // --- Practice Card ---
 const PracticeSummaryCard = ({ internship, index }) => {
   const navigate = useNavigate();
-  const statusKey = internship.is_cancelled ? 'cancelled' : internship.status_id;
-  const statusLabel = internship.is_cancelled
-    ? 'Anulada'
-    : STATUS_LABELS[statusKey] || 'Desconocido';
+  const { key: statusKey, label: statusLabel } = getStatusDisplay(internship);
   const statusStyle = STATUS_STYLES[statusKey] || STATUS_STYLES[1];
   const progress = getInternshipAdministrativeProgress(internship);
 
