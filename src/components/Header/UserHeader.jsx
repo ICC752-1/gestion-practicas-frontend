@@ -3,7 +3,10 @@ import universityLogo from "../../assets/university_logo.webp";
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from "../../context/useAuth";
 import { NotificationBell } from "../Notifications/NotificationBell";
-import { getRedirectPathForRoles } from "../../services/roleRouting";
+import {
+  getRedirectPathForRoles,
+  normalizeRoleNames,
+} from "../../services/roleRouting";
 
 export const UserHeader = () => {
     const { user, logout } = useAuth();
@@ -13,8 +16,9 @@ export const UserHeader = () => {
         ? `${user.first_name} ${user.last_name}`
         : "Usuario";
 
-    const userRole = user?.roles?.[0] || "";
-    const dashboardPath = getRedirectPathForRoles(user?.roles);
+    const roleNames = normalizeRoleNames(user?.roles);
+    const userRole = roleNames[0] || "";
+    const dashboardPath = getRedirectPathForRoles(roleNames);
 
     const navItems = [
       {

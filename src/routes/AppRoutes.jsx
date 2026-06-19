@@ -129,7 +129,7 @@ export const AppRoutes = () => {
           <Route
               path="/entrevistas"
               element={
-                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
+                  <PrivateRoute allowedRoles={[...STUDENT_ROLES, ...ADMIN_ROLES]}>
                       <InterviewSchedulingPage />
                   </PrivateRoute>
               }

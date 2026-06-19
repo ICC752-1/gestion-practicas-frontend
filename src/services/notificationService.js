@@ -5,7 +5,15 @@ export const notificationService = {
     const response = await api.get('/notifications', {
       params: { limit, offset },
     });
-    return response.data;
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+
+    if (Array.isArray(response.data?.items)) {
+      return response.data.items;
+    }
+
+    return [];
   },
 
   async getNotificationById(id) {
