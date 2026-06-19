@@ -115,7 +115,7 @@ export const UserHeader = () => {
 
         {/* Nombre - oculto en pantallas pequeñas */}
         <div className="hidden md:flex flex-col items-end leading-none min-w-0"
-          style={{ maxWidth: 'clamp(100px, 14vw, 220px)' }}
+          style={{ maxWidth: 'clamp(100px, 20vw, 320px)' }}
         >
           <span
             className="font-bold text-[#d22864] truncate w-full text-right block"
