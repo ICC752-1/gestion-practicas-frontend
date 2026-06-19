@@ -127,6 +127,15 @@ export const AppRoutes = () => {
           />
 
           <Route
+              path="/autoevaluacion/:internshipId"
+              element={
+                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
+                      <SelfEvaluationPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
               path="/entrevistas"
               element={
                   <PrivateRoute allowedRoles={[...STUDENT_ROLES, ...ADMIN_ROLES]}>
