@@ -33,6 +33,11 @@ export const UserHeader = () => {
         active: location.pathname === "/faq",
       },
       {
+        label: "Carta de Presentación",
+        to: "/cartas-presentacion",
+        active: location.pathname === "/cartas-presentacion",
+      },
+      {
         label: "Requisitos",
         to: "#",
         active: false,
