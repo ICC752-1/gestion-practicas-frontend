@@ -6,16 +6,29 @@ const coordinatorRoles = [
     "Secretaria de Carrera",
 ];
 
+export const normalizeRoleNames = (roles = []) =>
+    roles
+        .map((role) => {
+            if (typeof role === "string") {
+                return role;
+            }
+
+            return role?.role?.name || role?.name || null;
+        })
+        .filter(Boolean);
+
 export const getRedirectPathForRoles = (roles = []) => {
-    if (roles.includes("Estudiante")) {
+    const roleNames = normalizeRoleNames(roles);
+
+    if (roleNames.includes("Estudiante")) {
         return "/dashboard";
     }
 
-    if (coordinatorRoles.some((role) => roles.includes(role))) {
+    if (coordinatorRoles.some((role) => roleNames.includes(role))) {
         return "/coordinador";
     }
 
-    if (roles.includes("Supervisor de practica")) {
+    if (roleNames.includes("Supervisor de practica")) {
         return "/supervisor";
     }
 

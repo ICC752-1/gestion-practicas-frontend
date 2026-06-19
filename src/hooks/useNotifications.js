@@ -23,7 +23,7 @@ export const useNotifications = (limit = 10, enabled = true) => {
     try {
       setLoading(true);
       const data = await notificationService.getMyNotifications(limit);
-      setNotifications(data);
+      setNotifications(Array.isArray(data) ? data : []);
       setError(null);
     } catch (err) {
       if (err.response?.status === 401) {
@@ -74,14 +74,16 @@ export const useNotifications = (limit = 10, enabled = true) => {
 
   // Marca como vistas las notificaciones actuales (al abrir el panel)
   const markAsSeen = useCallback(() => {
-    const latestId = notifications.reduce((max, n) => Math.max(max, n.id), 0);
+    const latestId = (Array.isArray(notifications) ? notifications : [])
+      .reduce((max, n) => Math.max(max, n.id), 0);
     if (latestId > lastSeenId) {
       localStorage.setItem(LAST_SEEN_KEY, String(latestId));
       setLastSeenId(latestId);
     }
   }, [notifications, lastSeenId]);
 
-  const unseenCount = notifications.filter((n) => n.id > lastSeenId).length;
+  const unseenCount = (Array.isArray(notifications) ? notifications : [])
+    .filter((n) => n.id > lastSeenId).length;
 
   return {
     notifications,

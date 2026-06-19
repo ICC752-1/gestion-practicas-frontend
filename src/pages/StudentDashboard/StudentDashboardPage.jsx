@@ -383,6 +383,13 @@ export const StudentDashboardPage = () => {
                   // disabled={internships.length === 0} // Deshabilitado para agilizar
                 />
                 <QuickAction
+                  icon={Calendar}
+                  title="Agendar Entrevista"
+                  desc="Reserva o reprograma horarios disponibles"
+                  onClick={() => navigate('/entrevistas')}
+                  disabled={internships.length === 0}
+                />
+                <QuickAction
                   icon={Upload}
                   title="Subir Documentos"
                   desc="Informes, certificados y evaluaciones"
