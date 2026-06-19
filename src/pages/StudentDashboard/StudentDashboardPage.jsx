@@ -98,7 +98,7 @@ const StatusBadge = ({ internship }) => {
 };
 
 const DetailChip = ({ icon: Icon, label, value }) => (
-  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
+  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 flex-1 min-w-0">
     <Icon size={14} className="text-[#d22864] flex-shrink-0" />
     <div className="min-w-0">
       <p className="text-[9px] uppercase tracking-wider font-bold text-gray-400 leading-none">{label}</p>
@@ -158,7 +158,7 @@ const PracticeCard = ({ internship }) => {
         </div>
 
         {/* Chips row */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2">
           <DetailChip icon={Briefcase} label="Modalidad" value={internship.modality} />
           <DetailChip icon={Shield} label="Período" value={internship.internship_period} />
           <DetailChip icon={Clock} label="Horario" value={internship.schedule} />
