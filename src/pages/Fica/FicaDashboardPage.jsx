@@ -256,7 +256,7 @@ export const FicaDashboardPage = () => {
                     <tr>
                       <th className="py-3">Organización</th>
                       <th className="py-3">Prácticas</th>
-                      <th className="py-3">Aprobadas</th>
+                      <th className="py-3">Solicitudes aprobadas</th>
                       <th className="py-3">Rechazadas</th>
                       <th className="py-3">Canceladas</th>
                     </tr>

@@ -23,8 +23,8 @@ export const StudentTable = ({ students = [] }) => {
     const statusLabel = status?.title || status || '';
     const statusStr = String(statusLabel).toLowerCase();
     if (statusStr.includes('revisi') || status === 'in_review') return { label: 'En Revisión', color: 'bg-blue-500', value: 'En Revisión' };
-    if (statusStr.includes('aprob') || status === 'approved') return { label: 'Aprobado', color: 'bg-emerald-500', value: 'Aprobado' };
-    if (statusStr.includes('rechaz') || status === 'rejected') return { label: 'Rechazado', color: 'bg-red-500', value: 'Rechazado' };
+    if (statusStr.includes('aprob') || status === 'approved') return { label: 'Aprobada', color: 'bg-emerald-500', value: 'Aprobada' };
+    if (statusStr.includes('rechaz') || status === 'rejected') return { label: 'Rechazada', color: 'bg-red-500', value: 'Rechazada' };
     if (!status || statusStr === 'pendiente' || status === 'submitted' || status === 'submited') return { label: 'Pendiente', color: 'bg-amber-500', value: 'Pendiente' };
     return { label: statusLabel || 'Pendiente', color: 'bg-gray-500', value: statusLabel || 'Pendiente' };
   };
@@ -85,7 +85,7 @@ export const StudentTable = ({ students = [] }) => {
           <Inbox className="w-10 h-10 text-gray-300" />
         </div>
         <div>
-          <h3 className="text-xl font-bold text-gray-800">No hay prácticas registradas aún</h3>
+          <h3 className="text-xl font-bold text-gray-800">No hay solicitudes registradas aún</h3>
           <p className="text-gray-500 max-w-xs mx-auto">Cuando los estudiantes envíen sus solicitudes de práctica, aparecerán en esta lista.</p>
         </div>
       </div>
@@ -96,7 +96,7 @@ export const StudentTable = ({ students = [] }) => {
     <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
       <div className="flex flex-col space-y-4 mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
-          <h2 className="text-2xl font-bold text-gray-800">Lista de Estudiantes</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Solicitudes de práctica</h2>
           <div className="relative w-full md:w-96">
             <input
               type="text"
@@ -121,7 +121,7 @@ export const StudentTable = ({ students = [] }) => {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-ufro-primary focus:border-ufro-primary block p-2.5"
           >
-            <option value="">Todos los Estados</option>
+            <option value="">Todos los estados de solicitud</option>
             {uniqueStatuses.map(status => (
               <option key={status} value={status}>{status}</option>
             ))}
@@ -167,7 +167,7 @@ export const StudentTable = ({ students = [] }) => {
               <th className="pb-4 text-left font-bold text-gray-800">Estudiante</th>
               <th className="pb-4 text-left font-bold text-gray-800">Carrera</th>
               <th className="pb-4 text-left font-bold text-gray-800">Empresa</th>
-              <th className="pb-4 text-center font-bold text-gray-800">Estado</th>
+              <th className="pb-4 text-center font-bold text-gray-800">Estado de solicitud</th>
               <th className="pb-4 text-right font-bold text-gray-800">Acciones</th>
             </tr>
           </thead>
@@ -218,7 +218,7 @@ export const StudentTable = ({ students = [] }) => {
             ) : (
               <tr>
                 <td colSpan="5" className="py-8 text-center text-gray-500">
-                  No se encontraron estudiantes que coincidan con los filtros.
+                  No se encontraron solicitudes que coincidan con los filtros.
                 </td>
               </tr>
             )}

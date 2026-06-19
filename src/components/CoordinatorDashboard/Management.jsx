@@ -4,16 +4,16 @@ const STATUS_FILTERS = [
   { value: '', label: 'Todas' },
   { value: 'submitted', label: 'Pendientes' },
   { value: 'in_review', label: 'En revisión' },
-  { value: 'approved', label: 'Aprobadas' },
-  { value: 'rejected', label: 'Rechazadas' },
+  { value: 'approved', label: 'Solicitudes aprobadas' },
+  { value: 'rejected', label: 'Solicitudes rechazadas' },
 ];
 
 const Management = ({ students, statusFilter, onStatusFilterChange }) => {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] border border-gray-100/50">
       <div className="flex flex-col gap-4 mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Gestión de Prácticas</h2>
-        <div className="flex flex-wrap gap-2" aria-label="Filtrar prácticas por estado">
+        <h2 className="text-xl font-bold text-gray-800">Gestión de solicitudes de práctica</h2>
+        <div className="flex flex-wrap gap-2" aria-label="Filtrar solicitudes por estado administrativo">
           {STATUS_FILTERS.map((filter) => (
             <button
               key={filter.value || 'all'}

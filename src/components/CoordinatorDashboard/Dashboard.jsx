@@ -29,25 +29,25 @@ const Dashboard = ({
     <div className="p-6 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-          label="Total" 
+          label="Solicitudes totales" 
           value={stats.total} 
           Icon={Users} 
           variant="default"
         />
         <StatCard 
-          label="Pendientes" 
+          label="Solicitudes pendientes" 
           value={stats.pending} 
           Icon={Clock} 
           variant="alert"
         />
         <StatCard 
-          label="En Revisión" 
+          label="Solicitudes en revisión" 
           value={stats.inReview} 
           Icon={AlertCircle} 
           variant="progress"
         />
         <StatCard 
-          label="Aprobadas" 
+          label="Solicitudes aprobadas" 
           value={stats.approved} 
           Icon={CheckCircle} 
           variant="success"
@@ -64,8 +64,8 @@ const Dashboard = ({
             <FileText className="w-7 h-7 text-[#B5305F] group-hover:text-white transition-colors" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-800">Gestión de Prácticas</h3>
-            <p className="text-sm text-gray-400">Administra las solicitudes y estados</p>
+            <h3 className="text-lg font-bold text-gray-800">Gestión de solicitudes de práctica</h3>
+            <p className="text-sm text-gray-400">Administra solicitudes y sus estados administrativos</p>
           </div>
         </motion.button>
 
