@@ -48,6 +48,51 @@ export const documentService = {
   },
 
   /**
+   * Obtiene el paquete documental DIRAE de una práctica.
+   * GET /internships/{internship_id}/documents/package
+   */
+  async getDocumentPackage(internshipId) {
+    const response = await api.get(`/internships/${internshipId}/documents/package`);
+    return response.data;
+  },
+
+  /**
+   * Exporta paquetes documentales DIRAE en CSV.
+   * GET /dirae/document-packages/export
+   */
+  async exportDiraeDocumentPackages(internshipIds = []) {
+    const query = new URLSearchParams();
+    internshipIds.forEach((internshipId) => {
+      query.append('internship_ids', internshipId);
+    });
+
+    const path = query.toString()
+      ? `/dirae/document-packages/export?${query.toString()}`
+      : '/dirae/document-packages/export';
+    try {
+      const response = await api.get(path, { responseType: 'blob' });
+      const disposition = response.headers['content-disposition'] || '';
+      const filenameMatch = disposition.match(/filename="?([^";]+)"?/i);
+
+      return {
+        blob: response.data,
+        filename: filenameMatch?.[1] || 'dirae_document_packages.csv',
+      };
+    } catch (error) {
+      if (error.response?.data instanceof Blob) {
+        const text = await error.response.data.text();
+        try {
+          error.response.data = JSON.parse(text);
+        } catch {
+          error.response.data = { detail: text };
+        }
+      }
+
+      throw error;
+    }
+  },
+
+  /**
    * Descarga un documento específico.
    * GET /documents/{document_id}/download
    */
