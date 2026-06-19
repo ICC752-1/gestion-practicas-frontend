@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   Calendar,
   Building2,
+  FileText,
   User,
   AlertCircle,
   Loader2,
@@ -479,6 +480,12 @@ export const StudentDashboardPage = () => {
                   desc="Reserva o reprograma horarios disponibles"
                   onClick={() => navigate('/entrevistas')}
                   disabled={internships.length === 0}
+                />
+                <QuickAction
+                  icon={FileText}
+                  title="Carta de Presentación"
+                  desc="Genera o descarga tu carta opcional"
+                  onClick={() => navigate('/cartas-presentacion')}
                 />
                 <QuickAction
                   icon={Upload}
