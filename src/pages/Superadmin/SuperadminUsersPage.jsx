@@ -22,7 +22,6 @@ const initialFilters = {
 
 const initialForm = {
   email: '',
-  password: '',
   first_name: '',
   last_name: '',
   rut: '',
@@ -149,7 +148,7 @@ export const SuperadminUsersPage = () => {
     try {
       await createUser(form);
       setForm(initialForm);
-      setMessage('Usuario creado correctamente.');
+      setMessage('Usuario creado correctamente. Se envió el enlace de activación al correo registrado.');
       setOffset(0);
       await loadUsers();
     } catch (err) {
@@ -239,7 +238,7 @@ export const SuperadminUsersPage = () => {
           <h1 className="mt-3 text-3xl font-black text-gray-900">Administración de usuarios</h1>
           <p className="mt-4 text-gray-600">
             Gestiona cuentas y roles técnicos sin conceder permisos académicos implícitos.
-            Las cuentas nuevas usan credencial temporal de un solo uso y deben definir contraseña definitiva antes de ingresar.
+            Las cuentas nuevas reciben un enlace de activación de un solo uso para definir su contraseña.
           </p>
         </section>
 
@@ -410,11 +409,10 @@ export const SuperadminUsersPage = () => {
           <form onSubmit={handleCreateUser} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-black text-gray-900">Crear usuario</h2>
             <p className="mt-2 text-sm text-gray-500">
-              Define una credencial temporal de un solo uso. El usuario deberá reemplazarla antes de iniciar sesión.
+              El sistema enviará un enlace de activación al correo indicado. El usuario definirá su contraseña desde ese enlace.
             </p>
             <div className="mt-5 grid gap-3">
               <input name="email" type="email" required value={form.email} onChange={handleFormChange} placeholder="Correo" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
-              <input name="password" type="password" required minLength="8" value={form.password} onChange={handleFormChange} placeholder="Credencial temporal de un solo uso" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
               <div className="grid gap-3 sm:grid-cols-2">
                 <input name="first_name" required value={form.first_name} onChange={handleFormChange} placeholder="Nombres" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
                 <input name="last_name" required value={form.last_name} onChange={handleFormChange} placeholder="Apellidos" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />

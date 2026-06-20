@@ -47,6 +47,13 @@ export const authService = {
         });
     },
 
+    async activateAccount(token, newPassword) {
+        await api.post("/auth/activate-account", {
+            token,
+            new_password: newPassword,
+        });
+    },
+
     getGoogleLoginUrl() {
         return buildApiUrl("/auth/google/login");
     },
