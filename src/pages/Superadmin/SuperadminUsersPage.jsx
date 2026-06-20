@@ -420,17 +420,40 @@ export const SuperadminUsersPage = () => {
               <input name="rut" required value={form.rut} onChange={handleFormChange} placeholder="RUT" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
               <div className="rounded-2xl border border-gray-100 p-4">
                 <p className="text-xs font-black uppercase tracking-wide text-gray-500">Roles iniciales</p>
+                <p className="mt-1 text-xs font-semibold text-gray-400">
+                  {form.role_ids.length === 0
+                    ? 'Sin roles seleccionados'
+                    : `${form.role_ids.length} rol(es) seleccionado(s)`}
+                </p>
                 <div className="mt-3 grid gap-2">
-                  {roles.map((role) => (
-                    <label key={role.id} className="flex items-center gap-3 text-sm font-semibold text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={form.role_ids.includes(role.id)}
-                        onChange={() => handleRoleToggle(role.id)}
-                      />
-                      {role.name}
-                    </label>
-                  ))}
+                  {roles.map((role) => {
+                    const isSelected = form.role_ids.includes(role.id);
+
+                    return (
+                      <button
+                        key={role.id}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => handleRoleToggle(role.id)}
+                        className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-bold transition-all ${
+                          isSelected
+                            ? 'border-[#d22864] bg-[#fff0f6] text-[#8B1D46] shadow-sm ring-2 ring-[#d22864]/10'
+                            : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864]/50 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span>{role.name}</span>
+                        <span
+                          className={`flex h-5 w-5 items-center justify-center rounded-full border text-xs ${
+                            isSelected
+                              ? 'border-[#d22864] bg-[#d22864] text-white'
+                              : 'border-gray-300 bg-white text-transparent'
+                          }`}
+                        >
+                          ✓
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <button
