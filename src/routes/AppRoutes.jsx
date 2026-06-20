@@ -15,6 +15,7 @@ import { SupervisorEvaluationPage } from '../pages/Supervisor/SupervisorEvaluati
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
 import { InductionAdminPage } from '../pages/Induction/InductionAdminPage'
+import { PresentationLettersPage } from '../pages/PresentationLetters/PresentationLettersPage'
 import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
 import { FicaDashboardPage } from '../pages/Fica/FicaDashboardPage'
 import { SuperadminUsersPage } from '../pages/Superadmin/SuperadminUsersPage'
@@ -205,10 +206,28 @@ export const AppRoutes = () => {
           />
 
           <Route
-              path="/entrevistas"
+              path="/autoevaluacion/:internshipId"
               element={
                   <PrivateRoute allowedRoles={STUDENT_ROLES}>
+                      <SelfEvaluationPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/entrevistas"
+              element={
+                  <PrivateRoute allowedRoles={[...STUDENT_ROLES, ...DECISION_ADMIN_ROLES]}>
                       <InterviewSchedulingPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/cartas-presentacion"
+              element={
+                  <PrivateRoute allowedRoles={[...STUDENT_ROLES, ...DECISION_ADMIN_ROLES]}>
+                      <PresentationLettersPage />
                   </PrivateRoute>
               }
           />

@@ -21,8 +21,13 @@ export const useNotifications = (limit = 10, enabled = true) => {
     try {
       setLoading(true);
       const data = await notificationService.getMyNotifications(limit);
-      setNotifications(data.items || []);
-      setUnreadCount(data.unread_count || 0);
+      const items = Array.isArray(data) ? data : data?.items || [];
+      const unread = Array.isArray(data)
+        ? items.filter((notification) => !notification.is_read).length
+        : data?.unread_count || 0;
+
+      setNotifications(items);
+      setUnreadCount(unread);
       setError(null);
     } catch (err) {
       if (err.response?.status === 401) {

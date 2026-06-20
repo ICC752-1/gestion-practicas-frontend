@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { authService } from "../../services/authService";
 import { getOAuthErrorMessage } from "../../services/oauthErrors";
-import { getRedirectPathForRoles } from "../../services/roleRouting";
+import {
+    getRedirectPathForRoles,
+    normalizeRoleNames,
+} from "../../services/roleRouting";
 import ficaLogo from "../../assets/logo_fica.jpg";
 import { Header } from "../Header/Header";
 import { Footer } from "../Footer/Footer";
@@ -36,7 +39,7 @@ export const Login = () => {
 
             const user = await login(email, password);
 
-            const roles = user.roles || [];
+            const roles = normalizeRoleNames(user.roles || []);
             console.log("[DEBUG_LOG] Roles detectados en Login:", roles);
 
             navigate(getRedirectPathForRoles(roles));

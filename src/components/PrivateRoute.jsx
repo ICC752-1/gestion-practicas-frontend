@@ -1,7 +1,10 @@
 import { ArrowRight, ShieldAlert } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import { getRedirectPathForRoles } from "../services/roleRouting";
+import {
+    getRedirectPathForRoles,
+    normalizeRoleNames,
+} from "../services/roleRouting";
 
 const AccessDenied = ({ roles }) => {
     const redirectPath = getRedirectPathForRoles(roles);
@@ -48,7 +51,7 @@ export const PrivateRoute = ({ children, allowedRoles = [] }) => {
         return <Navigate to="/login" replace />;
     }
 
-    const userRoles = user?.roles || [];
+    const userRoles = normalizeRoleNames(user?.roles || []);
     const hasAllowedRole = allowedRoles.length === 0
         || allowedRoles.some((role) => userRoles.includes(role));
 

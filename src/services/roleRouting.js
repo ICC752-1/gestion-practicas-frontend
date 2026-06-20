@@ -17,6 +17,17 @@ export const decisionRoles = [
     CAREER_DIRECTOR_ROLE,
 ];
 
+export const normalizeRoleNames = (roles = []) =>
+    roles
+        .map((role) => {
+            if (typeof role === "string") {
+                return role;
+            }
+
+            return role?.role?.name || role?.name || null;
+        })
+        .filter(Boolean);
+
 const rolePriority = [
     SUPERADMIN_ROLE,
     FICA_ROLE,
@@ -28,19 +39,23 @@ const rolePriority = [
 ];
 
 export const getDisplayRoleForRoles = (roles = []) => {
-    return rolePriority.find((role) => roles.includes(role)) || roles[0] || "Sin rol";
+    const roleNames = normalizeRoleNames(roles);
+
+    return rolePriority.find((role) => roleNames.includes(role)) || roleNames[0] || "Sin rol";
 };
 
 export const getAdminBasePathForRoles = (roles = []) => {
-    if (roles.includes(PRACTICE_MANAGER_ROLE)) {
+    const roleNames = normalizeRoleNames(roles);
+
+    if (roleNames.includes(PRACTICE_MANAGER_ROLE)) {
         return "/encargado";
     }
 
-    if (roles.includes(CAREER_DIRECTOR_ROLE)) {
+    if (roleNames.includes(CAREER_DIRECTOR_ROLE)) {
         return "/director";
     }
 
-    if (roles.includes(SECRETARY_ROLE)) {
+    if (roleNames.includes(SECRETARY_ROLE)) {
         return "/secretaria";
     }
 
@@ -48,23 +63,25 @@ export const getAdminBasePathForRoles = (roles = []) => {
 };
 
 export const getRedirectPathForRoles = (roles = []) => {
-    if (roles.includes(SUPERADMIN_ROLE)) {
+    const roleNames = normalizeRoleNames(roles);
+
+    if (roleNames.includes(SUPERADMIN_ROLE)) {
         return "/superadmin/usuarios";
     }
 
-    if (roles.includes(FICA_ROLE)) {
+    if (roleNames.includes(FICA_ROLE)) {
         return "/fica";
     }
 
-    if (roles.includes(STUDENT_ROLE)) {
+    if (roleNames.includes(STUDENT_ROLE)) {
         return "/dashboard";
     }
 
-    if (adminRoles.some((role) => roles.includes(role))) {
-        return getAdminBasePathForRoles(roles);
+    if (adminRoles.some((role) => roleNames.includes(role))) {
+        return getAdminBasePathForRoles(roleNames);
     }
 
-    if (roles.includes(SUPERVISOR_ROLE)) {
+    if (roleNames.includes(SUPERVISOR_ROLE)) {
         return "/supervisor";
     }
 
