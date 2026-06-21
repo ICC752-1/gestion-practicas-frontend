@@ -13,6 +13,91 @@ import { User, Building2, UserRound, ClipboardList, FileText } from "lucide-reac
 import { useToast } from "../../context/useToast";
 import { internshipService } from "../../services/internshipService";
 
+const FIELD_LABELS = {
+  org_name: "Nombre de la organización",
+  sector: "Rubro de la organización",
+  address: "Dirección de la organización",
+  city: "Ciudad",
+  org_phone: "Teléfono de la organización",
+  web: "Página web",
+  supervisor_name: "Nombre del supervisor/a",
+  supervisor_profession: "Profesión del supervisor/a",
+  supervisor_position: "Cargo del supervisor/a",
+  supervisor_department: "Departamento del supervisor/a",
+  supervisor_email: "Correo del supervisor/a",
+  supervisor_phone: "Teléfono del supervisor/a",
+  start_date: "Fecha de inicio",
+  end_date: "Fecha de término",
+  schedule: "Horario",
+  days: "Días de práctica",
+  modality: "Modalidad",
+  internship_address: "Dirección de la práctica",
+  act_description: "Actividades a realizar",
+  ben_description: "Beneficios",
+  amount: "Monto de apoyo económico",
+  internship_period: "Período académico",
+  internship_type: "Tipo de práctica",
+};
+
+const FIELD_STEPS = {
+  org_name: 2,
+  sector: 2,
+  address: 2,
+  city: 2,
+  org_phone: 2,
+  web: 2,
+  supervisor_name: 3,
+  supervisor_profession: 3,
+  supervisor_position: 3,
+  supervisor_department: 3,
+  supervisor_email: 3,
+  supervisor_phone: 3,
+  start_date: 4,
+  end_date: 4,
+  schedule: 4,
+  days: 4,
+  modality: 4,
+  internship_address: 4,
+  act_description: 5,
+  ben_description: 5,
+  amount: 5,
+  internship_period: 1,
+  internship_type: 1,
+};
+
+const getValidationField = (validationItem) => {
+  const loc = validationItem?.loc;
+  return Array.isArray(loc) ? loc[loc.length - 1] : null;
+};
+
+const getFriendlyValidationMessage = (validationItem) => {
+  const field = getValidationField(validationItem);
+  const label = FIELD_LABELS[field] || field || "Campo";
+
+  if (field?.includes("email")) {
+    return `${label}: ingresa un correo válido, por ejemplo supervisor@empresa.cl.`;
+  }
+
+  if (validationItem?.type === "missing") {
+    return `${label}: este dato es obligatorio.`;
+  }
+
+  return `${label}: ${validationItem?.msg || "revisa el valor ingresado."}`;
+};
+
+const getApiValidationMessages = (detail) => {
+  if (!Array.isArray(detail)) return [];
+  return detail.map(getFriendlyValidationMessage);
+};
+
+const getApiErrorStep = (error) => {
+  const detail = error.response?.data?.detail;
+  if (!Array.isArray(detail) || detail.length === 0) return null;
+
+  const field = getValidationField(detail[0]);
+  return FIELD_STEPS[field] || null;
+};
+
 const getApiErrorMessage = (error) => {
   if (!error.response) {
     return "No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.";
@@ -24,7 +109,12 @@ const getApiErrorMessage = (error) => {
     return "Ya existe una solicitud vigente para este tipo de práctica. Revisa el registro existente antes de crear una nueva solicitud.";
   }
   if (detail?.message) return detail.message;
-  if (Array.isArray(detail)) return detail.map((item) => item.msg).join(", ");
+  if (Array.isArray(detail)) {
+    const validationMessages = getApiValidationMessages(detail);
+    return validationMessages.length > 0
+      ? validationMessages.join(" ")
+      : "Revisa los datos ingresados e intenta nuevamente.";
+  }
 
   if (error.response.status === 401) {
     return "Sesión expirada. Por favor, inicia sesión nuevamente.";
@@ -108,7 +198,14 @@ export const RegistrationPage = () => {
         console.error("Error completo:", err.response?.data || err);
 
         if (!err.response) {
-          setSubmitError("No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.");
+          const message = "No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.";
+          setSubmitError(message);
+          showToast({
+            type: "error",
+            title: "No se pudo enviar la solicitud",
+            message,
+            duration: 8000,
+          });
         } else {
           const status = err.response.status;
 
@@ -117,13 +214,27 @@ export const RegistrationPage = () => {
             localStorage.removeItem("token");
             window.location.href = "/login";
           } else {
-            setSubmitError(getApiErrorMessage(err));
+            const message = getApiErrorMessage(err);
+            const targetStep = getApiErrorStep(err);
+
+            setSubmitError(message);
+            if (targetStep) {
+              setCurrentStep(targetStep);
+            }
+            showToast({
+              type: "error",
+              title: status === 422 ? "Revisa los datos de la solicitud" : "No se pudo enviar la solicitud",
+              message,
+              duration: 9000,
+            });
           }
         }
         setIsSubmitting(false);
+        window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
     } else {
+      setSubmitError(null);
       setCurrentStep((prev) => prev + 1);
     }
 

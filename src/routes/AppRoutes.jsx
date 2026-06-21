@@ -16,6 +16,7 @@ import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
 import { InductionAdminPage } from '../pages/Induction/InductionAdminPage'
 import { PresentationLettersPage } from '../pages/PresentationLetters/PresentationLettersPage'
+import ActivateAccountPage from '../pages/Auth/ActivateAccountPage'
 import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
 import { FicaDashboardPage } from '../pages/Fica/FicaDashboardPage'
 import { SuperadminUsersPage } from '../pages/Superadmin/SuperadminUsersPage'
@@ -56,6 +57,7 @@ export const AppRoutes = () => {
           {/* Rutas públicas */}
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/activar-cuenta" element={<ActivateAccountPage />} />
           <Route
               path="/auth/callback"
               element={<AuthCallbackPage />}
