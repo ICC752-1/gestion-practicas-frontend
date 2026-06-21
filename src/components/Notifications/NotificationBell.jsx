@@ -6,9 +6,9 @@ import { useAuth } from '../../context/useAuth';
 
 // Etiquetas e iconos por tipo de evento según contrato del backend
 const EVENT_META = {
-  internship_approved: { label: 'Práctica aprobada', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-  internship_rejected: { label: 'Práctica rechazada', icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' },
-  internship_derived: { label: 'Práctica derivada', icon: Send, color: 'text-[#d22864]', bg: 'bg-[#fff0f6]' },
+  internship_approved: { label: 'Solicitud de práctica aprobada', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+  internship_rejected: { label: 'Solicitud de práctica rechazada', icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' },
+  internship_derived: { label: 'Expediente DIRAE derivado', icon: Send, color: 'text-[#d22864]', bg: 'bg-[#fff0f6]' },
   requirement_status_changed: { label: 'Cambio en requisito', icon: FileText, color: 'text-[#d22864]', bg: 'bg-[#fff0f6]' },
   custom: { label: 'Notificación', icon: Bell, color: 'text-gray-600', bg: 'bg-gray-100' },
 };
