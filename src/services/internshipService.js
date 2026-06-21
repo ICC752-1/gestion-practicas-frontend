@@ -85,4 +85,12 @@ export const internshipService = {
     const response = await api.post(`/internships/${internshipId}/dirae-reopen`, { comment });
     return response.data;
   },
+
+  async grantInternshipException(internshipId, rule, reason) {
+    const response = await api.post(`/internships/${internshipId}/exceptions`, {
+      rule,
+      reason,
+    });
+    return response.data;
+  },
 }

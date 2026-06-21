@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertCircle, User, Building, MapPin, FileText, History, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, User, Building, MapPin, FileText, History, MessageSquare, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import { ActionButtons } from '../../components/coordinador/ActionButtons';
@@ -9,6 +9,7 @@ import { useAuth } from '../../context/useAuth';
 import { documentService } from '../../services/documentService';
 import { AdminDocumentList } from '../../components/CoordinatorDashboard/AdminDocumentList';
 import { internshipService } from '../../services/internshipService';
+import { coordinatorService } from '../../services/coordinatorService';
 import { getAdminBasePathForRoles, getDisplayRoleForRoles } from '../../services/roleRouting';
 import { supervisorEvaluationService } from '../../services/supervisorEvaluationService';
 
@@ -40,6 +41,30 @@ const HISTORY_DEFAULT_SUBTITLES = {
   internship_created: 'Creación inicial de solicitud de práctica',
   student_cancel: 'Anulación solicitada por el estudiante',
   student_update: 'Corrección enviada por el estudiante',
+};
+
+const INSURANCE_STATUS_LABELS = {
+  pending: 'Pendiente de validación',
+  validated: 'Seguro validado',
+  requires_exception: 'Requiere excepción',
+  exception_authorized: 'Excepción autorizada',
+  not_applicable: 'No aplica',
+};
+
+const INSURANCE_STATUS_DESCRIPTIONS = {
+  pending: 'La solicitud aún requiere revisión administrativa del seguro escolar.',
+  validated: 'El seguro escolar fue validado para esta solicitud de práctica.',
+  requires_exception: 'La solicitud no cuenta con seguro validado y requiere una excepción administrativa.',
+  exception_authorized: 'Existe una excepción administrativa autorizada para esta solicitud.',
+  not_applicable: 'Administración marcó que esta solicitud no requiere validación de seguro.',
+};
+
+const getInsuranceBadgeClass = (status) => {
+  if (status === 'validated') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+  if (status === 'exception_authorized') return 'bg-blue-50 text-blue-700 border-blue-100';
+  if (status === 'requires_exception') return 'bg-red-50 text-red-700 border-red-100';
+  if (status === 'not_applicable') return 'bg-gray-50 text-gray-700 border-gray-200';
+  return 'bg-amber-50 text-amber-700 border-amber-100';
 };
 
 const getHistoryMetadata = (entry) => entry.metadata || entry.metadata_json || {};
@@ -92,6 +117,10 @@ export const PracticeDetailPage = () => {
   const [supervisorInvite, setSupervisorInvite] = useState(null);
   const [supervisorInviteError, setSupervisorInviteError] = useState('');
   const [supervisorInviteLoading, setSupervisorInviteLoading] = useState(false);
+  const [insuranceActionLoading, setInsuranceActionLoading] = useState(false);
+  const [insuranceActionError, setInsuranceActionError] = useState('');
+  const [insuranceActionSuccess, setInsuranceActionSuccess] = useState('');
+  const [insuranceNotes, setInsuranceNotes] = useState('');
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -164,13 +193,81 @@ export const PracticeDetailPage = () => {
     }
   };
 
+  const getErrorMessage = (err, fallback) => (
+    err.response?.data?.detail?.message ||
+    err.response?.data?.detail ||
+    err.response?.data?.message ||
+    err.message ||
+    fallback
+  );
+
+  const handleUpdateSchoolInsurance = async (status, successMessage) => {
+    setInsuranceActionLoading(true);
+    setInsuranceActionError('');
+    setInsuranceActionSuccess('');
+
+    try {
+      await coordinatorService.updatePracticeSchoolInsurance(
+        id,
+        status,
+        insuranceNotes.trim() || null
+      );
+      setInsuranceActionSuccess(successMessage);
+      setInsuranceNotes('');
+      await refresh();
+    } catch (err) {
+      setInsuranceActionError(
+        getErrorMessage(err, 'No se pudo actualizar el seguro escolar.')
+      );
+    } finally {
+      setInsuranceActionLoading(false);
+    }
+  };
+
+  const handleAuthorizeSchoolInsuranceException = async () => {
+    const reason = insuranceNotes.trim();
+    if (!reason) {
+      setInsuranceActionError('Debes indicar un motivo para autorizar la excepción.');
+      setInsuranceActionSuccess('');
+      return;
+    }
+
+    setInsuranceActionLoading(true);
+    setInsuranceActionError('');
+    setInsuranceActionSuccess('');
+
+    try {
+      await internshipService.grantInternshipException(
+        id,
+        'school_insurance',
+        reason
+      );
+      setInsuranceActionSuccess('Excepción de seguro escolar autorizada para esta solicitud.');
+      setInsuranceNotes('');
+      await refresh();
+    } catch (err) {
+      setInsuranceActionError(
+        getErrorMessage(err, 'No se pudo autorizar la excepción de seguro escolar.')
+      );
+    } finally {
+      setInsuranceActionLoading(false);
+    }
+  };
+
   const userName = user ? `${user.first_name} ${user.last_name}` : "Encargado";
   const userRole = getDisplayRoleForRoles(user?.roles);
   const adminBasePath = getAdminBasePathForRoles(user?.roles);
   const canInviteSupervisor = user?.roles?.some((role) => (
     role === 'Encargado de practica' || role === 'Director de carrera'
   ));
+  const canManageSchoolInsurance = Boolean(
+    canInviteSupervisor && practice && !practice.is_cancelled
+  );
   const practiceStatusTitle = practice?.status?.title || practice?.status || 'Pendiente';
+  const insuranceStatus = practice?.insurance_status || 'pending';
+  const insuranceStatusLabel = INSURANCE_STATUS_LABELS[insuranceStatus] || 'Pendiente de validación';
+  const insuranceStatusDescription = INSURANCE_STATUS_DESCRIPTIONS[insuranceStatus] || INSURANCE_STATUS_DESCRIPTIONS.pending;
+  const isSeasonalPractice = ['Verano', 'Invierno'].includes(practice?.internship_period);
   const canGenerateSupervisorInvitation = Boolean(
     canInviteSupervisor && practiceStatusTitle === 'Aprobada' && !practice?.is_cancelled
   );
@@ -279,6 +376,106 @@ export const PracticeDetailPage = () => {
                     <span className="font-medium">Término:</span> {practice.end_date || 'No definida'}
                   </p>
                 </div>
+              </div>
+
+              {/* Seguro escolar */}
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-5">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="flex gap-3">
+                    <div className="mt-1 rounded-2xl bg-white p-3 text-amber-600 shadow-sm">
+                      {insuranceStatus === 'validated' || insuranceStatus === 'exception_authorized'
+                        ? <ShieldCheck size={24} />
+                        : <ShieldAlert size={24} />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+                        Seguro escolar de la solicitud
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-bold ${getInsuranceBadgeClass(insuranceStatus)}`}>
+                          {insuranceStatusLabel}
+                        </span>
+                        {isSeasonalPractice && (
+                          <span className="rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-bold text-amber-700">
+                            Validación explícita requerida por periodo {practice.internship_period}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-2 text-sm text-gray-600">{insuranceStatusDescription}</p>
+                      {practice.insurance_validated_at && (
+                        <p className="mt-1 text-xs font-semibold text-gray-500">
+                          Última actualización: {new Date(practice.insurance_validated_at).toLocaleString('es-CL')}
+                        </p>
+                      )}
+                      {practice.insurance_notes && (
+                        <p className="mt-2 rounded-xl border border-amber-100 bg-white px-3 py-2 text-sm text-gray-600">
+                          {practice.insurance_notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {canManageSchoolInsurance && (
+                  <div className="mt-5 space-y-4 border-t border-amber-100 pt-5">
+                    <label className="block">
+                      <span className="text-sm font-bold text-gray-700">Observación administrativa</span>
+                      <textarea
+                        value={insuranceNotes}
+                        onChange={(event) => setInsuranceNotes(event.target.value)}
+                        rows={3}
+                        className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#d22864] focus:ring-2 focus:ring-[#d22864]/10"
+                        placeholder="Ej.: seguro validado para esta solicitud, o motivo de la excepción."
+                      />
+                    </label>
+
+                    {insuranceActionError && (
+                      <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                        {insuranceActionError}
+                      </p>
+                    )}
+                    {insuranceActionSuccess && (
+                      <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                        {insuranceActionSuccess}
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateSchoolInsurance('validated', 'Seguro escolar validado para esta solicitud.')}
+                        disabled={insuranceActionLoading}
+                        className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                      >
+                        Validar seguro
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateSchoolInsurance('requires_exception', 'Solicitud marcada como pendiente de excepción de seguro escolar.')}
+                        disabled={insuranceActionLoading}
+                        className="rounded-xl bg-amber-600 px-4 py-3 text-sm font-bold text-white hover:bg-amber-700 disabled:opacity-50"
+                      >
+                        Requiere excepción
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAuthorizeSchoolInsuranceException}
+                        disabled={insuranceActionLoading}
+                        className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        Autorizar excepción
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateSchoolInsurance('pending', 'Seguro escolar restablecido como pendiente de validación.')}
+                        disabled={insuranceActionLoading}
+                        className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Dejar pendiente
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Acciones administrativas */}
