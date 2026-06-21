@@ -46,6 +46,11 @@ export const internshipService = {
     return response.data;
   },
 
+  async getInternshipLifecycle(internshipId) {
+    const response = await api.get(`/internships/${internshipId}/lifecycle-tracking`);
+    return response.data;
+  },
+
   async getDiraeTracking(internshipId) {
     const response = await api.get(`/internships/${internshipId}/dirae-tracking`);
     return response.data;
@@ -68,6 +73,11 @@ export const internshipService = {
 
   async approveInternship(internshipId, comment) {
     const response = await api.post(`/internships/${internshipId}/approve`, { comment });
+    return response.data;
+  },
+
+  async startReview(internshipId) {
+    const response = await api.post(`/internships/${internshipId}/start-review`);
     return response.data;
   },
 

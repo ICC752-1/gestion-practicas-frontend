@@ -3,6 +3,7 @@ import { Search, Inbox, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import { getAdminBasePathForRoles } from '../../services/roleRouting';
+import { internshipService } from '../../services/internshipService';
 
 export const StudentTable = ({ students = [] }) => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export const StudentTable = ({ students = [] }) => {
   const [statusFilter, setStatusFilter] = useState('');
   const [degreeFilter, setDegreeFilter] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
+  const [openingId, setOpeningId] = useState(null);
 
   // FE4: Normalizar estado
   const getNormalizedStatus = (internship) => {
@@ -30,7 +32,7 @@ export const StudentTable = ({ students = [] }) => {
   };
 
   const uniqueDegrees = useMemo(() => {
-    return [...new Set(students.map(s => s.student?.degree).filter(Boolean))];
+    return [...new Set(students.map(s => s.student?.degree || s.student?.cod_degree).filter(Boolean))];
   }, [students]);
 
   const uniqueCompanies = useMemo(() => {
@@ -45,7 +47,7 @@ export const StudentTable = ({ students = [] }) => {
     // FE4: Mapear datos reales (estudiante, organización, ciudad, región, fechas, tipo de práctica)
     const name = s.student ? `${s.student.first_name} ${s.student.last_name}`.toLowerCase() : '';
     const email = s.student?.email?.toLowerCase() || '';
-    const degree = s.student?.degree?.toLowerCase() || '';
+    const degree = (s.student?.degree || s.student?.cod_degree || '').toLowerCase();
     const org = s.org_name?.toLowerCase() || '';
     
     // Datos FE4 mapeados para búsqueda (sin mostrar columnas en tabla)
@@ -72,11 +74,25 @@ export const StudentTable = ({ students = [] }) => {
     const normalizedStatus = getNormalizedStatus(s).value;
 
     const matchesStatus = statusFilter === '' || normalizedStatus === statusFilter;
-    const matchesDegree = degreeFilter === '' || s.student?.degree === degreeFilter;
+    const matchesDegree = degreeFilter === '' || (s.student?.degree || s.student?.cod_degree) === degreeFilter;
     const matchesCompany = companyFilter === '' || s.org_name === companyFilter;
 
     return matchesSearch && matchesStatus && matchesDegree && matchesCompany;
   });
+
+  const handleOpenDetails = async (internship) => {
+    setOpeningId(internship.id);
+    try {
+      await internshipService.startReview(internship.id);
+    } catch (error) {
+      console.error('No se pudo iniciar revisión automáticamente:', error);
+    } finally {
+      setOpeningId(null);
+      navigate(`${adminBasePath}/practica/${internship.id}`, {
+        state: { student: internship.student },
+      });
+    }
+  };
 
   if (students.length === 0) {
     return (
@@ -188,7 +204,7 @@ export const StudentTable = ({ students = [] }) => {
                     </td>
 
                     <td className="py-5 px-4">
-                      <p className="text-sm text-gray-700 font-medium">{student.student?.degree || 'N/A'}</p>
+                      <p className="text-sm text-gray-700 font-medium">{student.student?.degree || student.student?.cod_degree || 'N/A'}</p>
                     </td>
 
                     <td className="py-5 px-4">
@@ -206,10 +222,11 @@ export const StudentTable = ({ students = [] }) => {
 
                     <td className="py-5 px-4 text-right">
                       <button
-                        onClick={() => navigate(`${adminBasePath}/practica/${student.id}`, { state: { student: student.student } })}
+                        onClick={() => handleOpenDetails(student)}
+                        disabled={openingId === student.id}
                         className="text-ufro-primary font-bold hover:underline text-sm transition-all"
                       >
-                        Ver detalles
+                        {openingId === student.id ? 'Abriendo...' : 'Ver detalles'}
                       </button>
                     </td>
                   </tr>

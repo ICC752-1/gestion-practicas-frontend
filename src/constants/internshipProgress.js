@@ -21,17 +21,17 @@ const PROGRESS_BY_STATUS = {
   },
   Aprobada: {
     percentage: 100,
-    label: 'Proceso finalizado con aprobación',
+    label: 'Solicitud de práctica aprobada',
     color: 'bg-green-500',
   },
   Rechazada: {
     percentage: 100,
-    label: 'Proceso finalizado sin aprobación',
+    label: 'Solicitud de práctica rechazada',
     color: 'bg-red-500',
   },
   Reprobada: {
     percentage: 100,
-    label: 'Proceso finalizado sin aprobación',
+    label: 'Solicitud de práctica rechazada',
     color: 'bg-red-500',
   },
 };

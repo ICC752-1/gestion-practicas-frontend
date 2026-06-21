@@ -113,6 +113,7 @@ export const PracticeDetailPage = () => {
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [docsError, setDocsError] = useState(null);
   const [tracking, setTracking] = useState([]);
+  const [lifecycle, setLifecycle] = useState(null);
   const [trackingLoading, setTrackingLoading] = useState(true);
   const [supervisorInvite, setSupervisorInvite] = useState(null);
   const [supervisorInviteError, setSupervisorInviteError] = useState('');
@@ -139,8 +140,12 @@ export const PracticeDetailPage = () => {
   const fetchTracking = useCallback(async () => {
     try {
       setTrackingLoading(true);
-      const data = await internshipService.getInternshipTracking(id);
+      const [data, lifecycleData] = await Promise.all([
+        internshipService.getInternshipTracking(id),
+        internshipService.getInternshipLifecycle(id).catch(() => null),
+      ]);
       setTracking(data);
+      setLifecycle(lifecycleData);
     } catch (err) {
       console.error('Error fetching tracking:', err);
     } finally {
@@ -260,22 +265,28 @@ export const PracticeDetailPage = () => {
   const canInviteSupervisor = user?.roles?.some((role) => (
     role === 'Encargado de practica' || role === 'Director de carrera'
   ));
+  const isCareerDirector = user?.roles?.some((role) => role === 'Director de carrera');
   const canManageSchoolInsurance = Boolean(
-    canInviteSupervisor && practice && !practice.is_cancelled
+    isCareerDirector && practice && !practice.is_cancelled
   );
   const practiceStatusTitle = practice?.status?.title || practice?.status || 'Pendiente';
   const insuranceStatus = practice?.insurance_status || 'pending';
   const insuranceStatusLabel = INSURANCE_STATUS_LABELS[insuranceStatus] || 'Pendiente de validación';
   const insuranceStatusDescription = INSURANCE_STATUS_DESCRIPTIONS[insuranceStatus] || INSURANCE_STATUS_DESCRIPTIONS.pending;
-  const isSeasonalPractice = ['Verano', 'Invierno'].includes(practice?.internship_period);
+  const requiresExplicitInsurance = ['pending', 'requires_exception'].includes(insuranceStatus);
   const canGenerateSupervisorInvitation = Boolean(
-    canInviteSupervisor && practiceStatusTitle === 'Aprobada' && !practice?.is_cancelled
+    canInviteSupervisor && lifecycle?.can_generate_supervisor_invitation
   );
-  const supervisorInvitationUnavailableMessage = practice?.is_cancelled
-    ? 'No disponible para solicitudes anuladas.'
-    : practiceStatusTitle !== 'Aprobada'
-      ? 'Disponible cuando la solicitud esté aprobada.'
-      : '';
+  const getSupervisorInvitationUnavailableMessage = () => {
+    if (practice?.is_cancelled) return 'No disponible para solicitudes anuladas.';
+    if (practiceStatusTitle !== 'Aprobada') return 'Disponible cuando la solicitud esté aprobada.';
+    if (lifecycle?.supervisor_evaluation_submitted) return 'La evaluación del supervisor ya fue completada.';
+    if (lifecycle && !lifecycle.self_evaluation_submitted) {
+      return 'Disponible cuando el estudiante complete su autoevaluación.';
+    }
+    return '';
+  };
+  const supervisorInvitationUnavailableMessage = getSupervisorInvitationUnavailableMessage();
 
   // Usamos el estudiante que pasamos en la navegación desde StudentTable como fuente principal.
   // Si no está (ej. si el usuario entra directo a la URL), intentamos buscarlo en el practice.
@@ -284,7 +295,7 @@ export const PracticeDetailPage = () => {
 
   const studentName = studentData ? `${studentData.first_name || ''} ${studentData.last_name || ''}`.trim() : 'No disponible';
   const studentEmail = studentData?.email;
-  const studentDegree = studentData?.degree;
+  const studentDegree = studentData?.degree || studentData?.cod_degree;
 
   const companyAddress = [practice?.address, practice?.city, practice?.region].filter(Boolean).join(', ');
   const currentStatusLabel = practice?.is_cancelled
@@ -300,7 +311,10 @@ export const PracticeDetailPage = () => {
     return 'bg-gray-50 text-gray-700 border-gray-100';
   };
 
-  const getTimelineCircleColor = (title) => {
+  const getTimelineCircleColor = (title, status) => {
+    if (status === 'completed') return 'border-emerald-500 bg-emerald-500';
+    if (status === 'current') return 'border-[#d22864] bg-[#d22864]';
+    if (status === 'blocked') return 'border-red-500 bg-red-500';
     const t = (title || '').toLowerCase();
     if (t.includes('aprobad')) return 'border-emerald-500 bg-emerald-500';
     if (t.includes('rechazad') || t.includes('reprobad') || t.includes('anulad')) return 'border-red-500 bg-red-500';
@@ -308,6 +322,8 @@ export const PracticeDetailPage = () => {
     if (t.includes('dirae')) return 'border-blue-500 bg-blue-500';
     return 'border-gray-400 bg-gray-400';
   };
+
+  const timelineEntries = lifecycle?.events?.length ? lifecycle.events : tracking;
 
   return (
     <div className="min-h-screen flex flex-col bg-ufro-bg">
@@ -395,9 +411,9 @@ export const PracticeDetailPage = () => {
                         <span className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-bold ${getInsuranceBadgeClass(insuranceStatus)}`}>
                           {insuranceStatusLabel}
                         </span>
-                        {isSeasonalPractice && (
+                        {requiresExplicitInsurance && (
                           <span className="rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-bold text-amber-700">
-                            Validación explícita requerida por periodo {practice.internship_period}
+                            Requiere revisión de Dirección de carrera
                           </span>
                         )}
                       </div>
@@ -551,35 +567,39 @@ export const PracticeDetailPage = () => {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-8 h-8 text-ufro-primary animate-spin" />
                   </div>
-                ) : tracking.length === 0 ? (
+                ) : timelineEntries.length === 0 ? (
                   <div className="text-center py-6 bg-gray-50/50 border border-dashed border-gray-200 rounded-2xl">
                     <p className="text-gray-400 text-sm font-medium">No hay registros de seguimiento para esta práctica.</p>
                   </div>
                 ) : (
                   <div className="relative pl-6 border-l-2 border-gray-100 ml-3 space-y-6">
-                    {tracking.map((entry) => {
-                      const historyTitle = buildHistoryTitle(entry);
-                      const historySubtitle = buildHistorySubtitle(entry);
-                      const dateStr = new Date(entry.changed_at).toLocaleDateString('es-CL', {
+                    {timelineEntries.map((entry) => {
+                      const isLifecycleEntry = Boolean(entry.type);
+                      const historyTitle = isLifecycleEntry ? entry.title : buildHistoryTitle(entry);
+                      const historySubtitle = isLifecycleEntry ? entry.description : buildHistorySubtitle(entry);
+                      const dateValue = entry.occurred_at || entry.changed_at;
+                      const dateStr = dateValue ? new Date(dateValue).toLocaleDateString('es-CL', {
                         day: '2-digit',
                         month: 'short',
                         year: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit'
-                      });
+                      }) : null;
 
                       return (
                         <div key={entry.id} className="relative group">
                           {/* Circle on the left line */}
-                          <div className={`absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white shadow-sm transition-transform group-hover:scale-110 ${getTimelineCircleColor(historyTitle)}`} />
+                          <div className={`absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white shadow-sm transition-transform group-hover:scale-110 ${getTimelineCircleColor(historyTitle, entry.status)}`} />
 
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-4">
                             <span className="font-bold text-gray-800 text-[15px]">
                               {historyTitle}
                             </span>
-                            <span className="text-gray-400 text-xs font-semibold">
-                              {dateStr}
-                            </span>
+                            {dateStr && (
+                              <span className="text-gray-400 text-xs font-semibold">
+                                {dateStr}
+                              </span>
+                            )}
                           </div>
 
                           {entry.actor && (
