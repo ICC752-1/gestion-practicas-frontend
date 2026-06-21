@@ -47,11 +47,25 @@ export const authService = {
         });
     },
 
-    async activateAccount(token, newPassword) {
-        await api.post("/auth/activate-account", {
+    async getActivationInfo(token) {
+        const response = await api.get("/auth/activation-info", {
+            params: { token },
+        });
+
+        return response.data;
+    },
+
+    async activateAccount(token, newPassword, admissionYear) {
+        const payload = {
             token,
             new_password: newPassword,
-        });
+        };
+
+        if (admissionYear !== undefined) {
+            payload.admission_year = admissionYear;
+        }
+
+        await api.post("/auth/activate-account", payload);
     },
 
     getGoogleLoginUrl() {
