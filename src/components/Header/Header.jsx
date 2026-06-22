@@ -11,19 +11,19 @@ export const Header = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-50 flex min-h-[72px] w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm"
-      style={{ padding: '0.5rem clamp(0.5rem, 2vw, 2.5rem)', gap: 'clamp(0.5rem, 2vw, 1.5rem)' }}
+    <header className="sticky top-0 z-50 flex min-h-[72px] w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm overflow-hidden"
+      style={{ padding: '0.5rem clamp(0.5rem, 2vw, 2.5rem)', gap: '0.5rem' }}
     >
-      {/* Logo + Título */}
-      <div className="flex items-center gap-[clamp(0.5rem,1.5vw,1rem)] flex-shrink-0 min-w-0">
-        <div className="bg-[#d22864] rounded-xl shadow-sm flex-shrink-0" style={{ padding: 'clamp(4px, 0.8vw, 8px)' }}>
+      {/* Left: Logo + Title */}
+      <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0">
+        <div className="bg-[#d22864] rounded-xl shadow-sm flex-shrink-0 p-1.5" style={{ padding: 'clamp(4px, 0.6vw, 8px)' }}>
           <img
-            style={{ width: 'clamp(48px, 5vw, 64px)', height: 'clamp(48px, 5vw, 64px)' }}
+            style={{ width: 'clamp(44px, 4.5vw, 60px)', height: 'clamp(44px, 4.5vw, 60px)' }}
             className="object-contain"
             alt="Universidad de La Frontera"
             src={universityLogo}
-          />
-        </div>
+          />            
+        </div>    
         <div className="flex flex-col leading-tight min-w-0">
           <h1 className="font-bold tracking-tight text-[#d22864] truncate"
             style={{ fontSize: 'clamp(0.65rem, 2.0vw, 1.25rem)' }}>
