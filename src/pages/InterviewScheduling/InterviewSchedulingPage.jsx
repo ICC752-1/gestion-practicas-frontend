@@ -1103,7 +1103,7 @@ export const InterviewSchedulingPage = () => {
                             <p className="font-bold text-slate-800">Solicitud: {purposeLabel(respondingRequest.purpose)}</p>
                             <p className="text-slate-500">Estudiante: {respondingRequest.student?.first_name} {respondingRequest.student?.last_name}</p>
                             <p className="text-slate-500 text-xs">
-                                Fechas sugeridas: {JSON.parse(respondingRequest.preferred_dates || '[]').map(d => formatDisplayDate(d)).join(', ')}
+                                Fechas sugeridas: {parsePreferredDates(respondingRequest.preferred_dates).map(d => formatDisplayDate(d)).join(', ')}
                             </p>
                         </div>
 
