@@ -93,165 +93,162 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
   ];
 
   return (
-    <div className="bg-white rounded-[40px] shadow-[0px_4px_30px_#00000015] p-12 w-full max-w-[650px]">
-      <h2 className="text-3xl font-bold text-black mb-10">Información de la Práctica</h2>
+    <div className="bg-white rounded-3xl shadow-[0px_4px_26px_#00000012] p-8 md:p-10 w-full max-w-[580px] mx-auto border border-gray-100">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Información de la práctica</h2>
       
-      <form className="space-y-8" onSubmit={handleSubmit}>
+      <form className="space-y-5" onSubmit={handleSubmit}>
         {/* Tipo de práctica */}
-        <div className="space-y-4">
-          <label className="block text-xl font-bold text-black">Seleccione el tipo de práctica que realizará</label>
-          <div className="space-y-3">
-            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'Presencial' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
-              <input 
-                type="radio" 
-                name="practiceType" 
-                value="Presencial" 
-                checked={formData.practiceType === 'Presencial'}
-                onChange={handleChange}
-                className="w-6 h-6 accent-[#d22864]"
-              />
-              <span className="text-xl text-gray-700">Presencial</span>
-            </label>
-            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'Híbrido' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
-              <input 
-                type="radio" 
-                name="practiceType" 
-                value="Híbrido" 
-                checked={formData.practiceType === 'Híbrido'}
-                onChange={handleChange}
-                className="w-6 h-6 accent-[#d22864]"
-              />
-              <span className="text-xl text-gray-700">Híbrido</span>
-            </label>
-            <label className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${formData.practiceType === 'Remoto' ? 'border-[#d22864] bg-[#ffe7f0]' : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'}`}>
-              <input 
-                type="radio" 
-                name="practiceType" 
-                value="Remoto" 
-                checked={formData.practiceType === 'Remoto'}
-                onChange={handleChange}
-                className="w-6 h-6 accent-[#d22864]"
-              />
-              <span className="text-xl text-gray-700">Remoto</span>
-            </label>
-          </div>
-          {errors.practiceType && <p className="text-sm text-red-600">{errors.practiceType}</p>}
-        </div>
+        <div className="space-y-2">
+          <label className="block text-base font-bold text-gray-800">Tipo de práctica que realizará</label>
+          <div className="space-y-2">
+            {['Presencial', 'Híbrido', 'Remoto'].map((type) => {
+              const isSelected = formData.practiceType === type;
+              return (
+                <label 
+                  key={type}
+                  className={`flex items-center gap-4 p-3.5 rounded-2xl cursor-pointer transition-colors border ${
+                    isSelected 
+                      ? 'border-[#d22864] bg-[#ffe7f0]/40' 
+                      : errors.practiceType ? 'border-red-500 bg-[#fff1f2]' : 'border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {/* Círculo indicador visual perfectamente centrado */}
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                    isSelected ? 'border-[#d22864] bg-white' : 'border-gray-400 bg-white'
+                  }`}>
+                    {isSelected && (
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#d22864] transition-all" />
+                    )}
+                  </div>
 
+                  <input 
+                    type="radio" 
+                    name="practiceType" 
+                    value={type} 
+                    checked={isSelected}
+                    onChange={handleChange}
+                    className="sr-only" 
+                  />
+                  <span className="text-base text-gray-700">{type}</span>
+                </label>
+              );
+            })}
+          </div>
+          {errors.practiceType && <p className="text-xs text-red-600">{errors.practiceType}</p>}
+        </div>
         {/* Fechas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <label className="block text-xl font-bold text-black">Fecha de inicio</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="block text-base font-bold text-gray-800">Fecha de inicio</label>
             <input 
               type="date" 
               name="startDate"
               value={formData.startDate}
               onChange={handleChange}
-              className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.startDate ? 'border border-red-500' : 'border border-gray-300'}`}
+              className={`w-full h-13 px-4 bg-white rounded-2xl text-base text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.startDate ? 'border border-red-500' : 'border border-gray-300'}`}
             />
-            {errors.startDate && <p className="text-sm text-red-600">{errors.startDate}</p>}
+            {errors.startDate && <p className="text-xs text-red-600">{errors.startDate}</p>}
           </div>
-          <div className="space-y-3">
-            <label className="block text-xl font-bold text-black">Fecha de término</label>
+          <div className="space-y-2">
+            <label className="block text-base font-bold text-gray-800">Fecha de término</label>
             <input 
               type="date" 
               name="endDate"
               value={formData.endDate}
               onChange={handleChange}
-              className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.endDate ? 'border border-red-500' : 'border border-gray-300'}`}
+              className={`w-full h-13 px-4 bg-white rounded-2xl text-base text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.endDate ? 'border border-red-500' : 'border border-gray-300'}`}
             />
-            {errors.endDate && <p className="text-sm text-red-600">{errors.endDate}</p>}
+            {errors.endDate && <p className="text-xs text-red-600">{errors.endDate}</p>}
           </div>
         </div>
 
-        {/* Días de la semana */}
-        <div className="space-y-4">
-          <label className="block text-xl font-bold text-black">Seleccione los días regulares de la semana en que realizará su práctica</label>
+        {/* Días de la semana - SIN SCROLLBAR Y COMPLETOS */}
+        <div className="space-y-2">
+          <label className="block text-base font-bold text-gray-800">Días regulares de práctica</label>
           <div className="space-y-2">
-            {dayOptions.map((day) => (
-              <div
-                key={day.id}
-                onClick={() => {
-                  const currentDays = Array.isArray(formData.days) ? formData.days : [];
-                  const newDays = currentDays.includes(day.id)
-                    ? currentDays.filter((d) => d !== day.id)
-                    : [...currentDays, day.id];
-                  setFormData((prev) => ({ ...prev, days: newDays }));
-                  setErrors((prev) => ({ ...prev, days: '' }));
-                }}
-                className={`flex items-center gap-3 p-4 rounded-[20px] cursor-pointer transition-colors border ${
-                  formData.days.includes(day.id)
-                    ? 'border-[#d22864] bg-[#ffe7f0]'
-                    : 'border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
-                  formData.days.includes(day.id)
-                    ? 'bg-[#d22864] border-[#d22864]'
-                    : 'bg-white border-gray-400'
-                }`}>
-                  {formData.days.includes(day.id) && (
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
+            {dayOptions.map((day) => {
+              const isChecked = formData.days.includes(day.id);
+              return (
+                <div
+                  key={day.id}
+                  onClick={() => {
+                    const currentDays = Array.isArray(formData.days) ? formData.days : [];
+                    const newDays = isChecked
+                      ? currentDays.filter((d) => d !== day.id)
+                      : [...currentDays, day.id];
+                    setFormData((prev) => ({ ...prev, days: newDays }));
+                    setErrors((prev) => ({ ...prev, days: '' }));
+                  }}
+                  className={`flex items-center gap-4 p-3.5 rounded-2xl cursor-pointer transition-colors border bg-white ${
+                    isChecked ? 'border-[#d22864] bg-[#ffe7f0]/20' : 'border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                    isChecked ? 'bg-[#d22864] border-[#d22864]' : 'bg-white border-gray-400'
+                  }`}>
+                    {isChecked && (
+                      <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-base text-gray-700">{day.label}</span>
                 </div>
-                <span className="text-xl text-gray-700">{day.label}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          {errors.days && <p className="text-sm text-red-600">{errors.days}</p>}
+          {errors.days && <p className="text-xs text-red-600">{errors.days}</p>}
         </div>
 
         {/* Horarios */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <label className="block text-xl font-bold text-black">Hora de inicio</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="block text-base font-bold text-gray-800">Hora de inicio</label>
             <input 
               type="time" 
               name="startTime"
               value={formData.startTime}
               onChange={handleChange}
-              className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.startTime ? 'border border-red-500' : 'border border-gray-300'}`}
+              className={`w-full h-13 px-4 bg-white rounded-2xl text-base text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.startTime ? 'border border-red-500' : 'border border-gray-300'}`}
             />
-            {errors.startTime && <p className="text-sm text-red-600">{errors.startTime}</p>}
+            {errors.startTime && <p className="text-xs text-red-600">{errors.startTime}</p>}
           </div>
-          <div className="space-y-3">
-            <label className="block text-xl font-bold text-black">Hora de término</label>
+          <div className="space-y-2">
+            <label className="block text-base font-bold text-gray-800">Hora de término</label>
             <input 
               type="time" 
               name="endTime"
               value={formData.endTime}
               onChange={handleChange}
-              className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.endTime ? 'border border-red-500' : 'border border-gray-300'}`}
+              className={`w-full h-13 px-4 bg-white rounded-2xl text-base text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.endTime ? 'border border-red-500' : 'border border-gray-300'}`}
             />
-            {errors.endTime && <p className="text-sm text-red-600">{errors.endTime}</p>}
+            {errors.endTime && <p className="text-xs text-red-600">{errors.endTime}</p>}
           </div>
         </div>
 
         {/* Dirección */}
-        <div className="space-y-3">
-          <label className="block text-xl font-bold text-black">Ingrese la dirección donde realizará su Práctica</label>
+        <div className="space-y-2">
+          <label className="block text-base font-bold text-gray-800">Dirección donde realizará la práctica</label>
           <input 
             type="text" 
             name="internship_address"
             value={formData.internship_address}
             onChange={handleChange}
-            placeholder="Calle y número. Ej. Av. francia 01145"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.internship_address ? 'border border-red-500' : 'border border-gray-300'}`}
+            placeholder="Calle y número. Ej. Av. Alemania 01145"
+            className={`w-full h-13 px-5 bg-white rounded-2xl text-base text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.internship_address ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.internship_address && <p className="text-sm text-red-600">{errors.internship_address}</p>}
+          {errors.internship_address && <p className="text-xs text-red-600">{errors.internship_address}</p>}
         </div>
 
         {/* Región y Comuna */}
-        <div className="space-y-3">
-          <label className="block text-xl font-bold text-black">Seleccione la región donde realizará su Práctica</label>
+        <div className="space-y-2">
+          <label className="block text-base font-bold text-gray-800">Región</label>
           <div className="relative">
             <select 
               name="region" 
               value={formData.region} 
               onChange={handleChange}
-              className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all appearance-none ${errors.region ? 'border border-red-500' : 'border border-gray-300'}`}
+              className={`w-full h-13 px-5 bg-white rounded-2xl text-base text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all appearance-none ${errors.region ? 'border border-red-500' : 'border border-gray-300'}`}
             >
               <option value="">Seleccione una región</option>
               <option value="araucania">La Araucanía</option>
@@ -271,22 +268,22 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
               <option value="aysen">Aysén</option>
               <option value="magallanes">Magallanes</option>
             </select>
-            <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-black pointer-events-none" size={28} />
+            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={20} />
           </div>
-          {errors.region && <p className="text-sm text-red-600">{errors.region}</p>}
+          {errors.region && <p className="text-xs text-red-600">{errors.region}</p>}
         </div>
 
-        <div className="space-y-3">
-          <label className="block text-xl font-bold text-black">Comuna donde realizará su Práctica</label>
+        <div className="space-y-2">
+          <label className="block text-base font-bold text-gray-800">Comuna</label>
           <input
             type="text"
             name="commune"
             value={formData.commune}
             onChange={handleChange}
             placeholder="Ej: Temuco"
-            className={`w-full h-16 px-6 bg-white rounded-[20px] text-xl text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.commune ? 'border border-red-500' : 'border border-gray-300'}`}
+            className={`w-full h-13 px-5 bg-white rounded-2xl text-base text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.commune ? 'border border-red-500' : 'border border-gray-300'}`}
           />
-          {errors.commune && <p className="text-sm text-red-600">{errors.commune}</p>}
+          {errors.commune && <p className="text-xs text-red-600">{errors.commune}</p>}
         </div>
 
         {/* Buttons */}
@@ -294,13 +291,13 @@ export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
           <button 
             type="button"
             onClick={onBack}
-            className="flex-1 h-16 bg-white text-[#d22864] border border-[#d22864] text-2xl font-bold rounded-[20px] hover:bg-[#f9f4f7] transition-all shadow-sm cursor-pointer"
+            className="flex-1 h-13 bg-white text-[#d22864] border border-[#d22864] text-lg font-bold rounded-2xl hover:bg-[#f9f4f7] transition-all cursor-pointer"
           >
             Anterior
           </button>
           <button 
             type="submit"
-            className="flex-1 h-16 bg-[#d22864] text-white text-2xl font-bold rounded-[20px] hover:opacity-90 transition-opacity shadow-md cursor-pointer"
+            className="flex-1 h-13 bg-[#d22864] text-white text-lg font-bold rounded-2xl hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
           >
             Siguiente
           </button>
