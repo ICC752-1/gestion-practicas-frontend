@@ -146,18 +146,23 @@ const TimelineItem = ({ step, index, isLast }) => {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="flex gap-6 relative"
+      className="flex gap-6 relative items-start"
     >
+
       {!isLast && (
-        <div className="absolute left-[19.5px] top-10 w-[2px] h-[calc(100%-24px)] bg-[#d22864]" />
+        <div className="absolute left-[19px] top-7 w-[2px] h-[calc(100%-16px)] bg-[#d22864]" />
       )}
-      <div className="flex flex-col items-center z-10">
+      
+      <div className="flex flex-col items-center z-10 flex-shrink-0 mt-0.5">
         <div className="w-10 h-10 rounded-full border-2 border-[#d22864] bg-white flex items-center justify-center text-[#d22864] shadow-sm">
           {step.icon}
         </div>
       </div>
-      <div className="flex-1 pb-10 pt-2">
-        <h3 className="font-semibold text-gray-800 text-base md:text-lg">{step.title}</h3>
+      
+      <div className="flex-1 pb-10 min-w-0">
+        <h3 className="font-semibold text-gray-800 text-base md:text-lg leading-tight">
+          {step.title}
+        </h3>
         {step.subtitle && <p className="text-gray-400 text-xs md:text-sm mt-0.5">{step.subtitle}</p>}
         {step.actor && <p className="text-gray-400 text-xs md:text-sm mt-0.5">Por: {step.actor}</p>}
         {step.date && <p className="text-gray-400 text-xs md:text-sm mt-0.5">{step.date}</p>}
