@@ -10,7 +10,6 @@ export const StudentTable = ({ students = [] }) => {
   const { user } = useAuth();
   const adminBasePath = getAdminBasePathForRoles(user?.roles);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
   const [degreeFilter, setDegreeFilter] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
   const [openingId, setOpeningId] = useState(null);
@@ -37,10 +36,6 @@ export const StudentTable = ({ students = [] }) => {
 
   const uniqueCompanies = useMemo(() => {
     return [...new Set(students.map(s => s.org_name).filter(Boolean))];
-  }, [students]);
-
-  const uniqueStatuses = useMemo(() => {
-    return [...new Set(students.map(s => getNormalizedStatus(s).value).filter(Boolean))];
   }, [students]);
 
   const filteredStudents = students.filter(s => {
@@ -71,13 +66,10 @@ export const StudentTable = ({ students = [] }) => {
       endDate.includes(term)
     );
 
-    const normalizedStatus = getNormalizedStatus(s).value;
-
-    const matchesStatus = statusFilter === '' || normalizedStatus === statusFilter;
     const matchesDegree = degreeFilter === '' || (s.student?.degree || s.student?.cod_degree) === degreeFilter;
     const matchesCompany = companyFilter === '' || s.org_name === companyFilter;
 
-    return matchesSearch && matchesStatus && matchesDegree && matchesCompany;
+    return matchesSearch && matchesDegree && matchesCompany;
   });
 
   const handleOpenDetails = async (internship) => {
@@ -131,17 +123,6 @@ export const StudentTable = ({ students = [] }) => {
             <Filter size={18} className="mr-2" />
             <span className="text-sm font-medium">Filtros:</span>
           </div>
-          
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-ufro-primary focus:border-ufro-primary block p-2.5"
-          >
-            <option value="">Todos los estados de solicitud</option>
-            {uniqueStatuses.map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
 
           <select 
             value={degreeFilter}
@@ -165,9 +146,9 @@ export const StudentTable = ({ students = [] }) => {
             ))}
           </select>
           
-          {(statusFilter || degreeFilter || companyFilter) && (
+          {(degreeFilter || companyFilter) && (
             <button 
-              onClick={() => { setStatusFilter(''); setDegreeFilter(''); setCompanyFilter(''); }}
+              onClick={() => { setDegreeFilter(''); setCompanyFilter(''); }}
               className="text-sm text-ufro-primary font-medium hover:underline ml-auto"
             >
               Limpiar filtros
