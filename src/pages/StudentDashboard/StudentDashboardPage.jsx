@@ -248,17 +248,27 @@ const PracticeCard = ({ internship, lifecycle }) => {
             Ver Seguimiento
             <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
           </button>
-          <button
-            onClick={() => navigate(`/autoevaluacion/${internship.id}`)}
-            className={`w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border transition-all ${
-              canSelfEvaluate
-                ? 'border-[#d22864]/20 bg-[#fff0f6] text-[#d22864] hover:bg-[#ffe3ee]'
-                : 'border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100'
-            }`}
-          >
-            Autoevaluación
-            <ClipboardCheck size={18} />
-          </button>
+          {lifecycle?.current_step === "Presentación final por agendar" ? (
+            <button
+              onClick={() => navigate(`/entrevistas?internshipId=${internship.id}&purpose=final_presentation`)}
+              className="w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border border-[#d22864]/20 bg-[#fff0f6] text-[#d22864] hover:bg-[#ffe3ee] transition-all"
+            >
+              Agendar Presentación
+              <Calendar size={18} />
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate(`/autoevaluacion/${internship.id}`)}
+              className={`w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border transition-all ${
+                canSelfEvaluate
+                  ? 'border-[#d22864]/20 bg-[#fff0f6] text-[#d22864] hover:bg-[#ffe3ee]'
+                  : 'border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              Autoevaluación
+              <ClipboardCheck size={18} />
+            </button>
+          )}
         </div>
       </div>
     </motion.div>
@@ -534,7 +544,6 @@ export const StudentDashboardPage = () => {
                     ? "Solicita consultas generales o presentación final"
                     : "Solicita presentación final de tu práctica"}
                   onClick={() => navigate('/entrevistas')}
-                  disabled={!isSchedulingActionEnabled}
                   badge={appointmentNotificationsCount}
                 />
                 <QuickAction

@@ -11,6 +11,7 @@ const EVENT_META = {
   internship_derived: { label: 'Expediente DIRAE derivado', icon: Send, color: 'text-[#d22864]', bg: 'bg-[#fff0f6]' },
   requirement_status_changed: { label: 'Cambio en requisito', icon: FileText, color: 'text-[#d22864]', bg: 'bg-[#fff0f6]' },
   appointment_scheduled: { label: 'Cita agendada', icon: CalendarCheck, color: 'text-[#d22864]', bg: 'bg-[#fff0f6]' },
+  presentation_approved: { label: 'Presentación final aprobada', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
   custom: { label: 'Notificación', icon: Bell, color: 'text-gray-600', bg: 'bg-gray-100' },
 };
 
