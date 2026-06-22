@@ -76,7 +76,6 @@ export const StudentTable = ({ students = [] }) => {
     return matchesSearch && matchesStatus && matchesDegree && matchesCompany;
   });
 
-  // CORRECCIÓN FLUIDA: Proporciones optimizadas y min-w-0 interno para que colapse sin empujar la pantalla
   const gridLayoutClass = "grid grid-cols-[1.4fr_1fr_1.3fr_1.1fr_0.9fr] items-center gap-3 px-4 py-4 w-full";
 
   if (students.length === 0) {
