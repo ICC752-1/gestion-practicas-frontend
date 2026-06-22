@@ -36,8 +36,8 @@ const STATUS_LABELS = {
   1: 'Pendiente',
   2: 'En revisión DIRAE',
   3: 'En revisión',
-  4: 'Aprobada',
-  5: 'Rechazada'
+  4: 'Solicitud Aprobada',
+  5: 'Solicitud Rechazada'
 };
 
 const STATUS_STYLES = {
@@ -156,9 +156,15 @@ const DetailChip = ({ icon: Icon, label, value }) => (
   </div>
 );
 
-const PracticeCard = ({ internship }) => {
+const PracticeCard = ({ internship, lifecycle }) => {
   const navigate = useNavigate();
-  const progress = getInternshipAdministrativeProgress(internship);
+  const progress = lifecycle
+    ? {
+        percentage: lifecycle.progress_percentage,
+        label: lifecycle.current_step,
+        color: lifecycle.progress_percentage >= 100 ? 'bg-green-500' : 'bg-[#d22864]',
+      }
+    : getInternshipAdministrativeProgress(internship);
   const canSelfEvaluate = isSelfEvaluationAvailable(internship);
 
   return (
@@ -217,7 +223,7 @@ const PracticeCard = ({ internship }) => {
 
         <div className="rounded-2xl border border-gray-100 bg-gray-50/80 p-4">
           <div className="mb-2 flex items-center justify-between gap-4 text-xs font-bold">
-            <span className="text-gray-600">Avance administrativo</span>
+            <span className="text-gray-600">{lifecycle ? 'Avance de práctica' : 'Avance administrativo'}</span>
             <span className="text-gray-500">{progress.percentage}%</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-gray-200">
@@ -285,6 +291,7 @@ export const StudentDashboardPage = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [internships, setInternships] = useState([]);
+  const [lifecyclesById, setLifecyclesById] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -295,6 +302,18 @@ export const StudentDashboardPage = () => {
       setError(null);
       const data = await internshipService.getMyInternships();
       setInternships(data);
+      const lifecycleEntries = await Promise.all(
+        data.map(async (internship) => {
+          try {
+            const lifecycle = await internshipService.getInternshipLifecycle(internship.id);
+            return [internship.id, lifecycle];
+          } catch (error) {
+            console.error('No se pudo cargar seguimiento de práctica:', error);
+            return [internship.id, null];
+          }
+        })
+      );
+      setLifecyclesById(Object.fromEntries(lifecycleEntries));
     } catch (err) {
       setError(err.message || 'Error al cargar las prácticas');
     } finally {
@@ -449,6 +468,7 @@ export const StudentDashboardPage = () => {
                     <PracticeCard
                       key={internship.id}
                       internship={internship}
+                      lifecycle={lifecyclesById[internship.id]}
                     />
                   ))}
                 </div>

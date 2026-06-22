@@ -24,4 +24,12 @@ export const coordinatorService = {
     );
     return response.data;
   },
+
+  async updatePracticeSchoolInsurance(internshipId, status, notes = null) {
+    const response = await api.patch(
+      `/admin/internships/${internshipId}/school-insurance`,
+      { status, notes }
+    );
+    return response.data;
+  },
 };

@@ -9,7 +9,7 @@ import { useAuth } from '../../context/useAuth';
 import { getDisplayRoleForRoles } from '../../services/roleRouting';
 
 export const CoordinatorDashboardPage = () => {
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('submitted');
   const { user } = useAuth();
   const { stats, students, loading, error, refreshData } = useCoordinatorDashboard(statusFilter);
 

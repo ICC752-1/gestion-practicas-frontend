@@ -13,6 +13,7 @@ import {
 } from '../../services/superadminService';
 
 const PAGE_SIZE = 10;
+const STUDENT_ROLE_NAME = 'Estudiante';
 
 const initialFilters = {
   search: '',
@@ -22,15 +23,81 @@ const initialFilters = {
 
 const initialForm = {
   email: '',
-  password: '',
   first_name: '',
   last_name: '',
   rut: '',
+  admission_year: '',
   role_ids: [],
 };
 
 const getErrorMessage = (error) => {
   return error?.response?.data?.detail || 'No se pudo completar la acción.';
+};
+
+const cleanRut = (value) => {
+  const raw = value.replace(/[^0-9kK]/g, '').toUpperCase();
+
+  if (!raw) {
+    return '';
+  }
+
+  const lastCharacter = raw.slice(-1);
+  const number = (
+    lastCharacter === 'K' ? raw.slice(0, -1) : raw
+  ).replace(/\D/g, '');
+
+  return `${number}${lastCharacter === 'K' ? 'K' : ''}`;
+};
+
+const calculateRutVerifier = (number) => {
+  let total = 0;
+  let multiplier = 2;
+
+  for (let index = number.length - 1; index >= 0; index -= 1) {
+    total += Number(number[index]) * multiplier;
+    multiplier = multiplier === 7 ? 2 : multiplier + 1;
+  }
+
+  const remainder = 11 - (total % 11);
+
+  if (remainder === 11) {
+    return '0';
+  }
+  if (remainder === 10) {
+    return 'K';
+  }
+  return String(remainder);
+};
+
+const formatRut = (value) => {
+  const cleaned = cleanRut(value);
+
+  if (cleaned.length <= 1) {
+    return cleaned;
+  }
+
+  const number = cleaned.slice(0, -1);
+  const verifier = cleaned.slice(-1);
+  const formattedNumber = Number(number).toLocaleString('es-CL');
+
+  return `${formattedNumber}-${verifier}`;
+};
+
+const isValidRut = (value) => {
+  const cleaned = cleanRut(value);
+
+  if (cleaned.length < 2) {
+    return false;
+  }
+
+  const number = cleaned.slice(0, -1).replace(/^0+/, '');
+  const verifier = cleaned.slice(-1);
+
+  if (!number || !/^\d+$/.test(number)) {
+    return false;
+  }
+
+  return calculateRutVerifier(number) === verifier;
 };
 
 export const SuperadminUsersPage = () => {
@@ -48,6 +115,10 @@ export const SuperadminUsersPage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const selectedRoleNames = roles
+    .filter((role) => form.role_ids.includes(role.id))
+    .map((role) => role.name);
+  const isStudentSelected = selectedRoleNames.includes(STUDENT_ROLE_NAME);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -128,6 +199,12 @@ export const SuperadminUsersPage = () => {
     setForm((current) => ({ ...current, [name]: value }));
   };
 
+  const handleRutChange = (event) => {
+    const formattedRut = formatRut(event.target.value);
+
+    setForm((current) => ({ ...current, rut: formattedRut }));
+  };
+
   const handleRoleToggle = (roleId) => {
     setForm((current) => {
       const hasRole = current.role_ids.includes(roleId);
@@ -147,9 +224,22 @@ export const SuperadminUsersPage = () => {
     setMessage('');
 
     try {
-      await createUser(form);
+      if (!isValidRut(form.rut)) {
+        setError('Ingresa un RUT válido con dígito verificador correcto.');
+        return;
+      }
+
+      const payload = {
+        ...form,
+        admission_year:
+          isStudentSelected && form.admission_year
+            ? Number(form.admission_year)
+            : undefined,
+      };
+
+      await createUser(payload);
       setForm(initialForm);
-      setMessage('Usuario creado correctamente.');
+      setMessage('Usuario creado correctamente. Se envió el enlace de activación al correo registrado.');
       setOffset(0);
       await loadUsers();
     } catch (err) {
@@ -239,7 +329,7 @@ export const SuperadminUsersPage = () => {
           <h1 className="mt-3 text-3xl font-black text-gray-900">Administración de usuarios</h1>
           <p className="mt-4 text-gray-600">
             Gestiona cuentas y roles técnicos sin conceder permisos académicos implícitos.
-            Las cuentas nuevas usan credencial temporal de un solo uso y deben definir contraseña definitiva antes de ingresar.
+            Las cuentas nuevas reciben un enlace de activación de un solo uso para definir su contraseña.
           </p>
         </section>
 
@@ -410,29 +500,87 @@ export const SuperadminUsersPage = () => {
           <form onSubmit={handleCreateUser} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-black text-gray-900">Crear usuario</h2>
             <p className="mt-2 text-sm text-gray-500">
-              Define una credencial temporal de un solo uso. El usuario deberá reemplazarla antes de iniciar sesión.
+              El sistema enviará un enlace de activación al correo indicado. El usuario definirá su contraseña desde ese enlace.
             </p>
             <div className="mt-5 grid gap-3">
               <input name="email" type="email" required value={form.email} onChange={handleFormChange} placeholder="Correo" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
-              <input name="password" type="password" required minLength="8" value={form.password} onChange={handleFormChange} placeholder="Credencial temporal de un solo uso" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
               <div className="grid gap-3 sm:grid-cols-2">
                 <input name="first_name" required value={form.first_name} onChange={handleFormChange} placeholder="Nombres" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
                 <input name="last_name" required value={form.last_name} onChange={handleFormChange} placeholder="Apellidos" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
               </div>
-              <input name="rut" required value={form.rut} onChange={handleFormChange} placeholder="RUT" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
+              <div>
+                <input
+                  name="rut"
+                  required
+                  value={form.rut}
+                  onChange={handleRutChange}
+                  placeholder="RUT"
+                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-[#d22864] ${
+                    form.rut && !isValidRut(form.rut)
+                      ? 'border-red-200 bg-red-50'
+                      : 'border-gray-200'
+                  }`}
+                />
+                <p
+                  className={`mt-1 text-xs font-semibold ${
+                    form.rut && !isValidRut(form.rut)
+                      ? 'text-red-600'
+                      : 'text-gray-400'
+                  }`}
+                >
+                  {form.rut && !isValidRut(form.rut)
+                    ? 'RUT inválido o dígito verificador incorrecto.'
+                    : 'Formato automático: 12.345.678-5'}
+                </p>
+              </div>
+              {isStudentSelected && (
+                <input
+                  name="admission_year"
+                  type="number"
+                  min="1900"
+                  max="2100"
+                  value={form.admission_year}
+                  onChange={handleFormChange}
+                  placeholder="Año de ingreso (opcional)"
+                  className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
+                />
+              )}
               <div className="rounded-2xl border border-gray-100 p-4">
                 <p className="text-xs font-black uppercase tracking-wide text-gray-500">Roles iniciales</p>
+                <p className="mt-1 text-xs font-semibold text-gray-400">
+                  {form.role_ids.length === 0
+                    ? 'Sin roles seleccionados'
+                    : `${form.role_ids.length} rol(es) seleccionado(s)`}
+                </p>
                 <div className="mt-3 grid gap-2">
-                  {roles.map((role) => (
-                    <label key={role.id} className="flex items-center gap-3 text-sm font-semibold text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={form.role_ids.includes(role.id)}
-                        onChange={() => handleRoleToggle(role.id)}
-                      />
-                      {role.name}
-                    </label>
-                  ))}
+                  {roles.map((role) => {
+                    const isSelected = form.role_ids.includes(role.id);
+
+                    return (
+                      <button
+                        key={role.id}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => handleRoleToggle(role.id)}
+                        className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-bold transition-all ${
+                          isSelected
+                            ? 'border-[#d22864] bg-[#fff0f6] text-[#8B1D46] shadow-sm ring-2 ring-[#d22864]/10'
+                            : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864]/50 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span>{role.name}</span>
+                        <span
+                          className={`flex h-5 w-5 items-center justify-center rounded-full border text-xs ${
+                            isSelected
+                              ? 'border-[#d22864] bg-[#d22864] text-white'
+                              : 'border-gray-300 bg-white text-transparent'
+                          }`}
+                        >
+                          ✓
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <button
