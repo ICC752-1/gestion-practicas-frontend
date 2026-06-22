@@ -88,7 +88,7 @@ export const ActionButtons = ({ practice, onActionSuccess }) => {
       if (status === 403) {
         msg = 'No tiene permisos para realizar esta acción.';
       } else if (status === 404) {
-        msg = 'La práctica no fue encontrada o ya no existe.';
+        msg = 'La solicitud no fue encontrada o ya no existe.';
       } else {
         msg = error.response?.data?.detail?.message ||
               error.response?.data?.detail ||
@@ -122,7 +122,7 @@ export const ActionButtons = ({ practice, onActionSuccess }) => {
                 className="px-6 h-12 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
               >
                 <Check size={18} strokeWidth={2.5} />
-                {approveStartsReview ? 'Enviar a Revisión' : 'Aprobar Práctica'}
+                {approveStartsReview ? 'Enviar a revisión' : 'Aprobar solicitud'}
               </button>
               <button
                 onClick={() => handleOpenModal('reject')}
@@ -130,7 +130,7 @@ export const ActionButtons = ({ practice, onActionSuccess }) => {
                 className="px-6 h-12 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 active:scale-95 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
               >
                 <XCircle size={18} strokeWidth={2.5} />
-                Rechazar Práctica
+                Rechazar solicitud
               </button>
             </>
           )}

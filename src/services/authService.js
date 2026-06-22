@@ -39,6 +39,14 @@ export const authService = {
         localStorage.removeItem("refresh_token");
     },
 
+    async completeTemporaryPassword(email, temporaryPassword, newPassword) {
+        await api.post("/auth/complete-temporary-password", {
+            email,
+            temporary_password: temporaryPassword,
+            new_password: newPassword,
+        });
+    },
+
     getGoogleLoginUrl() {
         return buildApiUrl("/auth/google/login");
     },

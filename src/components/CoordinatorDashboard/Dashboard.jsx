@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { StatCard } from '../coordinador/StatCard';
 import Management from './Management';
-import { Users, FileText, CheckCircle, Clock, Calendar, AlertCircle } from 'lucide-react';
+import { Users, FileText, CheckCircle, Clock, Calendar, AlertCircle, Mail } from 'lucide-react';
 
 const getStatusTotal = (stats, titles) => {
   return (stats?.internships_by_status || [])
@@ -29,32 +29,32 @@ const Dashboard = ({
     <div className="p-6 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-          label="Total" 
+          label="Solicitudes totales" 
           value={stats.total} 
           Icon={Users} 
           variant="default"
         />
         <StatCard 
-          label="Pendientes" 
+          label="Solicitudes pendientes" 
           value={stats.pending} 
           Icon={Clock} 
           variant="alert"
         />
         <StatCard 
-          label="En Revisión" 
+          label="Solicitudes en revisión" 
           value={stats.inReview} 
           Icon={AlertCircle} 
           variant="progress"
         />
         <StatCard 
-          label="Aprobadas" 
+          label="Solicitudes aprobadas" 
           value={stats.approved} 
           Icon={CheckCircle} 
           variant="success"
         />
        </div>
        
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -64,8 +64,8 @@ const Dashboard = ({
             <FileText className="w-7 h-7 text-[#B5305F] group-hover:text-white transition-colors" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-800">Gestión de Prácticas</h3>
-            <p className="text-sm text-gray-400">Administra las solicitudes y estados</p>
+            <h3 className="text-lg font-bold text-gray-800">Gestión de solicitudes de práctica</h3>
+            <p className="text-sm text-gray-400">Administra solicitudes y sus estados administrativos</p>
           </div>
         </motion.button>
 
@@ -81,6 +81,21 @@ const Dashboard = ({
           <div>
             <h3 className="text-lg font-bold text-gray-800">Configurar Horarios</h3>
             <p className="text-sm text-gray-400">Gestiona tus horarios disponibles para las entrevistas</p>
+          </div>
+        </motion.button>
+
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate('/cartas-presentacion')}
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
+        >
+          <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
+            <Mail className="w-7 h-7 text-[#B5305F] group-hover:text-white transition-colors" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">Cartas de Presentación</h3>
+            <p className="text-sm text-gray-400">Administra plantillas por tipo de práctica</p>
           </div>
         </motion.button>
       </div>

@@ -170,6 +170,15 @@ export const PracticeDetailPage = () => {
   const canInviteSupervisor = user?.roles?.some((role) => (
     role === 'Encargado de practica' || role === 'Director de carrera'
   ));
+  const practiceStatusTitle = practice?.status?.title || practice?.status || 'Pendiente';
+  const canGenerateSupervisorInvitation = Boolean(
+    canInviteSupervisor && practiceStatusTitle === 'Aprobada' && !practice?.is_cancelled
+  );
+  const supervisorInvitationUnavailableMessage = practice?.is_cancelled
+    ? 'No disponible para solicitudes anuladas.'
+    : practiceStatusTitle !== 'Aprobada'
+      ? 'Disponible cuando la solicitud esté aprobada.'
+      : '';
 
   // Usamos el estudiante que pasamos en la navegación desde StudentTable como fuente principal.
   // Si no está (ej. si el usuario entra directo a la URL), intentamos buscarlo en el practice.
@@ -183,7 +192,7 @@ export const PracticeDetailPage = () => {
   const companyAddress = [practice?.address, practice?.city, practice?.region].filter(Boolean).join(', ');
   const currentStatusLabel = practice?.is_cancelled
     ? 'Anulada'
-    : practice?.status?.title || practice?.status || 'Pendiente';
+    : practiceStatusTitle;
 
   const getBadgeColor = (title) => {
     const t = (title || '').toLowerCase();
@@ -217,7 +226,7 @@ export const PracticeDetailPage = () => {
         </button>
 
         <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-800 mb-8">Detalle de Práctica Administrativa</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-8">Detalle de solicitud de práctica</h2>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center min-h-[30vh] space-y-4">
@@ -252,7 +261,7 @@ export const PracticeDetailPage = () => {
               {/* Sección de Práctica */}
               <div className="border-t border-gray-100 pt-8 mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Estado</h3>
+                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Estado de solicitud</h3>
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${getBadgeColor(currentStatusLabel)}`}>
                     {currentStatusLabel}
                   </span>
@@ -286,11 +295,16 @@ export const PracticeDetailPage = () => {
                       <p className="mt-1 text-sm text-gray-500">
                         Genera o reenvía un enlace de un solo uso al correo registrado del supervisor.
                       </p>
+                      {!canGenerateSupervisorInvitation && supervisorInvitationUnavailableMessage && (
+                        <p className="mt-2 text-sm font-semibold text-[#b01e52]">
+                          {supervisorInvitationUnavailableMessage}
+                        </p>
+                      )}
                     </div>
                     <button
                       type="button"
                       onClick={handleGenerateSupervisorInvitation}
-                      disabled={supervisorInviteLoading || practice.is_cancelled}
+                      disabled={supervisorInviteLoading || !canGenerateSupervisorInvitation}
                       className="rounded-xl bg-[#d22864] px-4 py-3 text-sm font-bold text-white hover:bg-[#b01e52] disabled:opacity-50"
                     >
                       {supervisorInviteLoading ? 'Generando...' : 'Generar invitación'}

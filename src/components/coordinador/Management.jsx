@@ -58,8 +58,8 @@ export default function Management({ students, onUpdateStatus, onBack }) {
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span className="font-bold underline-offset-4 group-hover:underline">Volver al Panel</span>
           </button>
-          <h2 className="text-3xl font-bold text-[#B5305F] mb-1 font-display">Gestión de Prácticas</h2>
-          <p className="text-gray-400 font-medium italic">Revisión coordinada de procesos académicos</p>
+          <h2 className="text-3xl font-bold text-[#B5305F] mb-1 font-display">Gestión de solicitudes de práctica</h2>
+          <p className="text-gray-400 font-medium italic">Revisión coordinada de solicitudes administrativas</p>
         </div>
       </header>
 

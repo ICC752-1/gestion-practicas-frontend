@@ -239,7 +239,7 @@ export const SuperadminUsersPage = () => {
           <h1 className="mt-3 text-3xl font-black text-gray-900">Administración de usuarios</h1>
           <p className="mt-4 text-gray-600">
             Gestiona cuentas y roles técnicos sin conceder permisos académicos implícitos.
-            Al desactivar una cuenta se bloquean nuevas sesiones y refresh tokens.
+            Las cuentas nuevas usan credencial temporal de un solo uso y deben definir contraseña definitiva antes de ingresar.
           </p>
         </section>
 
@@ -330,6 +330,11 @@ export const SuperadminUsersPage = () => {
                         <span className={`rounded-full px-3 py-1 text-xs font-black ${item.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
                           {item.is_active ? 'Activo' : 'Inactivo'}
                         </span>
+                        {item.must_change_password && (
+                          <span className="mt-2 block rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
+                            Cambio de contraseña pendiente
+                          </span>
+                        )}
                       </td>
                       <td className="px-3 py-4">
                         <div className="flex max-w-xs flex-wrap gap-2">
@@ -405,11 +410,11 @@ export const SuperadminUsersPage = () => {
           <form onSubmit={handleCreateUser} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-black text-gray-900">Crear usuario</h2>
             <p className="mt-2 text-sm text-gray-500">
-              Usa una credencial temporal y solicita cambio posterior fuera de este panel.
+              Define una credencial temporal de un solo uso. El usuario deberá reemplazarla antes de iniciar sesión.
             </p>
             <div className="mt-5 grid gap-3">
               <input name="email" type="email" required value={form.email} onChange={handleFormChange} placeholder="Correo" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
-              <input name="password" type="password" required minLength="8" value={form.password} onChange={handleFormChange} placeholder="Credencial temporal" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
+              <input name="password" type="password" required minLength="8" value={form.password} onChange={handleFormChange} placeholder="Credencial temporal de un solo uso" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
               <div className="grid gap-3 sm:grid-cols-2">
                 <input name="first_name" required value={form.first_name} onChange={handleFormChange} placeholder="Nombres" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
                 <input name="last_name" required value={form.last_name} onChange={handleFormChange} placeholder="Apellidos" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />

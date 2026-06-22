@@ -22,9 +22,9 @@ export const ActionModal = ({
   };
 
   const actionLabels = {
-    approve: approveStartsReview ? 'Enviar a Revisión' : 'Aprobar Práctica',
-    reject: 'Rechazar Práctica',
-    derive: 'Derivar Práctica',
+    approve: approveStartsReview ? 'Enviar a revisión' : 'Aprobar solicitud',
+    reject: 'Rechazar solicitud',
+    derive: 'Derivar solicitud',
   };
 
   const actionColors = {
@@ -48,9 +48,9 @@ export const ActionModal = ({
   const actionDescriptions = {
     approve: approveStartsReview
       ? 'La solicitud pasará de Pendiente a En revisión. Esta acción no constituye la aprobación final de la práctica.'
-      : '¿Está seguro de que desea aprobar esta práctica? La solicitud cambiará al estado Aprobada.',
-    reject: 'Esta acción rechazará la práctica de forma definitiva. Es obligatorio que ingrese un motivo claro para el rechazo.',
-    derive: 'Esta acción derivará la práctica a revisión por la Dirección de Registro Académico Estudiantil (DIRAE). Es obligatorio ingresar un motivo.',
+      : '¿Está seguro de que desea aprobar esta solicitud? La práctica quedará habilitada administrativamente para continuar su ejecución.',
+    reject: 'Esta acción rechazará la solicitud de forma definitiva. Es obligatorio que ingrese un motivo claro para el rechazo.',
+    derive: 'Esta acción derivará la solicitud a revisión por la Dirección de Registro Académico Estudiantil (DIRAE). Es obligatorio ingresar un motivo.',
   };
 
   const isCommentRequired = actionType === 'reject' || actionType === 'derive';

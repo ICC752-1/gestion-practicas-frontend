@@ -83,8 +83,14 @@ export const SupervisorPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <StatCard title="Estudiantes asignados" count={assignments.length} />
             <StatCard title="En proceso" count={pendingCount} />
-            <StatCard title="Evaluaciones disponibles" count={pendingCount} />
+            <StatCard title="Evaluaciones pendientes" count={pendingCount} />
             <StatCard title="Completadas" count={completedCount} />
+          </div>
+          <div className="mt-6 rounded-2xl border border-brand-light/20 bg-brand-light/5 px-5 py-4 text-sm text-gray-600">
+            <p className="font-bold text-brand-medium">Evaluación solo por enlace seguro</p>
+            <p className="mt-1">
+              Este panel es informativo. Para completar una evaluación, use el enlace de un solo uso enviado al correo registrado por la coordinación.
+            </p>
           </div>
         </section>
 
