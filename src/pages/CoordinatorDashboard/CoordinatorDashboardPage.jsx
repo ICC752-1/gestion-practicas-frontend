@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, AlertCircle, Settings, Clock, ArrowRight } from 'lucide-react';
+import { Loader2, AlertCircle, Clock, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
@@ -15,7 +15,6 @@ export const CoordinatorDashboardPage = () => {
   const navigate = useNavigate();
   const { stats, students, loading, error, refreshData } = useCoordinatorDashboard(statusFilter);
 
-  const [generalConfig, setGeneralConfig] = useState({ general_consultations_enabled: false });
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [metaLoading, setMetaLoading] = useState(true);
 
@@ -24,9 +23,6 @@ export const CoordinatorDashboardPage = () => {
 
   const fetchSchedulingMeta = async () => {
     try {
-      const config = await schedulingService.getSchedulingConfig();
-      setGeneralConfig(config);
-      
       const requests = await schedulingService.getPendingRequests();
       setPendingRequestsCount(requests.length);
     } catch (e) {
@@ -40,66 +36,33 @@ export const CoordinatorDashboardPage = () => {
     fetchSchedulingMeta();
   }, []);
 
-  const handleToggleConsultations = async () => {
-    const nextVal = !generalConfig.general_consultations_enabled;
-    try {
-      await schedulingService.updateSchedulingConfig({ general_consultations_enabled: nextVal });
-      setGeneralConfig(prev => ({ ...prev, general_consultations_enabled: nextVal }));
-    } catch (e) {
-      console.error("Failed to toggle consultations", e);
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-ufro-bg">
       <UserHeader userName={userName} userRole={userRole} />
       
       <main className="flex-grow container mx-auto px-4 py-8 max-w-6xl space-y-6">
         
-        {/* Scheduling Quick Widget */}
+        {/* Pending Requests Quick Widget */}
         {!loading && !metaLoading && (
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-2xl bg-pink-50 flex items-center justify-center text-[#d22864] flex-shrink-0">
-                <Settings className="w-6 h-6" />
+                <Clock className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-800 text-lg">Configuración de Consultas Generales</h3>
-                <p className="text-sm text-gray-400">Activa o desactiva la posibilidad de que estudiantes agenden consultas presenciales individuales contigo.</p>
+                <h3 className="font-bold text-gray-800 text-lg">Solicitudes de Agendamiento</h3>
+                <p className="text-sm text-gray-400">Revisa y responde las solicitudes pendientes de los estudiantes.</p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4">
-              {/* Toggle Switch */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-gray-600">
-                  {generalConfig.general_consultations_enabled ? 'Habilitadas' : 'Deshabilitadas'}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleToggleConsultations}
-                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none ${
-                    generalConfig.general_consultations_enabled ? 'bg-green-500' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                      generalConfig.general_consultations_enabled ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Pending Requests Badge */}
-              <button
-                onClick={() => navigate('/entrevistas')}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-ufro-primary hover:bg-opacity-95 text-white font-bold text-xs transition shadow-md shadow-ufro-primary/10"
-              >
-                <Clock className="w-4 h-4" />
-                <span>Solicitudes pendientes: {pendingRequestsCount}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <button
+              onClick={() => navigate('/entrevistas')}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-ufro-primary hover:bg-opacity-95 text-white font-bold text-xs transition shadow-md shadow-ufro-primary/10"
+            >
+              <Clock className="w-4 h-4" />
+              <span>Solicitudes pendientes: {pendingRequestsCount}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
 

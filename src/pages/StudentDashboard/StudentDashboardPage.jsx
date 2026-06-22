@@ -31,6 +31,7 @@ import { canUploadDocuments } from "../../services/documentService";
 import { dataPortabilityService } from "../../services/dataPortabilityService";
 import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
 import { useToast } from "../../context/useToast";
+import { useNotifications } from "../../hooks/useNotifications";
 
 // --- Constants ---
 const STATUS_LABELS = {
@@ -264,17 +265,22 @@ const PracticeCard = ({ internship, lifecycle }) => {
   );
 };
 
-const QuickAction = ({ icon: Icon, title, desc, onClick, primary, disabled }) => (
+const QuickAction = ({ icon: Icon, title, desc, onClick, primary, disabled, badge }) => (
   <motion.button
     whileHover={!disabled ? { y: -5, scale: 1.02 } : {}}
     onClick={!disabled ? onClick : undefined}
-    className={`p-6 rounded-[2rem] text-left flex flex-col gap-4 transition-all duration-300 ${
+    className={`relative p-6 rounded-[2rem] text-left flex flex-col gap-4 transition-all duration-300 ${
       disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' :
       primary
         ? 'bg-[#d22864] text-white shadow-xl shadow-[#d22864]/20'
         : 'bg-white text-gray-900 shadow-lg shadow-gray-200/50 border border-gray-50 hover:border-[#d22864]/20'
     }`}
   >
+    {badge ? (
+      <span className="absolute top-4 right-4 min-w-[22px] h-[22px] px-1.5 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[11px] font-bold leading-none shadow-md">
+        {badge > 9 ? '9+' : badge}
+      </span>
+    ) : null}
     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${primary && !disabled ? 'bg-white/20' : 'bg-[#d22864]/10 text-[#d22864]'}`}>
       <Icon size={24} />
     </div>
@@ -291,9 +297,10 @@ export const StudentDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { notifications } = useNotifications(50, true);
   const [internships, setInternships] = useState([]);
   const [lifecyclesById, setLifecyclesById] = useState({});
-  const [generalConfig, setGeneralConfig] = useState({ general_consultations_enabled: false });
+  const [generalConfig, setGeneralConfig] = useState({ general_consultations_enabled: false, active_coordinators: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -382,7 +389,14 @@ export const StudentDashboardPage = () => {
            lifecycle?.supervisor_evaluation_submitted;
   });
 
-  const isSchedulingActionEnabled = generalConfig?.general_consultations_enabled || hasQualifyingInternship;
+  const hasActiveCoordinators = Array.isArray(generalConfig?.active_coordinators)
+    && generalConfig.active_coordinators.length > 0;
+
+  const isSchedulingActionEnabled = hasActiveCoordinators || hasQualifyingInternship;
+
+  const appointmentNotificationsCount = notifications.filter(
+    (notification) => !notification.is_read && notification.event_type === 'appointment_scheduled'
+  ).length;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans selection:bg-[#d22864]/10 selection:text-[#d22864]">
@@ -515,12 +529,13 @@ export const StudentDashboardPage = () => {
                 />
                 <QuickAction
                   icon={Calendar}
-                  title="Solicitar Agendamiento"
-                  desc={generalConfig?.general_consultations_enabled
+                  title="Agendar horas y consultas"
+                  desc={hasActiveCoordinators
                     ? "Solicita consultas generales o presentación final"
                     : "Solicita presentación final de tu práctica"}
                   onClick={() => navigate('/entrevistas')}
                   disabled={!isSchedulingActionEnabled}
+                  badge={appointmentNotificationsCount}
                 />
                 <QuickAction
                   icon={FileText}

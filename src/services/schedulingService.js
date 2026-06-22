@@ -102,4 +102,10 @@ export const schedulingService = {
     const response = await api.patch('/scheduling/config', data);
     return response.data;
   },
+
+  async scheduleDirectAppointment(data) {
+    const response = await api.post('/scheduling/appointments/direct', data);
+    return response.data;
+  },
 };
+

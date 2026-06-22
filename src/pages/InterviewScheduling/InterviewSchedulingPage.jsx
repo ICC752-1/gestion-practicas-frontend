@@ -14,8 +14,6 @@ import {
     MessageSquare,
     Info,
     CalendarPlus,
-    Sliders,
-    Settings,
 } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
@@ -178,6 +176,7 @@ export const InterviewSchedulingPage = () => {
     // Student Form State
     const [formPurpose, setFormPurpose] = useState('general_consultation');
     const [formInternshipId, setFormInternshipId] = useState('');
+    const [formTargetCoordinatorId, setFormTargetCoordinatorId] = useState('');
     const [formMessage, setFormMessage] = useState('');
     const [formPreferredDates, setFormPreferredDates] = useState(['', '', '']);
 
@@ -194,6 +193,23 @@ export const InterviewSchedulingPage = () => {
     const [rejectingRequest, setRejectingRequest] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [outcomeForms, setOutcomeForms] = useState({});
+
+    // Direct scheduling modal states
+    const [showDirectScheduleModal, setShowDirectScheduleModal] = useState(false);
+    const [directForm, setDirectForm] = useState({
+        internshipId: '',
+        date: '',
+        start_time: '09:00',
+        end_time: '09:30',
+        modality: 'Presencial',
+        location: '',
+        comments: '',
+    });
+
+    // Cancel / Reschedule modal state
+    const [cancellingAppointment, setCancellingAppointment] = useState(null);
+    const [cancelMode, setCancelMode] = useState('cancel');
+    const [cancelReason, setCancelReason] = useState('');
 
     const selectedDateKey = toDateKey(
         selectedDate.year,
@@ -241,6 +257,17 @@ export const InterviewSchedulingPage = () => {
                 // Pending requests
                 const pendingData = await schedulingService.getPendingRequests();
                 setPendingRequests(pendingData);
+
+                // Load all internships for direct scheduling
+                try {
+                    const internshipsData = await internshipService.getInternships();
+                    const activeInternships = internshipsData.filter(
+                        (i) => i.status === 'approved' && i.completion_status !== 'finalized' && !i.is_cancelled
+                    );
+                    setInternships(activeInternships);
+                } catch (err) {
+                    console.error("Error loading internships for direct scheduling", err);
+                }
             }
         } catch (error) {
             setMessage({ type: 'error', text: getErrorMessage(error) });
@@ -310,6 +337,12 @@ export const InterviewSchedulingPage = () => {
         return !isCancelled && !isFinalized && hasSelf && hasSupervisor;
     }, [selectedInternship]);
 
+    // Coordinadores activos para consultas generales (R6)
+    const activeCoordinators = Array.isArray(generalConfig?.active_coordinators)
+        ? generalConfig.active_coordinators
+        : [];
+    const noActiveCoordinators = isStudent && formPurpose === 'general_consultation' && activeCoordinators.length === 0;
+
     // Submit Scheduling Request (Student)
     const handleCreateRequest = async (event) => {
         event.preventDefault();
@@ -327,6 +360,7 @@ export const InterviewSchedulingPage = () => {
             await schedulingService.createSchedulingRequest({
                 purpose: formPurpose,
                 internship_id: formPurpose === 'final_presentation' ? Number(formInternshipId) : null,
+                target_coordinator_id: formPurpose === 'general_consultation' ? Number(formTargetCoordinatorId) : null,
                 message: formMessage || null,
                 preferred_dates: filteredDates,
             });
@@ -339,6 +373,7 @@ export const InterviewSchedulingPage = () => {
 
             // Reset form
             setFormMessage('');
+            setFormTargetCoordinatorId('');
             setFormPreferredDates(['', '', '']);
             setActiveTab('requests');
             await loadData({ clearMessage: false });
@@ -371,10 +406,7 @@ export const InterviewSchedulingPage = () => {
     };
 
     // Cancel Appointment (Student/Coordinator)
-    const handleCancelAppointment = async (appointmentId) => {
-        const reason = window.prompt('Indica el motivo de cancelación de la cita:');
-        if (reason === null) return; // user cancelled prompt
-
+    const handleCancelAppointment = async (appointmentId, reason) => {
         setSubmitting(true);
         setMessage(null);
 
@@ -393,22 +425,38 @@ export const InterviewSchedulingPage = () => {
         }
     };
 
-    // Toggle General Consultations (Coordinator)
-    const handleToggleConsultations = async (enabled) => {
+    // Open Cancel/Reschedule modal (reemplaza window.prompt - R7)
+    const startCancelAppointment = (appointment) => {
+        setCancellingAppointment(appointment);
+        setCancelMode('cancel');
+        setCancelReason('');
         setMessage(null);
-        try {
-            await schedulingService.updateSchedulingConfig({ general_consultations_enabled: enabled });
-            setGeneralConfig(prev => ({ ...prev, general_consultations_enabled: enabled }));
-            showToast({
-                type: 'success',
-                title: 'Configuración actualizada',
-                message: enabled 
-                    ? 'Has habilitado las consultas generales en tu agenda.' 
-                    : 'Has deshabilitado las consultas generales en tu agenda.',
-            });
-        } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
+    };
+
+    const closeCancelModal = () => {
+        setCancellingAppointment(null);
+        setCancelReason('');
+        setCancelMode('cancel');
+    };
+
+    const handleConfirmCancel = async (event) => {
+        event.preventDefault();
+        if (!cancellingAppointment) return;
+
+        const trimmedReason = cancelReason.trim();
+        if (!trimmedReason) {
+            setMessage({ type: 'error', text: 'Debes indicar una justificación.' });
+            return;
         }
+
+        const prefix = cancelMode === 'reschedule'
+            ? 'Solicitud de reprogramación:'
+            : 'Solicitud de cancelación:';
+        const fullReason = `${prefix} ${trimmedReason}`;
+
+        const targetId = cancellingAppointment.id;
+        closeCancelModal();
+        await handleCancelAppointment(targetId, fullReason);
     };
 
     // Open Responding dialog (Coordinator)
@@ -557,6 +605,46 @@ export const InterviewSchedulingPage = () => {
         }
     };
 
+    const handleDirectSchedule = async (event) => {
+        event.preventDefault();
+        setSubmitting(true);
+        setMessage(null);
+
+        try {
+            await schedulingService.scheduleDirectAppointment({
+                internship_id: Number(directForm.internshipId),
+                date: directForm.date,
+                start_time: `${directForm.start_time}:00`,
+                end_time: `${directForm.end_time}:00`,
+                modality: directForm.modality,
+                location: directForm.location || null,
+                comments: directForm.comments || null,
+            });
+
+            showToast({
+                type: 'success',
+                title: 'Cita agendada',
+                message: 'Se ha agendado la presentación final directamente.',
+            });
+
+            setShowDirectScheduleModal(false);
+            setDirectForm({
+                internshipId: '',
+                date: '',
+                start_time: '09:00',
+                end_time: '09:30',
+                modality: 'Presencial',
+                location: '',
+                comments: '',
+            });
+            await loadData({ clearMessage: false });
+        } catch (error) {
+            setMessage({ type: 'error', text: getErrorMessage(error) });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-ufro-bg flex flex-col font-sans">
             <UserHeader />
@@ -566,7 +654,7 @@ export const InterviewSchedulingPage = () => {
                 <div className="mb-8 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h2 className="text-3xl font-black text-slate-900 sm:text-4xl">
-                            Agendamiento de Citas
+                            Agendar horas y consultas
                         </h2>
                         <p className="text-sm text-slate-500 mt-1">
                             {isAdmin
@@ -574,23 +662,14 @@ export const InterviewSchedulingPage = () => {
                                 : 'Solicita horas para consultas generales o presentaciones finales de tus prácticas.'}
                         </p>
                     </div>
-                    {/* Quick Stats / Controls */}
                     {isAdmin && (
-                        <div className="mt-4 md:mt-0 flex items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                            <Settings className="text-[#d22864] h-5 w-5" />
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Consultas Generales</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className={`h-2.5 w-2.5 rounded-full ${generalConfig.general_consultations_enabled ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`}></span>
-                                    <button 
-                                        onClick={() => handleToggleConsultations(!generalConfig.general_consultations_enabled)}
-                                        className="text-sm font-bold text-slate-700 hover:text-[#d22864] transition"
-                                    >
-                                        {generalConfig.general_consultations_enabled ? 'Habilitadas (Desactivar)' : 'Deshabilitadas (Activar)'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <button
+                            onClick={() => setShowDirectScheduleModal(true)}
+                            className="flex items-center gap-2 rounded-2xl bg-[#d22864] hover:bg-[#b01e50] px-5 py-3 font-bold text-white shadow-md shadow-[#d22864]/10 transition"
+                        >
+                            <CalendarPlus size={18} />
+                            Agendar Presentación Directa
+                        </button>
                     )}
                 </div>
 
@@ -702,6 +781,37 @@ export const InterviewSchedulingPage = () => {
                                             </select>
                                         </div>
 
+                                        {formPurpose === 'general_consultation' && (
+                                            <div className="sm:col-span-2">
+                                                <label className="block text-sm font-bold text-slate-700 mb-2">
+                                                    Coordinador destinatario
+                                                </label>
+                                                {activeCoordinators.length === 0 ? (
+                                                    <div className="rounded-2xl border border-amber-200 bg-amber-50 text-amber-800 text-xs font-semibold p-4 flex gap-2">
+                                                        <Info className="h-4 w-4 flex-shrink-0" />
+                                                        <span>
+                                                            No hay coordinadores con consultas generales habilitadas en este
+                                                            momento. Vuelve más tarde o solicita una presentación final.
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <select
+                                                        value={formTargetCoordinatorId}
+                                                        onChange={(e) => setFormTargetCoordinatorId(e.target.value)}
+                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                                        required
+                                                    >
+                                                        <option value="" disabled>Selecciona un coordinador</option>
+                                                        {activeCoordinators.map((coord) => (
+                                                            <option key={coord.id} value={coord.id}>
+                                                                {coord.first_name} {coord.last_name} ({coord.role_name || 'Coordinador'})
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {formPurpose === 'final_presentation' && (
                                             <div className="sm:col-span-2">
                                                 <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -786,7 +896,7 @@ export const InterviewSchedulingPage = () => {
 
                                     <button
                                         type="submit"
-                                        disabled={submitting || (formPurpose === 'final_presentation' && !qualifiesForPresentation)}
+                                        disabled={submitting || (formPurpose === 'final_presentation' && !qualifiesForPresentation) || noActiveCoordinators}
                                         className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] hover:bg-[#b01e50] px-6 py-4 font-bold text-white shadow-md shadow-[#d22864]/10 transition disabled:opacity-60"
                                     >
                                         <Send size={18} />
@@ -857,7 +967,9 @@ export const InterviewSchedulingPage = () => {
 
                                             {req.coordinator_response && (
                                                 <div className={`text-sm p-4 rounded-xl border ${req.status === 'rejected' ? 'bg-red-50/50 border-red-100 text-red-900' : 'bg-green-50/50 border-green-100 text-green-900'}`}>
-                                                    <p className="text-xs font-black uppercase tracking-wider mb-1">Respuesta del Coordinador:</p>
+                                                    <p className="text-xs font-black uppercase tracking-wider mb-1">
+                                                        Respuesta del {req.resolved_by_role === 'Director' ? 'Director' : 'Coordinador'}:
+                                                    </p>
                                                     <p className="italic">"{req.coordinator_response}"</p>
                                                 </div>
                                             )}
@@ -969,6 +1081,12 @@ export const InterviewSchedulingPage = () => {
                                                         Estudiante: {appointment.student.first_name} {appointment.student.last_name} ({appointment.student.email})
                                                     </p>
                                                 )}
+                                                {isStudent && appointment.owner && (
+                                                    <p className="text-xs text-slate-400 mt-1">
+                                                        Organizado por: {appointment.owner.first_name} {appointment.owner.last_name}
+                                                        {appointment.owner.role_name ? ` (${appointment.owner.role_name})` : ''}
+                                                    </p>
+                                                )}
                                                 {appointment.internship_id && (
                                                     <p className="text-xs text-[#d22864] font-bold mt-1">
                                                         Práctica ID #{appointment.internship_id}
@@ -1054,7 +1172,7 @@ export const InterviewSchedulingPage = () => {
                                                         Confirmar Resultado
                                                     </button>
                                                     <button
-                                                        onClick={() => handleCancelAppointment(appointment.id)}
+                                                        onClick={() => startCancelAppointment(appointment)}
                                                         disabled={submitting}
                                                         className="text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl px-4 py-2 border border-transparent transition"
                                                     >
@@ -1068,11 +1186,11 @@ export const InterviewSchedulingPage = () => {
                                         {isStudent && appointment.status === 'scheduled' && (
                                             <div className="flex justify-end gap-2">
                                                 <button
-                                                    onClick={() => handleCancelAppointment(appointment.id)}
+                                                    onClick={() => startCancelAppointment(appointment)}
                                                     disabled={submitting}
                                                     className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 rounded-xl px-4 py-2 transition"
                                                 >
-                                                    Solicitar Cancelación
+                                                    Solicitar Cancelación o Modificación
                                                 </button>
                                             </div>
                                         )}
@@ -1236,6 +1354,213 @@ export const InterviewSchedulingPage = () => {
                                     className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-sm font-bold text-white transition shadow-sm"
                                 >
                                     Rechazar Solicitud
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            )}
+
+            {/* Modal: Solicitar cancelación o modificación (R7) */}
+            {cancellingAppointment && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4 py-6">
+                    <section className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 className="text-xl font-black text-slate-900">
+                                Solicitar cancelación o modificación
+                            </h3>
+                            <button onClick={closeCancelModal} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="text-sm text-slate-600">
+                            Indica qué acción solicitas sobre tu cita del{' '}
+                            <strong>{formatDisplayDate(cancellingAppointment.date)}</strong> a las{' '}
+                            <strong>{formatSlotTime(cancellingAppointment)}</strong>. La coordinación revisará tu solicitud.
+                        </div>
+
+                        <form onSubmit={handleConfirmCancel} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setCancelMode('cancel')}
+                                    className={`rounded-2xl border-2 px-4 py-3 text-sm font-bold transition text-left ${
+                                        cancelMode === 'cancel'
+                                            ? 'border-red-500 bg-red-50 text-red-700'
+                                            : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                                    }`}
+                                >
+                                    <XCircle className="h-5 w-5 mb-1" />
+                                    Cancelar Cita
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCancelMode('reschedule')}
+                                    className={`rounded-2xl border-2 px-4 py-3 text-sm font-bold transition text-left ${
+                                        cancelMode === 'reschedule'
+                                            ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                                            : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                                    }`}
+                                >
+                                    <Clock className="h-5 w-5 mb-1" />
+                                    Solicitar Reprogramación
+                                </button>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">
+                                    Justificación
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    value={cancelReason}
+                                    onChange={(e) => setCancelReason(e.target.value)}
+                                    placeholder={
+                                        cancelMode === 'reschedule'
+                                            ? 'Explica por qué necesitas reprogramar y, si lo sabes, fechas alternativas.'
+                                            : 'Explica el motivo de la cancelación de la cita.'
+                                    }
+                                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex gap-2 justify-end">
+                                <button
+                                    type="button"
+                                    onClick={closeCancelModal}
+                                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className={`px-5 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-sm disabled:opacity-60 ${
+                                        cancelMode === 'reschedule'
+                                            ? 'bg-[#d22864] hover:bg-[#b01e50]'
+                                            : 'bg-red-600 hover:bg-red-700'
+                                    }`}
+                                >
+                                    {cancelMode === 'reschedule' ? 'Enviar Solicitud' : 'Confirmar Cancelación'}
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            )}
+
+            {/* Modal: Agendar Presentación Directamente (Coordinador/Director) */}
+            {showDirectScheduleModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4 py-6">
+                    <section className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl space-y-4 overflow-y-auto max-h-[90vh]">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 className="text-xl font-black text-slate-900">
+                                Agendar Presentación Directa
+                            </h3>
+                            <button onClick={() => setShowDirectScheduleModal(false)} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleDirectSchedule} className="space-y-4">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">
+                                        Selecciona la Práctica del Estudiante
+                                    </label>
+                                    <select
+                                        value={directForm.internshipId}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, internshipId: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        required
+                                    >
+                                        <option value="" disabled>Selecciona una práctica</option>
+                                        {internships.map((internship) => (
+                                            <option key={internship.id} value={internship.id}>
+                                                #{internship.id} · {internship.student?.first_name} {internship.student?.last_name} · {internship.org_name} ({internship.internship_type})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Fecha de la Cita</label>
+                                    <input
+                                        type="date"
+                                        value={directForm.date}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, date: e.target.value }))}
+                                        min={today.toISOString().split('T')[0]}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Hora Inicio</label>
+                                    <input
+                                        type="time"
+                                        value={directForm.start_time}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, start_time: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Hora Término</label>
+                                    <input
+                                        type="time"
+                                        value={directForm.end_time}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, end_time: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        required
+                                    />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Modalidad</label>
+                                    <select
+                                        value={directForm.modality}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, modality: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                    >
+                                        {MODALITY_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                                    </select>
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Ubicación / Enlace de Reunión</label>
+                                    <input
+                                        type="text"
+                                        value={directForm.location}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, location: e.target.value }))}
+                                        placeholder="Ej. Oficina 302, o link de Teams / Meet"
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                    />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Comentarios o Notas</label>
+                                    <textarea
+                                        rows={2}
+                                        value={directForm.comments}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, comments: e.target.value }))}
+                                        placeholder="Comentarios adicionales sobre la presentación..."
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 justify-end pt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDirectScheduleModal(false)}
+                                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="px-5 py-2.5 rounded-xl bg-[#d22864] hover:bg-[#b01e50] text-sm font-bold text-white transition shadow-sm"
+                                >
+                                    Agendar Cita
                                 </button>
                             </div>
                         </form>
