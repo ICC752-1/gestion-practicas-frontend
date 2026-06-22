@@ -461,6 +461,31 @@ export const SeguimientoPage = () => {
               onUpdated={fetchData}
             />
 
+            {lifecycle?.supervisor_evaluation_submitted && 
+             lifecycle?.self_evaluation_submitted &&
+             !internship?.is_cancelled && 
+             internship?.completion_status !== 'finalized' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 mb-8 border border-gray-100 flex flex-col items-center text-center gap-4"
+              >
+                <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-600">
+                  <CheckCircle2 size={24} />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-gray-900">¡Evaluaciones Completadas!</h4>
+                  <p className="text-sm text-gray-500 mt-1">Cumples con los requisitos para agendar tu entrevista o presentación final.</p>
+                </div>
+                <button
+                  onClick={() => navigate(`/entrevistas?internshipId=${internshipId}&purpose=final_presentation`)}
+                  className="px-6 py-3 rounded-2xl bg-[#d22864] hover:bg-[#b01e50] font-bold text-white shadow-md shadow-[#d22864]/10 transition"
+                >
+                  Solicitar Entrevista / Presentación Final
+                </button>
+              </motion.div>
+            )}
+
             {/* Practice Details */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}

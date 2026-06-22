@@ -25,6 +25,7 @@ import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
 import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
+import { schedulingService } from "../../services/schedulingService";
 import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
 import { canUploadDocuments } from "../../services/documentService";
 import { dataPortabilityService } from "../../services/dataPortabilityService";
@@ -292,6 +293,7 @@ export const StudentDashboardPage = () => {
   const { showToast } = useToast();
   const [internships, setInternships] = useState([]);
   const [lifecyclesById, setLifecyclesById] = useState({});
+  const [generalConfig, setGeneralConfig] = useState({ general_consultations_enabled: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -300,8 +302,15 @@ export const StudentDashboardPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await internshipService.getMyInternships();
+      
+      const [data, config] = await Promise.all([
+        internshipService.getMyInternships(),
+        schedulingService.getSchedulingConfig().catch(() => ({ general_consultations_enabled: false }))
+      ]);
+      
       setInternships(data);
+      setGeneralConfig(config);
+
       const lifecycleEntries = await Promise.all(
         data.map(async (internship) => {
           try {
@@ -364,6 +373,16 @@ export const StudentDashboardPage = () => {
     : "Estudiante";
 
   const canUpload = internships.some(canUploadDocuments);
+
+  const hasQualifyingInternship = internships.some(internship => {
+    const lifecycle = lifecyclesById[internship.id];
+    return !internship.is_cancelled &&
+           internship.completion_status !== 'finalized' &&
+           lifecycle?.self_evaluation_submitted &&
+           lifecycle?.supervisor_evaluation_submitted;
+  });
+
+  const isSchedulingActionEnabled = generalConfig?.general_consultations_enabled || hasQualifyingInternship;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans selection:bg-[#d22864]/10 selection:text-[#d22864]">
@@ -496,10 +515,12 @@ export const StudentDashboardPage = () => {
                 />
                 <QuickAction
                   icon={Calendar}
-                  title="Agendar Entrevista"
-                  desc="Reserva o reprograma horarios disponibles"
+                  title="Solicitar Agendamiento"
+                  desc={generalConfig?.general_consultations_enabled
+                    ? "Solicita consultas generales o presentación final"
+                    : "Solicita presentación final de tu práctica"}
                   onClick={() => navigate('/entrevistas')}
-                  disabled={internships.length === 0}
+                  disabled={!isSchedulingActionEnabled}
                 />
                 <QuickAction
                   icon={FileText}
