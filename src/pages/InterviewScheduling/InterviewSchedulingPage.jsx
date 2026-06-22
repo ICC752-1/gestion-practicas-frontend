@@ -142,6 +142,18 @@ const getResultBadgeClasses = (result) => {
 const shouldShowOutcomeComments = (outcome) =>
     outcome?.attendance_status === 'no_show' || outcome?.result === 'Reprobado';
 
+const parsePreferredDates = (dates) => {
+    if (Array.isArray(dates)) return dates;
+    if (typeof dates === 'string') {
+        try {
+            return JSON.parse(dates);
+        } catch (e) {
+            return [];
+        }
+    }
+    return [];
+};
+
 export const InterviewSchedulingPage = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
@@ -401,7 +413,7 @@ export const InterviewSchedulingPage = () => {
 
     // Open Responding dialog (Coordinator)
     const startResponse = (request) => {
-        const dates = JSON.parse(request.preferred_dates || '[]');
+        const dates = parsePreferredDates(request.preferred_dates);
         const defaultDate = dates[0] || '';
         
         setRespondingRequest(request);
@@ -803,9 +815,8 @@ export const InterviewSchedulingPage = () => {
                                     </div>
                                 )}
 
-                                {/* Student Request Cards */}
                                 {isStudent && myRequests.map((req) => {
-                                    const preferredDatesList = JSON.parse(req.preferred_dates || '[]');
+                                    const preferredDatesList = parsePreferredDates(req.preferred_dates);
                                     return (
                                         <div key={req.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm space-y-4">
                                             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -814,7 +825,7 @@ export const InterviewSchedulingPage = () => {
                                                         {purposeLabel(req.purpose)}
                                                     </h4>
                                                     <p className="text-xs text-slate-400 mt-1">
-                                                        Creada el: {formatDisplayDate(req.created_at.split('T')[0])}
+                                                        Creada el: {req.created_at ? formatDisplayDate(req.created_at.split('T')[0]) : ''}
                                                     </p>
                                                 </div>
                                                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${getRequestStatusBadgeClasses(req.status)}`}>
@@ -868,7 +879,7 @@ export const InterviewSchedulingPage = () => {
 
                                 {/* Coordinator Request Cards */}
                                 {isAdmin && pendingRequests.map((req) => {
-                                    const preferredDatesList = JSON.parse(req.preferred_dates || '[]');
+                                    const preferredDatesList = parsePreferredDates(req.preferred_dates);
                                     return (
                                         <div key={req.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm space-y-4">
                                             <div className="flex flex-wrap items-start justify-between gap-3">
