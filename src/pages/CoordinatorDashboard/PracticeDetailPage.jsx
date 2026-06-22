@@ -216,7 +216,7 @@ export const PracticeDetailPage = () => {
     <div className="min-h-screen flex flex-col bg-ufro-bg">
       <UserHeader userName={userName} userRole={userRole} />
 
-      <main className="flex-grow container mx-auto px-4 py-12 max-w-4xl animate-fade-in">
+      <main className="flex-grow container mx-auto px-4 py-8 max-w-4xl animate-fade-in">
         <button
           onClick={() => navigate(adminBasePath)}
           className="flex items-center text-ufro-primary hover:underline mb-6 font-medium cursor-pointer"
@@ -258,27 +258,36 @@ export const PracticeDetailPage = () => {
                 </div>
               </div>
 
-              {/* Sección de Práctica */}
-              <div className="border-t border-gray-100 pt-8 mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Estado de solicitud</h3>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${getBadgeColor(currentStatusLabel)}`}>
-                    {currentStatusLabel}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Tipo / Modalidad</h3>
-                  <p className="text-lg font-medium text-gray-800">
-                    {practice.modality || practice.practice_type || 'No especificado'}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Fechas</h3>
-                  <p className="text-gray-800 text-sm mt-1">
-                    <span className="font-medium">Inicio:</span> {practice.start_date || 'No definida'} <br />
-                    <span className="font-medium">Término:</span> {practice.end_date || 'No definida'}
-                  </p>
-                </div>
+              {/* Sección de Práctica - Envuelto en la misma tarjeta para alineación simétrica */}
+              <div className="border-t border-gray-100 pt-8 mt-8 px-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    {/* Columna 1: Estado de solicitud (Alineado perfectamente con Empresa) */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Estado de solicitud</h3>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${getBadgeColor(currentStatusLabel)}`}>
+                        {currentStatusLabel}
+                      </span>
+                    </div>
+
+                    {/* Columna 2: Tipo / Modalidad (Alineado perfectamente con Ubicación) */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Tipo / Modalidad</h3>
+                      <p className="text-lg font-medium text-gray-800">
+                        {practice.modality || practice.practice_type || 'No especificado'}
+                      </p>
+                    </div>
+
+                    {/* Columna 3: Fechas */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Fechas</h3>
+                      <p className="text-gray-800 text-sm mt-1">
+                        <span className="font-medium">Inicio:</span> {practice.start_date || 'No definida'} <br />
+                        <span className="font-medium">Término:</span> {practice.end_date || 'No definida'}
+                      </p>
+                    </div>
+
+                  </div>
               </div>
 
               {/* Acciones administrativas */}
@@ -374,7 +383,7 @@ export const PracticeDetailPage = () => {
                       return (
                         <div key={entry.id} className="relative group">
                           {/* Circle on the left line */}
-                          <div className={`absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white shadow-sm transition-transform group-hover:scale-110 ${getTimelineCircleColor(historyTitle)}`} />
+                          <div className={`absolute -left-[33px] top-1.5 w-4 h-4 rounded-full border-4 border-white shadow-sm transition-transform group-hover:scale-110 ${getTimelineCircleColor(historyTitle)}`} />
 
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-4">
                             <span className="font-bold text-gray-800 text-[15px]">
