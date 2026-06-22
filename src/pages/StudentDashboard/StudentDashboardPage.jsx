@@ -36,8 +36,8 @@ const STATUS_LABELS = {
   1: 'Pendiente',
   2: 'En revisión DIRAE',
   3: 'En revisión',
-  4: 'Aprobada',
-  5: 'Rechazada'
+  4: 'Solicitud Aprobada',
+  5: 'Solicitud Rechazada'
 };
 
 const STATUS_STYLES = {

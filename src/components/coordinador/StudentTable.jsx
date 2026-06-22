@@ -24,7 +24,7 @@ export const StudentTable = ({ students = [] }) => {
     const statusLabel = status?.title || status || '';
     const statusStr = String(statusLabel).toLowerCase();
     if (statusStr.includes('revisi') || status === 'in_review') return { label: 'En Revisión', color: 'bg-blue-500', value: 'En Revisión' };
-    if (statusStr.includes('aprob') || status === 'approved') return { label: 'Aprobada', color: 'bg-emerald-500', value: 'Aprobada' };
+    if (statusStr.includes('aprob') || status === 'approved') return { label: 'Solicitud Aprobada', color: 'bg-emerald-500', value: 'Aprobada' };
     if (statusStr.includes('rechaz') || status === 'rejected') return { label: 'Rechazada', color: 'bg-red-500', value: 'Rechazada' };
     if (!status || statusStr === 'pendiente' || status === 'submitted' || status === 'submited') return { label: 'Pendiente', color: 'bg-amber-500', value: 'Pendiente' };
     return { label: statusLabel || 'Pendiente', color: 'bg-gray-500', value: statusLabel || 'Pendiente' };
