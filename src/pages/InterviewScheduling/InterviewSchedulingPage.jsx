@@ -269,9 +269,18 @@ export const InterviewSchedulingPage = () => {
 
     // Filtered Appointments on Selected Date
     const selectedDayAppointments = useMemo(
-        () => appointments.filter((appt) => apppt.date === selectedDateKey),
+        () => appointments.filter((appt) => appt.date === selectedDateKey),
         [appointments, selectedDateKey]
     );
+
+    // Sort appointments chronologically
+    const orderedAppointments = useMemo(() => {
+        return [...appointments].sort((a, b) => {
+            const cmp = a.date.localeCompare(b.date);
+            if (cmp !== 0) return cmp;
+            return a.start_time.localeCompare(b.start_time);
+        });
+    }, [appointments]);
 
     // Check if the student meets presentation requirements
     const selectedInternship = useMemo(() => {
