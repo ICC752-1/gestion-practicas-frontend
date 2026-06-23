@@ -84,12 +84,26 @@ const RECOMMENDATION_LABELS = {
 
 const formatDate = (value) => {
   if (!value) return 'Sin fecha';
-  return new Date(value).toLocaleDateString('es-CL');
+  // Date-only strings (YYYY-MM-DD) are treated as local calendar dates
+  return new Date(value + 'T00:00:00').toLocaleDateString('es-CL');
+};
+
+// Parses a UTC-naive datetime string from the backend by appending 'Z' so JS
+// correctly interprets it as UTC before converting to local time for display.
+const parseUTCDateTime = (value) => {
+  if (!value) return null;
+  // If it already has timezone info, use as-is
+  if (value.endsWith('Z') || value.includes('+') || (value.includes('-') && value.lastIndexOf('-') > 10)) {
+    return new Date(value);
+  }
+  return new Date(value + 'Z');
 };
 
 const formatDateTime = (value) => {
   if (!value) return 'Sin fecha';
-  return new Date(value).toLocaleString('es-CL');
+  const d = parseUTCDateTime(value);
+  if (!d || isNaN(d)) return 'Sin fecha';
+  return d.toLocaleString('es-CL');
 };
 
 const getStatusTitle = (internship) => {
@@ -369,9 +383,19 @@ export const SecretaryDashboardPage = () => {
     } catch (error) {
       console.error('Error exporting DIRAE CSV:', error);
       const detail = error.response?.data?.detail;
-      const reasons = detail?.internships?.[0]?.reasons || [];
-      const readableReasons = reasons.map((reason) => PACKAGE_REASONS[reason] || reason).join(' ');
-      setExportError(readableReasons || getErrorMessage(error, 'No se pudo exportar el expediente.'));
+      console.error('Error detail:', detail);
+      // detail = { message: string, internships: [{ internship_id, reasons: string[] }] }
+      const internshipErrors = detail?.internships || [];
+      const allReasons = internshipErrors.flatMap((i) => i.reasons || []);
+      const uniqueReasons = [...new Set(allReasons)];
+      const readableReasons = uniqueReasons
+        .map((reason) => PACKAGE_REASONS[reason] || reason)
+        .join(' ');
+      setExportError(
+        readableReasons ||
+        (typeof detail?.message === 'string' ? detail.message : null) ||
+        getErrorMessage(error, 'No se pudo exportar el expediente.')
+      );
     } finally {
       setDiraeActionLoading('');
     }
@@ -518,8 +542,7 @@ export const SecretaryDashboardPage = () => {
 
           <div className="mt-6 rounded-2xl border border-sky-100 bg-sky-50 p-4 text-sm font-semibold text-sky-800">
             Bandeja de entrada global para Secretaría de Carrera. Desde aquí puede listar, buscar,
-            filtrar y exportar expedientes a DIRAE en lote. Por políticas del backend,
-            los documentos de carácter confidencial/sensible no se listan ni descargan para este rol.
+            filtrar y exportar expedientes a DIRAE en lote.
           </div>
         </section>
 
@@ -1304,7 +1327,7 @@ const DiraePackagePanel = ({
     <div className="mt-5 space-y-3">
       <button
         type="button"
-        onClick={onExport}
+        onClick={() => onExport()}
         disabled={!packageData.exportable || actionLoading === 'export'}
         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:bg-gray-300"
       >
