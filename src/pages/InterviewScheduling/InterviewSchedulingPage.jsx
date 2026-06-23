@@ -583,6 +583,13 @@ export const InterviewSchedulingPage = () => {
     const handleSendResponse = async (event) => {
         event.preventDefault();
         if (!respondingRequest) return;
+
+        const trimmedLocation = (responseForm.location || '').trim();
+        if (!trimmedLocation) {
+            setMessage({ type: 'error', text: 'La ubicación o enlace de reunión es obligatorio.' });
+            return;
+        }
+
         setSubmitting(true);
         setMessage(null);
 
@@ -592,7 +599,7 @@ export const InterviewSchedulingPage = () => {
                 start_time: `${responseForm.start_time}:00`,
                 end_time: `${responseForm.end_time}:00`,
                 modality: responseForm.modality,
-                location: responseForm.location || null,
+                location: trimmedLocation,
                 comments: responseForm.comments || null,
             });
 
@@ -710,6 +717,13 @@ export const InterviewSchedulingPage = () => {
 
     const handleDirectSchedule = async (event) => {
         event.preventDefault();
+
+        const trimmedLocation = (directForm.location || '').trim();
+        if (!trimmedLocation) {
+            setMessage({ type: 'error', text: 'La ubicación o enlace de reunión es obligatorio.' });
+            return;
+        }
+
         setSubmitting(true);
         setMessage(null);
 
@@ -720,7 +734,7 @@ export const InterviewSchedulingPage = () => {
                 start_time: `${directForm.start_time}:00`,
                 end_time: `${directForm.end_time}:00`,
                 modality: directForm.modality,
-                location: directForm.location || null,
+                location: trimmedLocation,
                 comments: directForm.comments || null,
             });
 
@@ -999,7 +1013,7 @@ export const InterviewSchedulingPage = () => {
                                                 value={formMessage}
                                                 onChange={(e) => setFormMessage(e.target.value)}
                                                 placeholder="Ej. Prefiero horario de tarde, o consultas específicas sobre mi portafolio."
-                                                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
                                              />
                                          </div>
 
@@ -1048,8 +1062,17 @@ export const InterviewSchedulingPage = () => {
                                         disabled={submitting || (formPurpose === 'final_presentation' && !qualifiesForPresentation) || noActiveCoordinators}
                                         className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] hover:bg-[#b01e50] px-6 py-4 font-bold text-white shadow-md shadow-[#d22864]/10 transition disabled:opacity-60"
                                     >
-                                        <Send size={18} />
-                                        Enviar Solicitud de Agendamiento
+                                        {submitting ? (
+                                            <>
+                                                <RefreshCw size={18} className="animate-spin" />
+                                                Enviando Solicitud...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send size={18} />
+                                                Enviar Solicitud de Agendamiento
+                                            </>
+                                        )}
                                     </button>
                                 </form>
                             </section>
@@ -1321,9 +1344,18 @@ export const InterviewSchedulingPage = () => {
                                                                  <button
                                                                      onClick={() => handleConfirmAppointment(appointment.id)}
                                                                      disabled={submitting}
-                                                                     className="flex items-center gap-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-3 py-2 transition shadow-sm"
+                                                                     className="flex items-center justify-center gap-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-3 py-2 transition shadow-sm"
                                                                  >
-                                                                     <Check size={13} /> Confirmar Asistencia
+                                                                     {submitting ? (
+                                                                         <>
+                                                                             <RefreshCw size={13} className="animate-spin" />
+                                                                             Confirmando...
+                                                                         </>
+                                                                     ) : (
+                                                                         <>
+                                                                             <Check size={13} /> Confirmar Asistencia
+                                                                         </>
+                                                                     )}
                                                                  </button>
                                                              ) : (
                                                                  <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
@@ -1375,7 +1407,7 @@ export const InterviewSchedulingPage = () => {
                                                             value={outcomeForms[appointment.id]?.comments || ''}
                                                             onChange={(e) => setOutcomeField(appointment.id, 'comments', e.target.value)}
                                                             placeholder={outcomeForms[appointment.id]?.attendance_status === 'no_show' ? 'Indica detalles de la inasistencia...' : 'Observaciones de la evaluación...'}
-                                                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#d22864]"
+                                                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#d22864]"
                                                         />
                                                     </div>
                                                 </div>
@@ -1491,7 +1523,8 @@ export const InterviewSchedulingPage = () => {
                                         value={responseForm.location}
                                         onChange={(e) => setResponseForm(prev => ({ ...prev, location: e.target.value }))}
                                         placeholder="Ej. Oficina 302, o link de Teams / Meet"
-                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#d22864] outline-none transition"
+                                        required
                                     />
                                 </div>
                                 <div className="sm:col-span-2">
@@ -1517,9 +1550,16 @@ export const InterviewSchedulingPage = () => {
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-sm font-bold text-white transition shadow-sm"
+                                    className="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-sm font-bold text-white transition shadow-sm flex items-center justify-center gap-1.5"
                                 >
-                                    Confirmar y Agendar
+                                    {submitting ? (
+                                        <>
+                                            <RefreshCw size={16} className="animate-spin" />
+                                            Agendando...
+                                        </>
+                                    ) : (
+                                        'Confirmar y Agendar'
+                                    )}
                                 </button>
                             </div>
                         </form>
@@ -1552,7 +1592,7 @@ export const InterviewSchedulingPage = () => {
                                     value={rejectionReason}
                                     onChange={(e) => setRejectionReason(e.target.value)}
                                     placeholder="Explica detalladamente por qué se rechaza la solicitud (ej. no cumple con el informe final, proponer otras fechas por correo, etc.)"
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#d22864] outline-none transition"
                                     required
                                 />
                             </div>
@@ -1638,7 +1678,7 @@ export const InterviewSchedulingPage = () => {
                                             ? 'Explica por qué necesitas reprogramar y, si lo sabes, fechas alternativas.'
                                             : 'Explica el motivo de la cancelación de la cita.'
                                     }
-                                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
                                     required
                                 />
                             </div>
@@ -1654,13 +1694,20 @@ export const InterviewSchedulingPage = () => {
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className={`px-5 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-sm disabled:opacity-60 ${
+                                    className={`px-5 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-sm disabled:opacity-60 flex items-center justify-center gap-1.5 ${
                                         cancelMode === 'reschedule'
                                             ? 'bg-[#d22864] hover:bg-[#b01e50]'
                                             : 'bg-red-600 hover:bg-red-700'
                                     }`}
                                 >
-                                    {cancelMode === 'reschedule' ? 'Enviar Solicitud' : 'Confirmar Cancelación'}
+                                    {submitting ? (
+                                        <>
+                                            <RefreshCw size={16} className="animate-spin" />
+                                            Enviando...
+                                        </>
+                                    ) : (
+                                        cancelMode === 'reschedule' ? 'Enviar Solicitud' : 'Confirmar Cancelación'
+                                    )}
                                 </button>
                             </div>
                         </form>
@@ -1749,7 +1796,8 @@ export const InterviewSchedulingPage = () => {
                                         value={directForm.location}
                                         onChange={(e) => setDirectForm(prev => ({ ...prev, location: e.target.value }))}
                                         placeholder="Ej. Oficina 302, o link de Teams / Meet"
-                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#d22864] outline-none transition"
+                                        required
                                     />
                                 </div>
                                 <div className="sm:col-span-2">
@@ -1759,7 +1807,7 @@ export const InterviewSchedulingPage = () => {
                                         value={directForm.comments}
                                         onChange={(e) => setDirectForm(prev => ({ ...prev, comments: e.target.value }))}
                                         placeholder="Comentarios adicionales sobre la presentación..."
-                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#d22864] outline-none transition"
                                     />
                                 </div>
                             </div>
@@ -1775,9 +1823,16 @@ export const InterviewSchedulingPage = () => {
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-5 py-2.5 rounded-xl bg-[#d22864] hover:bg-[#b01e50] text-sm font-bold text-white transition shadow-sm"
+                                    className="px-5 py-2.5 rounded-xl bg-[#d22864] hover:bg-[#b01e50] text-sm font-bold text-white transition shadow-sm flex items-center justify-center gap-1.5"
                                 >
-                                    Agendar Cita
+                                    {submitting ? (
+                                        <>
+                                            <RefreshCw size={16} className="animate-spin" />
+                                            Agendando...
+                                        </>
+                                    ) : (
+                                        'Agendar Cita'
+                                    )}
                                 </button>
                             </div>
                         </form>

@@ -1235,7 +1235,7 @@ const DocumentCard = ({
             value={reviewComment}
             onChange={(event) => onReviewCommentChange(event.target.value)}
             placeholder="Comentario de revisión"
-            className="mt-3 h-24 w-full resize-none rounded-2xl border border-gray-100 bg-white p-3 text-sm font-semibold outline-none focus:border-[#d22864]/30"
+            className="mt-3 h-24 w-full resize-none rounded-2xl border border-gray-100 bg-white p-3 text-sm font-semibold text-gray-800 outline-none focus:border-[#d22864]/30"
           />
           {reviewError && <p className="mt-2 text-sm font-bold text-red-600">{reviewError}</p>}
           <button
@@ -1361,7 +1361,7 @@ const ActionBox = ({ label, placeholder, value, loading, onChange, onSubmit, ico
       value={value}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
-      className="mt-2 h-20 w-full resize-none rounded-xl border border-gray-100 bg-white p-3 text-sm font-semibold outline-none focus:border-[#d22864]/30"
+      className="mt-2 h-20 w-full resize-none rounded-xl border border-gray-100 bg-white p-3 text-sm font-semibold text-gray-800 outline-none focus:border-[#d22864]/30"
     />
     <button
       type="button"
@@ -1391,7 +1391,7 @@ const AdministrativeUploadPanel = ({
       <div>
         <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Adjunto administrativo</p>
         <p className="mt-1 text-sm font-semibold text-gray-500">
-          Secretaría solo puede adjuntar tipos administrativos no sensibles autorizados por backend.
+          Secretaría solo puede adjuntar tipos administrativos no sensibles.
         </p>
       </div>
     </div>

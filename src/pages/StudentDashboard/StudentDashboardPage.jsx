@@ -310,6 +310,7 @@ export const StudentDashboardPage = () => {
   const { notifications } = useNotifications(50, true);
   const [internships, setInternships] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [confirmingAppointmentId, setConfirmingAppointmentId] = useState(null);
 
   const fetchAppointments = async () => {
     try {
@@ -572,18 +573,29 @@ export const StudentDashboardPage = () => {
                       <div className="flex flex-col gap-2 items-end justify-center w-full md:w-auto">
                         {!appt.is_confirmed && (
                           <button
+                            disabled={confirmingAppointmentId === appt.id}
                             onClick={async () => {
                               try {
+                                setConfirmingAppointmentId(appt.id);
                                 await schedulingService.confirmAppointment(appt.id);
                                 showToast({ type: 'success', title: 'Asistencia confirmada', message: 'Has confirmado tu asistencia.' });
                                 fetchAppointments();
                               } catch (err) {
                                 showToast({ type: 'error', title: 'Error', message: 'No se pudo confirmar.' });
+                              } finally {
+                                setConfirmingAppointmentId(null);
                               }
                             }}
-                            className="w-full md:w-auto flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-5 py-3 transition shadow-md shadow-emerald-600/10 active:scale-95"
+                            className="w-full md:w-auto flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-5 py-3 transition shadow-md shadow-emerald-600/10 active:scale-95 disabled:opacity-60"
                           >
-                            Confirmar Asistencia
+                            {confirmingAppointmentId === appt.id ? (
+                              <>
+                                <RefreshCw size={13} className="animate-spin" />
+                                Confirmando...
+                              </>
+                            ) : (
+                              'Confirmar Asistencia'
+                            )}
                           </button>
                         )}
                         <button

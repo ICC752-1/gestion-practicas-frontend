@@ -232,7 +232,7 @@ export const AdminDocumentList = ({
                                   setReviewError(null);
                                 }}
                                 placeholder="Escribe el comentario de revisión..."
-                                className="h-20 w-full resize-none rounded-xl border-none bg-gray-50 p-3 text-xs font-medium focus:ring-1 focus:ring-[#d22864]/20"
+                                className="h-20 w-full resize-none rounded-xl border-none bg-gray-50 p-3 text-xs font-medium text-gray-800 focus:ring-1 focus:ring-[#d22864]/20"
                               />
                             </div>
 
