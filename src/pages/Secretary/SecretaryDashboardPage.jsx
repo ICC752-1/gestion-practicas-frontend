@@ -323,6 +323,7 @@ export const SecretaryDashboardPage = () => {
       await refreshActiveExpediente();
       await loadAllInternships();
     } catch (error) {
+      console.error('Error exporting DIRAE CSV:', error);
       const detail = error.response?.data?.detail;
       const reasons = detail?.internships?.[0]?.reasons || [];
       const readableReasons = reasons.map((reason) => PACKAGE_REASONS[reason] || reason).join(' ');
