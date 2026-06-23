@@ -17,7 +17,9 @@ const EVENT_META = {
 
 const formatDate = (isoDate) => {
   if (!isoDate) return '';
-  return new Date(isoDate).toLocaleDateString('es-CL', {
+  // Server returns UTC-naive strings; append 'Z' to parse as UTC → display local
+  const d = isoDate.endsWith('Z') ? new Date(isoDate) : new Date(isoDate + 'Z');
+  return d.toLocaleDateString('es-CL', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',

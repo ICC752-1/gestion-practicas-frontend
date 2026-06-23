@@ -420,7 +420,7 @@ export const PracticeDetailPage = () => {
                       <p className="mt-2 text-sm text-gray-600">{insuranceStatusDescription}</p>
                       {practice.insurance_validated_at && (
                         <p className="mt-1 text-xs font-semibold text-gray-500">
-                          Última actualización: {new Date(practice.insurance_validated_at).toLocaleString('es-CL')}
+                          Última actualización: {new Date(practice.insurance_validated_at.endsWith('Z') ? practice.insurance_validated_at : practice.insurance_validated_at + 'Z').toLocaleString('es-CL')}
                         </p>
                       )}
                       {practice.insurance_notes && (

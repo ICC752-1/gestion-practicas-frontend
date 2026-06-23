@@ -89,21 +89,23 @@ export const ActionModal = ({
             {actionDescriptions[actionType]}
           </p>
 
-          {isCommentRequired && (
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold text-gray-700 flex justify-between">
-                <span>Motivo / Comentario</span>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-gray-700 flex justify-between">
+              <span>Motivo / Comentario</span>
+              {isCommentRequired ? (
                 <span className="text-red-500 text-xs font-semibold">Obligatorio</span>
-              </label>
-              <textarea
-                disabled={isLoading}
-                className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#d22864]/30 focus:border-[#d22864] outline-none transition-all resize-none h-32 text-gray-800 placeholder-gray-400 text-sm font-medium shadow-inner"
-                placeholder="Escriba el motivo detallado aquí..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-              />
-            </div>
-          )}
+              ) : (
+                <span className="text-gray-400 text-xs font-semibold">Opcional</span>
+              )}
+            </label>
+            <textarea
+              disabled={isLoading}
+              className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#d22864]/30 focus:border-[#d22864] outline-none transition-all resize-none h-32 text-gray-800 placeholder-gray-400 text-sm font-medium shadow-inner"
+              placeholder={isCommentRequired ? "Escriba el motivo detallado aquí..." : "Comentario u observaciones de la aprobación (opcional)..."}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Actions */}

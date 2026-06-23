@@ -16,6 +16,9 @@ import {
     MessageSquare,
     Info,
     CalendarPlus,
+    Upload,
+    FileText,
+    Download,
 } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
@@ -24,6 +27,7 @@ import { StatsCard } from '../../components/InterviewScheduling/StatsCard';
 import { useAuth } from '../../context/useAuth';
 import { useToast } from '../../context/useToast';
 import { internshipService } from '../../services/internshipService';
+import { documentService } from '../../services/documentService';
 import { schedulingService } from '../../services/schedulingService';
 import { getRedirectPathForRoles } from '../../services/roleRouting';
 
@@ -183,6 +187,7 @@ export const InterviewSchedulingPage = () => {
     const [formTargetCoordinatorId, setFormTargetCoordinatorId] = useState('');
     const [formMessage, setFormMessage] = useState('');
     const [formPreferredDates, setFormPreferredDates] = useState(['', '', '']);
+    const [slidesFile, setSlidesFile] = useState(null);
 
     // Coordinator Response State
     const [respondingRequest, setRespondingRequest] = useState(null);
@@ -361,12 +366,31 @@ export const InterviewSchedulingPage = () => {
         }
 
         try {
+            let documentId = null;
+            if (formPurpose === 'final_presentation' && slidesFile) {
+                // 1. Obtener tipos de documentos
+                const docTypes = await documentService.getDocumentTypes();
+                const slidesType = docTypes.find(t => t.name === 'Diapositivas de Presentación');
+                if (!slidesType) {
+                    throw new Error('Tipo documental "Diapositivas de Presentación" no configurado.');
+                }
+                
+                // 2. Subir el documento
+                const uploadedDoc = await documentService.uploadDocument(
+                    Number(formInternshipId),
+                    slidesType.id,
+                    slidesFile
+                );
+                documentId = uploadedDoc.id;
+            }
+
             await schedulingService.createSchedulingRequest({
                 purpose: formPurpose,
                 internship_id: formPurpose === 'final_presentation' ? Number(formInternshipId) : null,
                 target_coordinator_id: formPurpose === 'general_consultation' ? Number(formTargetCoordinatorId) : null,
                 message: formMessage || null,
                 preferred_dates: filteredDates,
+                document_id: documentId,
             });
 
             showToast({
@@ -379,6 +403,7 @@ export const InterviewSchedulingPage = () => {
             setFormMessage('');
             setFormTargetCoordinatorId('');
             setFormPreferredDates(['', '', '']);
+            setSlidesFile(null);
             setActiveTab('requests');
             await loadData({ clearMessage: false });
         } catch (error) {
@@ -424,6 +449,80 @@ export const InterviewSchedulingPage = () => {
             await loadData({ clearMessage: false });
         } catch (error) {
             setMessage({ type: 'error', text: getErrorMessage(error) });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleConfirmAppointment = async (appointmentId) => {
+        setSubmitting(true);
+        setMessage(null);
+        try {
+            await schedulingService.confirmAppointment(appointmentId);
+            showToast({
+                type: 'success',
+                title: 'Asistencia confirmada',
+                message: 'Tu asistencia a la cita ha sido confirmada exitosamente.',
+            });
+            await loadData({ clearMessage: false });
+        } catch (error) {
+            setMessage({ type: 'error', text: getErrorMessage(error) });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleUploadSlides = async (appointment, file) => {
+        if (!file) return;
+        setSubmitting(true);
+        setMessage(null);
+        try {
+            const docTypes = await documentService.getDocumentTypes();
+            const slidesType = docTypes.find(t => t.name === 'Diapositivas de Presentación');
+            if (!slidesType) {
+                throw new Error('Tipo de documento "Diapositivas de Presentación" no configurado.');
+            }
+
+            const uploadedDoc = await documentService.uploadDocument(
+                appointment.internship_id,
+                slidesType.id,
+                file
+            );
+
+            await schedulingService.updateAppointmentDocument(appointment.id, uploadedDoc.id);
+
+            showToast({
+                type: 'success',
+                title: 'Diapositivas subidas',
+                message: 'Tus diapositivas han sido cargadas y vinculadas exitosamente.',
+            });
+            await loadData({ clearMessage: false });
+        } catch (error) {
+            setMessage({ type: 'error', text: getErrorMessage(error) });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDownloadDocument = async (doc) => {
+        if (!doc?.id) return;
+        setSubmitting(true);
+        try {
+            const blob = await documentService.downloadDocument(doc.id);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = doc.file_name || doc.name || `${doc.document_type?.name || 'documento'}.${doc.extension || 'pdf'}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            showToast({
+                type: 'error',
+                title: 'Error de descarga',
+                message: 'No se pudo descargar el documento.',
+            });
         } finally {
             setSubmitting(false);
         }
@@ -484,6 +583,13 @@ export const InterviewSchedulingPage = () => {
     const handleSendResponse = async (event) => {
         event.preventDefault();
         if (!respondingRequest) return;
+
+        const trimmedLocation = (responseForm.location || '').trim();
+        if (!trimmedLocation) {
+            setMessage({ type: 'error', text: 'La ubicación o enlace de reunión es obligatorio.' });
+            return;
+        }
+
         setSubmitting(true);
         setMessage(null);
 
@@ -493,7 +599,7 @@ export const InterviewSchedulingPage = () => {
                 start_time: `${responseForm.start_time}:00`,
                 end_time: `${responseForm.end_time}:00`,
                 modality: responseForm.modality,
-                location: responseForm.location || null,
+                location: trimmedLocation,
                 comments: responseForm.comments || null,
             });
 
@@ -564,7 +670,7 @@ export const InterviewSchedulingPage = () => {
                 nextForm.result = DEFAULT_OUTCOME_FORM.result;
             }
 
-            if (!shouldShowOutcomeComments(nextForm)) {
+            if (field !== 'comments' && !shouldShowOutcomeComments(nextForm)) {
                 nextForm.comments = '';
             }
 
@@ -611,6 +717,13 @@ export const InterviewSchedulingPage = () => {
 
     const handleDirectSchedule = async (event) => {
         event.preventDefault();
+
+        const trimmedLocation = (directForm.location || '').trim();
+        if (!trimmedLocation) {
+            setMessage({ type: 'error', text: 'La ubicación o enlace de reunión es obligatorio.' });
+            return;
+        }
+
         setSubmitting(true);
         setMessage(null);
 
@@ -621,7 +734,7 @@ export const InterviewSchedulingPage = () => {
                 start_time: `${directForm.start_time}:00`,
                 end_time: `${directForm.end_time}:00`,
                 modality: directForm.modality,
-                location: directForm.location || null,
+                location: trimmedLocation,
                 comments: directForm.comments || null,
             });
 
@@ -900,18 +1013,66 @@ export const InterviewSchedulingPage = () => {
                                                 value={formMessage}
                                                 onChange={(e) => setFormMessage(e.target.value)}
                                                 placeholder="Ej. Prefiero horario de tarde, o consultas específicas sobre mi portafolio."
-                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
-                                            />
-                                        </div>
-                                    </div>
+                                                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                             />
+                                         </div>
+
+                                         {formPurpose === 'final_presentation' && (
+                                             <div className="sm:col-span-2">
+                                                 <label className="block text-sm font-bold text-slate-700 mb-2">
+                                                     Diapositivas de Presentación (Opcional)
+                                                 </label>
+                                                 <div className="mt-1 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 px-6 py-6 transition hover:border-[#d22864] bg-slate-50/50">
+                                                     <Upload className="mx-auto h-10 w-10 text-slate-400 mb-2" />
+                                                     <div className="flex text-sm text-slate-600 justify-center items-center">
+                                                         <label className="relative cursor-pointer rounded-md font-bold text-[#d22864] hover:text-[#b01e50] focus-within:outline-none">
+                                                             <span>Subir un archivo</span>
+                                                             <input
+                                                                 type="file"
+                                                                 accept=".ppt,.pptx,.pdf,.doc,.docx"
+                                                                 className="sr-only"
+                                                                 onChange={(e) => setSlidesFile(e.target.files[0])}
+                                                             />
+                                                         </label>
+                                                         <p className="pl-1">o arrastrar y soltar</p>
+                                                     </div>
+                                                     <p className="text-xs text-slate-400 mt-1">
+                                                         Formatos admitidos: PPT, PPTX, PDF, DOC, DOCX
+                                                     </p>
+                                                     {slidesFile && (
+                                                         <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                                                             <FileText size={14} className="text-[#d22864]" />
+                                                             <span>{slidesFile.name}</span>
+                                                             <button
+                                                                 type="button"
+                                                                 onClick={() => setSlidesFile(null)}
+                                                                 className="text-red-500 hover:text-red-700 font-bold ml-1"
+                                                             >
+                                                                 ✕
+                                                             </button>
+                                                         </div>
+                                                     )}
+                                                 </div>
+                                             </div>
+                                         )}
+                                     </div>
 
                                     <button
                                         type="submit"
                                         disabled={submitting || (formPurpose === 'final_presentation' && !qualifiesForPresentation) || noActiveCoordinators}
                                         className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] hover:bg-[#b01e50] px-6 py-4 font-bold text-white shadow-md shadow-[#d22864]/10 transition disabled:opacity-60"
                                     >
-                                        <Send size={18} />
-                                        Enviar Solicitud de Agendamiento
+                                        {submitting ? (
+                                            <>
+                                                <RefreshCw size={18} className="animate-spin" />
+                                                Enviando Solicitud...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send size={18} />
+                                                Enviar Solicitud de Agendamiento
+                                            </>
+                                        )}
                                     </button>
                                 </form>
                             </section>
@@ -1127,8 +1288,85 @@ export const InterviewSchedulingPage = () => {
                                             <div className="text-sm bg-slate-50 p-3 rounded-xl border border-slate-100">
                                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Notas / Comentarios:</p>
                                                 <p className="text-slate-600 italic">"{appointment.comments}"</p>
-                                            </div>
-                                        )}
+                                             </div>
+                                         )}
+
+                                         {/* Material y Confirmación de Asistencia */}
+                                         {appointment.purpose === 'final_presentation' && (
+                                             <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                                                 {/* Documento (Diapositivas) */}
+                                                 <div className="flex flex-col gap-1">
+                                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Diapositivas de Presentación</span>
+                                                     {appointment.document ? (
+                                                         <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 w-fit">
+                                                             <FileText size={15} className="text-[#d22864] flex-shrink-0" />
+                                                             <span className="text-xs font-semibold text-slate-700 max-w-[200px] truncate">{appointment.document.name || 'diapositivas'}</span>
+                                                             <button
+                                                                 type="button"
+                                                                 onClick={() => handleDownloadDocument(appointment.document)}
+                                                                 className="text-slate-400 hover:text-[#d22864] transition p-1"
+                                                                 title="Descargar diapositivas"
+                                                             >
+                                                                 <Download size={14} />
+                                                             </button>
+                                                         </div>
+                                                     ) : (
+                                                         <div className="flex items-center gap-2">
+                                                             {isStudent && appointment.status === 'scheduled' ? (
+                                                                 <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-[#d22864] bg-[#d22864]/5 hover:bg-[#d22864]/10 border border-[#d22864]/20 rounded-xl px-3 py-2 transition">
+                                                                     <Upload size={13} />
+                                                                     <span>Subir Diapositivas</span>
+                                                                     <input
+                                                                         type="file"
+                                                                         accept=".ppt,.pptx,.pdf,.doc,.docx"
+                                                                         className="sr-only"
+                                                                         onChange={(e) => handleUploadSlides(appointment, e.target.files[0])}
+                                                                     />
+                                                                 </label>
+                                                             ) : (
+                                                                 <span className="text-xs text-slate-400 italic">No se han subido diapositivas</span>
+                                                             )}
+                                                         </div>
+                                                     )}
+                                                 </div>
+
+                                                 {/* Confirmación de Asistencia */}
+                                                 <div className="flex flex-col gap-1 items-end">
+                                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Confirmación de Asistencia</span>
+                                                     {appointment.is_confirmed ? (
+                                                         <span className="flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+                                                             <CheckCircle2 size={13} className="text-emerald-600" />
+                                                             Asistencia Confirmada
+                                                         </span>
+                                                     ) : (
+                                                         <div className="flex items-center gap-2">
+                                                             {isStudent && appointment.status === 'scheduled' ? (
+                                                                 <button
+                                                                     onClick={() => handleConfirmAppointment(appointment.id)}
+                                                                     disabled={submitting}
+                                                                     className="flex items-center justify-center gap-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-3 py-2 transition shadow-sm"
+                                                                 >
+                                                                     {submitting ? (
+                                                                         <>
+                                                                             <RefreshCw size={13} className="animate-spin" />
+                                                                             Confirmando...
+                                                                         </>
+                                                                     ) : (
+                                                                         <>
+                                                                             <Check size={13} /> Confirmar Asistencia
+                                                                         </>
+                                                                     )}
+                                                                 </button>
+                                                             ) : (
+                                                                 <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                                                                     Pendiente de Confirmación
+                                                                 </span>
+                                                             )}
+                                                         </div>
+                                                     )}
+                                                 </div>
+                                             </div>
+                                         )}
 
                                         {/* Coordinator Registers Outcome */}
                                         {isAdmin && appointment.status === 'scheduled' && (
@@ -1169,7 +1407,7 @@ export const InterviewSchedulingPage = () => {
                                                             value={outcomeForms[appointment.id]?.comments || ''}
                                                             onChange={(e) => setOutcomeField(appointment.id, 'comments', e.target.value)}
                                                             placeholder={outcomeForms[appointment.id]?.attendance_status === 'no_show' ? 'Indica detalles de la inasistencia...' : 'Observaciones de la evaluación...'}
-                                                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#d22864]"
+                                                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#d22864]"
                                                         />
                                                     </div>
                                                 </div>
@@ -1178,14 +1416,21 @@ export const InterviewSchedulingPage = () => {
                                                     <button
                                                         onClick={() => handleRegisterOutcome(appointment.id)}
                                                         disabled={submitting}
-                                                        className="text-xs font-bold text-white bg-[#d22864] hover:bg-[#b01e50] rounded-xl px-4 py-2 transition"
+                                                        className="text-xs font-bold text-white bg-[#d22864] hover:bg-[#b01e50] rounded-xl px-4 py-2 transition flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
                                                     >
-                                                        Confirmar Resultado
+                                                        {submitting ? (
+                                                            <>
+                                                                <RefreshCw size={13} className="animate-spin" />
+                                                                Guardando...
+                                                            </>
+                                                        ) : (
+                                                            'Confirmar Resultado'
+                                                        )}
                                                     </button>
                                                     <button
                                                         onClick={() => startCancelAppointment(appointment)}
                                                         disabled={submitting}
-                                                        className="text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl px-4 py-2 border border-transparent transition"
+                                                        className="text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl px-4 py-2 border border-transparent transition disabled:opacity-60 disabled:cursor-not-allowed"
                                                     >
                                                         Cancelar Cita
                                                     </button>
@@ -1285,7 +1530,8 @@ export const InterviewSchedulingPage = () => {
                                         value={responseForm.location}
                                         onChange={(e) => setResponseForm(prev => ({ ...prev, location: e.target.value }))}
                                         placeholder="Ej. Oficina 302, o link de Teams / Meet"
-                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#d22864] outline-none transition"
+                                        required
                                     />
                                 </div>
                                 <div className="sm:col-span-2">
@@ -1311,9 +1557,16 @@ export const InterviewSchedulingPage = () => {
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-sm font-bold text-white transition shadow-sm"
+                                    className="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-sm font-bold text-white transition shadow-sm flex items-center justify-center gap-1.5"
                                 >
-                                    Confirmar y Agendar
+                                    {submitting ? (
+                                        <>
+                                            <RefreshCw size={16} className="animate-spin" />
+                                            Agendando...
+                                        </>
+                                    ) : (
+                                        'Confirmar y Agendar'
+                                    )}
                                 </button>
                             </div>
                         </form>
@@ -1346,7 +1599,7 @@ export const InterviewSchedulingPage = () => {
                                     value={rejectionReason}
                                     onChange={(e) => setRejectionReason(e.target.value)}
                                     placeholder="Explica detalladamente por qué se rechaza la solicitud (ej. no cumple con el informe final, proponer otras fechas por correo, etc.)"
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#d22864] outline-none transition"
                                     required
                                 />
                             </div>
@@ -1432,7 +1685,7 @@ export const InterviewSchedulingPage = () => {
                                             ? 'Explica por qué necesitas reprogramar y, si lo sabes, fechas alternativas.'
                                             : 'Explica el motivo de la cancelación de la cita.'
                                     }
-                                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
                                     required
                                 />
                             </div>
@@ -1448,13 +1701,20 @@ export const InterviewSchedulingPage = () => {
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className={`px-5 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-sm disabled:opacity-60 ${
+                                    className={`px-5 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-sm disabled:opacity-60 flex items-center justify-center gap-1.5 ${
                                         cancelMode === 'reschedule'
                                             ? 'bg-[#d22864] hover:bg-[#b01e50]'
                                             : 'bg-red-600 hover:bg-red-700'
                                     }`}
                                 >
-                                    {cancelMode === 'reschedule' ? 'Enviar Solicitud' : 'Confirmar Cancelación'}
+                                    {submitting ? (
+                                        <>
+                                            <RefreshCw size={16} className="animate-spin" />
+                                            Enviando...
+                                        </>
+                                    ) : (
+                                        cancelMode === 'reschedule' ? 'Enviar Solicitud' : 'Confirmar Cancelación'
+                                    )}
                                 </button>
                             </div>
                         </form>
@@ -1543,7 +1803,8 @@ export const InterviewSchedulingPage = () => {
                                         value={directForm.location}
                                         onChange={(e) => setDirectForm(prev => ({ ...prev, location: e.target.value }))}
                                         placeholder="Ej. Oficina 302, o link de Teams / Meet"
-                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#d22864] outline-none transition"
+                                        required
                                     />
                                 </div>
                                 <div className="sm:col-span-2">
@@ -1553,7 +1814,7 @@ export const InterviewSchedulingPage = () => {
                                         value={directForm.comments}
                                         onChange={(e) => setDirectForm(prev => ({ ...prev, comments: e.target.value }))}
                                         placeholder="Comentarios adicionales sobre la presentación..."
-                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#d22864] outline-none transition"
                                     />
                                 </div>
                             </div>
@@ -1569,9 +1830,16 @@ export const InterviewSchedulingPage = () => {
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-5 py-2.5 rounded-xl bg-[#d22864] hover:bg-[#b01e50] text-sm font-bold text-white transition shadow-sm"
+                                    className="px-5 py-2.5 rounded-xl bg-[#d22864] hover:bg-[#b01e50] text-sm font-bold text-white transition shadow-sm flex items-center justify-center gap-1.5"
                                 >
-                                    Agendar Cita
+                                    {submitting ? (
+                                        <>
+                                            <RefreshCw size={16} className="animate-spin" />
+                                            Agendando...
+                                        </>
+                                    ) : (
+                                        'Agendar Cita'
+                                    )}
                                 </button>
                             </div>
                         </form>

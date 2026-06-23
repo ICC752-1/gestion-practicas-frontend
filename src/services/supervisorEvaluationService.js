@@ -23,4 +23,9 @@ export const supervisorEvaluationService = {
     const response = await api.get('/supervisor/evaluations/me');
     return response.data;
   },
+
+  async getEvaluation(internshipId) {
+    const response = await api.get(`/supervisor/evaluations/internships/${internshipId}`);
+    return response.data;
+  },
 };

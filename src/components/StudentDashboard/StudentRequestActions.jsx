@@ -88,8 +88,9 @@ const buildInitialForm = (internship) => {
 
 const formatDeadline = (value) => {
   if (!value) return '';
-
-  return new Date(value).toLocaleString('es-CL', {
+  // Server returns UTC-naive strings; append 'Z' to parse as UTC → display local
+  const d = value.endsWith('Z') ? new Date(value) : new Date(value + 'Z');
+  return d.toLocaleString('es-CL', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

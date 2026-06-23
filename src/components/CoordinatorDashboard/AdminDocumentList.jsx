@@ -154,7 +154,9 @@ export const AdminDocumentList = ({
                   </h4>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
                     <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">
-                      {doc.upload_date ? new Date(doc.upload_date).toLocaleDateString('es-CL') : 'Fecha no disponible'}
+                      {doc.upload_date
+                        ? new Date(doc.upload_date.endsWith('Z') ? doc.upload_date : doc.upload_date + 'Z').toLocaleDateString('es-CL')
+                        : 'Fecha no disponible'}
                     </p>
                     <div className={`px-3 py-0.5 rounded-full flex items-center gap-1.5 ${status.bg} ${status.color}`}>
                       <StatusIcon size={12} />
@@ -232,7 +234,7 @@ export const AdminDocumentList = ({
                                   setReviewError(null);
                                 }}
                                 placeholder="Escribe el comentario de revisión..."
-                                className="h-20 w-full resize-none rounded-xl border-none bg-gray-50 p-3 text-xs font-medium focus:ring-1 focus:ring-[#d22864]/20"
+                                className="h-20 w-full resize-none rounded-xl border-none bg-gray-50 p-3 text-xs font-medium text-gray-800 focus:ring-1 focus:ring-[#d22864]/20"
                               />
                             </div>
 
