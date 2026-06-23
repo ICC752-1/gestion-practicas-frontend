@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     AlertCircle,
+    ArrowLeft,
     Calendar as CalendarIcon,
     CalendarCheck,
     CheckCircle2,
     Clock,
     MapPin,
-    Pencil,
     RefreshCw,
     Send,
-    Trash2,
     XCircle,
+    Check,
+    X,
+    MessageSquare,
+    Info,
+    CalendarPlus,
 } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
@@ -20,6 +25,7 @@ import { useAuth } from '../../context/useAuth';
 import { useToast } from '../../context/useToast';
 import { internshipService } from '../../services/internshipService';
 import { schedulingService } from '../../services/schedulingService';
+import { getRedirectPathForRoles } from '../../services/roleRouting';
 
 const MONTHS = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -32,8 +38,8 @@ const ADMIN_ROLES = new Set([
 ]);
 
 const PURPOSE_OPTIONS = [
-    { value: 'initial_interview', label: 'Entrevista inicial' },
-    { value: 'final_presentation', label: 'Presentación final' },
+    { value: 'general_consultation', label: 'Consulta general presencial' },
+    { value: 'final_presentation', label: 'Entrevista / Presentación final' },
 ];
 
 const MODALITY_OPTIONS = ['Presencial', 'Remoto', 'Híbrido'];
@@ -50,6 +56,12 @@ const STATUS_LABELS = {
     completed: 'Realizada',
     no_show: 'No asistió',
 };
+const REQUEST_STATUS_LABELS = {
+    pending: 'Pendiente',
+    scheduled: 'Agendada',
+    rejected: 'Rechazada',
+    cancelled: 'Cancelada',
+};
 const RESULT_LABELS = {
     Aprobada: 'Resultado aprobado',
     Reprobado: 'Resultado reprobado',
@@ -57,16 +69,6 @@ const RESULT_LABELS = {
 const DEFAULT_OUTCOME_FORM = {
     attendance_status: 'completed',
     result: 'Aprobada',
-    comments: '',
-};
-
-const DEFAULT_AVAILABILITY_FORM = {
-    start_time: '09:00',
-    end_time: '12:00',
-    duration_minutes: 30,
-    modality: 'Presencial',
-    purpose: 'initial_interview',
-    location: '',
     comments: '',
 };
 
@@ -79,16 +81,6 @@ const dateToCalendarValue = (date) => ({
     day: date.getDate(),
 });
 
-const dateKeyToCalendarValue = (dateKey) => {
-    const [year, month, day] = dateKey.split('-').map(Number);
-
-    return {
-        year,
-        month: month - 1,
-        day,
-    };
-};
-
 const formatDisplayDate = (dateValue) => {
     if (!dateValue) return '';
 
@@ -99,16 +91,9 @@ const formatDisplayDate = (dateValue) => {
     }).format(new Date(`${dateValue}T00:00:00`));
 };
 
-const formatSlotTime = (slot) =>
-    `${slot.start_time.slice(0, 5)} - ${slot.end_time.slice(0, 5)}`;
-
-const getDurationMinutes = (startTime, endTime) => {
-    if (!startTime || !endTime) return 0;
-
-    const [startHour, startMinute] = startTime.split(':').map(Number);
-    const [endHour, endMinute] = endTime.split(':').map(Number);
-
-    return (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+const formatSlotTime = (slot) => {
+    if (!slot.start_time || !slot.end_time) return '';
+    return `${slot.start_time.slice(0, 5)} - ${slot.end_time.slice(0, 5)}`;
 };
 
 const getErrorMessage = (error) => {
@@ -131,13 +116,22 @@ const getRoleNames = (user) => {
         .filter(Boolean);
 };
 
-const purposeLabel = (purpose) =>
-    PURPOSE_OPTIONS.find((option) => option.value === purpose)?.label || purpose;
+const purposeLabel = (purpose) => {
+    if (purpose === 'initial_interview') return 'Entrevista inicial';
+    return PURPOSE_OPTIONS.find((option) => option.value === purpose)?.label || purpose;
+};
 
 const getStatusBadgeClasses = (status) => {
     if (status === 'completed') return 'bg-green-100 text-green-700';
     if (status === 'no_show') return 'bg-amber-100 text-amber-700';
     return 'bg-blue-100 text-blue-700';
+};
+
+const getRequestStatusBadgeClasses = (status) => {
+    if (status === 'scheduled') return 'bg-green-100 text-green-700 border border-green-200';
+    if (status === 'rejected') return 'bg-red-100 text-red-700 border border-red-200';
+    if (status === 'cancelled') return 'bg-gray-100 text-gray-600 border border-gray-200';
+    return 'bg-amber-100 text-amber-700 border border-amber-200';
 };
 
 const getResultBadgeClasses = (result) => {
@@ -149,517 +143,21 @@ const getResultBadgeClasses = (result) => {
 const shouldShowOutcomeComments = (outcome) =>
     outcome?.attendance_status === 'no_show' || outcome?.result === 'Reprobado';
 
-const groupSlotsByPurpose = (slots) =>
-    PURPOSE_OPTIONS
-        .map((purpose) => ({
-            ...purpose,
-            slots: slots.filter((slot) => slot.purpose === purpose.value),
-        }))
-        .filter((group) => group.slots.length > 0);
-
-const SlotButton = ({ slot, disabled, label, onClick }) => (
-    <button
-        type="button"
-        disabled={disabled}
-        onClick={onClick}
-        className={[
-            'min-h-[112px] w-full rounded-xl border p-4 text-left transition',
-            disabled
-                ? 'border-gray-200 bg-gray-50 text-gray-400'
-                : 'border-gray-200 bg-white shadow-sm hover:border-brand-medium hover:bg-brand-medium/5 hover:shadow-md',
-        ].join(' ')}
-    >
-        <div className="flex h-full flex-col justify-between gap-3">
-            <div className="flex items-start justify-between gap-3">
-                <div>
-                    <p className="text-lg font-black leading-none text-slate-900">
-                        {formatSlotTime(slot)}
-                    </p>
-                    <p className="mt-2 text-xs font-bold uppercase text-slate-400">
-                        {slot.modality}
-                    </p>
-                </div>
-                <span className="rounded-lg bg-brand-medium px-3 py-1 text-xs font-bold text-white">
-                    {label}
-                </span>
-            </div>
-            <div>
-                {slot.location && (
-                    <p className="flex min-w-0 items-center gap-1 truncate text-xs text-slate-500">
-                        <MapPin size={13} /> {slot.location}
-                    </p>
-                )}
-            </div>
-        </div>
-    </button>
-);
-
-const SlotActions = ({
-    slot,
-    submitting,
-    onEdit,
-    onClose,
-    onDelete,
-}) => (
-    <div className="grid grid-cols-3 gap-2">
-        <button
-            type="button"
-            disabled={submitting}
-            onClick={() => onEdit(slot)}
-            className="flex min-h-10 items-center justify-center rounded-lg bg-white px-2 text-xs font-bold text-brand-medium ring-1 ring-brand-medium/20 transition hover:bg-brand-medium/5 disabled:opacity-60"
-        >
-            <Pencil size={15} />
-            <span className="sr-only">Editar</span>
-        </button>
-        <button
-            type="button"
-            disabled={submitting}
-            onClick={() => onClose(slot.id)}
-            className="min-h-10 rounded-lg bg-slate-100 px-2 text-xs font-bold text-slate-700 transition hover:bg-slate-200 disabled:opacity-60"
-        >
-            Cerrar
-        </button>
-        <button
-            type="button"
-            disabled={submitting}
-            onClick={() => onDelete(slot)}
-            className="flex min-h-10 items-center justify-center rounded-lg bg-red-50 px-2 text-xs font-bold text-red-600 transition hover:bg-red-100 disabled:opacity-60"
-        >
-            <Trash2 size={15} />
-            <span className="sr-only">Eliminar</span>
-        </button>
-    </div>
-);
-
-const SlotGroup = ({
-    group,
-    isAdmin,
-    submitting,
-    reschedulingAppointmentId,
-    onReserve,
-    onEdit,
-    onClose,
-    onDelete,
-}) => (
-    <section className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-        <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-                <h4 className="text-sm font-black text-slate-900">{group.label}</h4>
-                <p className="text-xs text-slate-500">
-                    {group.slots.length} horario{group.slots.length === 1 ? '' : 's'} disponible{group.slots.length === 1 ? '' : 's'}
-                </p>
-            </div>
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-brand-medium ring-1 ring-brand-medium/15">
-                {group.slots.length}
-            </span>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {group.slots.map((slot) => (
-                <div key={slot.id} className="space-y-2">
-                    <SlotButton
-                        slot={slot}
-                        disabled={submitting || isAdmin}
-                        label={
-                            isAdmin
-                                ? 'Disponible'
-                                : reschedulingAppointmentId
-                                    ? 'Usar'
-                                    : 'Reservar'
-                        }
-                        onClick={() => onReserve(slot.id)}
-                    />
-                    {isAdmin && (
-                        <SlotActions
-                            slot={slot}
-                            submitting={submitting}
-                            onEdit={onEdit}
-                            onClose={onClose}
-                            onDelete={onDelete}
-                        />
-                    )}
-                </div>
-            ))}
-        </div>
-    </section>
-);
-
-const EmptyScheduleState = ({ isStudent, upcomingSlots, reschedulingAppointmentId, submitting, onReserve, onSelectDate }) => (
-    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
-        <p className="text-sm font-semibold text-slate-700">
-            No hay horarios disponibles para esta fecha.
-        </p>
-        {isStudent && upcomingSlots.length > 0 && (
-            <div className="mt-4">
-                <p className="mb-3 text-xs font-black uppercase text-slate-400">
-                    Próximos horarios disponibles
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                    {upcomingSlots.slice(0, 4).map((slot) => (
-                        <div key={slot.id} className="rounded-xl border border-white bg-white p-3 shadow-sm">
-                            <p className="mb-2 text-xs font-bold uppercase text-slate-400">
-                                {formatDisplayDate(slot.date)}
-                            </p>
-                            <SlotButton
-                                slot={slot}
-                                disabled={submitting}
-                                label={reschedulingAppointmentId ? 'Usar' : 'Reservar'}
-                                onClick={() => onReserve(slot.id)}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => onSelectDate(dateKeyToCalendarValue(slot.date))}
-                                className="mt-2 w-full rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-brand-medium hover:text-white"
-                            >
-                                Ver día
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )}
-    </div>
-);
-
-const AppointmentItem = ({
-    appointment,
-    isAdmin,
-    isHighlighted,
-    outcome,
-    onOutcomeChange,
-    onCancel,
-    onRegisterOutcome,
-    onStartReschedule,
-    isRescheduling,
-}) => (
-    <div
-        className={[
-            'rounded-xl border p-4 transition',
-            isHighlighted
-                ? 'border-green-300 bg-green-50/80 shadow-md shadow-green-100'
-                : 'border-gray-200 bg-white',
-        ].join(' ')}
-    >
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-                <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-bold text-slate-900">
-                        {purposeLabel(appointment.purpose)}
-                    </p>
-                    <span
-                        className={[
-                            'inline-flex items-center rounded-full px-3 py-1 text-xs font-bold',
-                            getStatusBadgeClasses(appointment.status),
-                        ].join(' ')}
-                    >
-                        {STATUS_LABELS[appointment.status] || appointment.status}
-                    </span>
-                    {isHighlighted && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-600 px-3 py-1 text-xs font-bold text-white">
-                            <CheckCircle2 size={13} /> Confirmada
-                        </span>
-                    )}
-                    {appointment.result && (
-                        <span
-                            className={[
-                                'inline-flex items-center rounded-full px-3 py-1 text-xs font-bold',
-                                getResultBadgeClasses(appointment.result),
-                            ].join(' ')}
-                        >
-                            {RESULT_LABELS[appointment.result] || appointment.result}
-                        </span>
-                    )}
-                </div>
-                <p className="mt-1 text-sm text-slate-500">
-                    {formatDisplayDate(appointment.date)} · {formatSlotTime(appointment)}
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                    Práctica #{appointment.internship_id || 'sin asignar'}
-                </p>
-                {appointment.location && (
-                    <p className="mt-2 flex items-center gap-1 text-xs text-slate-500">
-                        <MapPin size={13} /> {appointment.location}
-                    </p>
-                )}
-                {appointment.comments && (
-                    <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                        {appointment.comments}
-                    </p>
-                )}
-            </div>
-
-            <div className="flex w-full flex-col gap-2 md:w-64">
-                {isAdmin && appointment.status === 'scheduled' && (
-                    <>
-                        <select
-                            value={outcome?.attendance_status || DEFAULT_OUTCOME_FORM.attendance_status}
-                            onChange={(event) =>
-                                onOutcomeChange(
-                                    appointment.id,
-                                    'attendance_status',
-                                    event.target.value,
-                                )
-                            }
-                            className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand-medium"
-                        >
-                            {APPOINTMENT_STATUS_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                        {outcome?.attendance_status !== 'no_show' && (
-                            <select
-                                value={outcome?.result || DEFAULT_OUTCOME_FORM.result}
-                                onChange={(event) =>
-                                    onOutcomeChange(
-                                        appointment.id,
-                                        'result',
-                                        event.target.value,
-                                    )
-                                }
-                                className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand-medium"
-                            >
-                                {RESULT_OPTIONS.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
-                        {shouldShowOutcomeComments(outcome) && (
-                            <textarea
-                                rows={3}
-                                value={outcome?.comments || ''}
-                                onChange={(event) =>
-                                    onOutcomeChange(
-                                        appointment.id,
-                                        'comments',
-                                        event.target.value,
-                                    )
-                                }
-                                placeholder={
-                                    outcome?.attendance_status === 'no_show'
-                                        ? 'Observaciones de inasistencia'
-                                        : 'Observaciones de reprobación'
-                                }
-                                className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand-medium"
-                            />
-                        )}
-                    </>
-                )}
-
-                <div className="flex gap-2">
-                    {!isAdmin && appointment.status === 'scheduled' && (
-                        <button
-                            type="button"
-                            onClick={() => onStartReschedule(appointment.id)}
-                            className={[
-                                'flex-1 rounded-xl px-3 py-2 text-sm font-bold transition',
-                                isRescheduling
-                                    ? 'bg-slate-800 text-white'
-                                    : 'bg-gray-100 text-slate-700 hover:bg-gray-200',
-                            ].join(' ')}
-                        >
-                            Reprogramar
-                        </button>
-                    )}
-                    {appointment.status === 'scheduled' && (
-                        <button
-                            type="button"
-                            onClick={() => onCancel(appointment)}
-                            className="flex-1 rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-red-600 transition hover:bg-red-100"
-                        >
-                            Cancelar
-                        </button>
-                    )}
-                </div>
-
-                {isAdmin && appointment.status === 'scheduled' && (
-                    <button
-                        type="button"
-                        onClick={() => onRegisterOutcome(appointment.id)}
-                        className="rounded-xl bg-brand-medium px-3 py-2 text-sm font-bold text-white transition hover:bg-brand-dark"
-                    >
-                        Registrar resultado
-                    </button>
-                )}
-
-                {!isAdmin && appointment.status !== 'scheduled' && (
-                    <div className="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-600">
-                        {appointment.status === 'completed'
-                            ? 'El encargado ya registró el resultado de esta instancia.'
-                            : 'La cita quedó registrada como no asistida.'}
-                    </div>
-                )}
-                {isAdmin && appointment.status !== 'scheduled' && (
-                    <div className="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-600">
-                        Resultado ya registrado para esta cita.
-                    </div>
-                )}
-            </div>
-        </div>
-    </div>
-);
-
-const BookingConfirmation = ({ appointment, onDismiss }) => (
-    <section className="rounded-2xl border border-green-200 bg-white p-5 shadow-md ring-1 ring-green-100">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex gap-4">
-                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-green-100 text-green-700">
-                    <CalendarCheck size={24} />
-                </div>
-                <div>
-                    <p className="text-xs font-black uppercase tracking-wider text-green-700">
-                        Cita confirmada
-                    </p>
-                    <h3 className="mt-1 text-xl font-black text-slate-900">
-                        {purposeLabel(appointment.purpose)}
-                    </h3>
-                    <p className="mt-1 text-sm font-semibold text-slate-600">
-                        {formatDisplayDate(appointment.date)} · {formatSlotTime(appointment)}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                        Práctica #{appointment.internship_id} · {appointment.modality}
-                    </p>
-                    {appointment.location && (
-                        <p className="mt-2 flex items-center gap-1 text-sm text-slate-500">
-                            <MapPin size={14} /> {appointment.location}
-                        </p>
-                    )}
-                </div>
-            </div>
-            <button
-                type="button"
-                onClick={onDismiss}
-                className="self-start rounded-xl bg-green-50 px-3 py-2 text-sm font-bold text-green-700 transition hover:bg-green-100"
-            >
-                Ocultar
-            </button>
-        </div>
-    </section>
-);
-
-const DeleteAvailabilityDialog = ({
-    slot,
-    submitting,
-    onCancel,
-    onConfirm,
-}) => {
-    if (!slot) return null;
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4 py-6">
-            <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-                <div className="flex gap-4">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-                        <Trash2 size={22} />
-                    </div>
-                    <div>
-                        <p className="text-xs font-black uppercase text-red-600">
-                            Eliminar disponibilidad
-                        </p>
-                        <h3 className="mt-1 text-xl font-black text-slate-900">
-                            ¿Eliminar este horario?
-                        </h3>
-                        <p className="mt-2 text-sm text-slate-500">
-                            Se eliminará el bloque del {formatDisplayDate(slot.date)} · {formatSlotTime(slot)}.
-                        </p>
-                        <p className="mt-2 text-sm font-semibold text-slate-700">
-                            Esta acción no se puede deshacer.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                    <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={onCancel}
-                        className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-200 disabled:opacity-60"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={onConfirm}
-                        className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-60"
-                    >
-                        <Trash2 size={16} />
-                        Eliminar horario
-                    </button>
-                </div>
-            </section>
-        </div>
-    );
-};
-
-const CancelAppointmentDialog = ({
-    appointment,
-    reason,
-    submitting,
-    onReasonChange,
-    onCancel,
-    onConfirm,
-}) => {
-    if (!appointment) return null;
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4 py-6">
-            <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-                <div className="flex gap-4">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-                        <XCircle size={22} />
-                    </div>
-                    <div>
-                        <p className="text-xs font-black uppercase text-red-600">
-                            Cancelar cita
-                        </p>
-                        <h3 className="mt-1 text-xl font-black text-slate-900">
-                            ¿Cancelar esta cita?
-                        </h3>
-                        <p className="mt-2 text-sm text-slate-500">
-                            {purposeLabel(appointment.purpose)} · {formatDisplayDate(appointment.date)} · {formatSlotTime(appointment)}
-                        </p>
-                    </div>
-                </div>
-
-                <label className="mt-5 block text-sm font-semibold text-slate-700">
-                    Motivo de cancelación
-                    <textarea
-                        rows={3}
-                        value={reason}
-                        onChange={(event) => onReasonChange(event.target.value)}
-                        placeholder="Indica el motivo de la cancelación"
-                        className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand-medium"
-                    />
-                </label>
-
-                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                    <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={onCancel}
-                        className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-200 disabled:opacity-60"
-                    >
-                        Volver
-                    </button>
-                    <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={onConfirm}
-                        className="rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-60"
-                    >
-                        Confirmar cancelación
-                    </button>
-                </div>
-            </section>
-        </div>
-    );
+const parsePreferredDates = (dates) => {
+    if (Array.isArray(dates)) return dates;
+    if (typeof dates === 'string') {
+        try {
+            return JSON.parse(dates);
+        } catch (e) {
+            return [];
+        }
+    }
+    return [];
 };
 
 export const InterviewSchedulingPage = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const { showToast } = useToast();
     const today = useMemo(() => new Date(), []);
     const roleNames = useMemo(() => getRoleNames(user), [user]);
@@ -667,24 +165,55 @@ export const InterviewSchedulingPage = () => {
     const isStudent = roleNames.includes('Estudiante');
 
     const [selectedDate, setSelectedDate] = useState(dateToCalendarValue(today));
-    const [availableSlots, setAvailableSlots] = useState([]);
     const [appointments, setAppointments] = useState([]);
+    const [myRequests, setMyRequests] = useState([]);
+    const [pendingRequests, setPendingRequests] = useState([]);
     const [internships, setInternships] = useState([]);
-    const [selectedInternshipId, setSelectedInternshipId] = useState('');
-    const [hasAutoSelectedDate, setHasAutoSelectedDate] = useState(false);
+    const [generalConfig, setGeneralConfig] = useState({ general_consultations_enabled: false });
+
+    // UI States
+    const [activeTab, setActiveTab] = useState(isStudent ? 'request' : 'requests');
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState(null);
-    const [confirmedAppointment, setConfirmedAppointment] = useState(null);
-    const [reschedulingAppointmentId, setReschedulingAppointmentId] = useState(null);
-    const [editingSlotId, setEditingSlotId] = useState(null);
-    const [slotPendingDeletion, setSlotPendingDeletion] = useState(null);
-    const [appointmentPendingCancellation, setAppointmentPendingCancellation] = useState(null);
-    const [cancelReasons, setCancelReasons] = useState({});
-    const [outcomeForms, setOutcomeForms] = useState({});
-    const [availabilityForm, setAvailabilityForm] = useState({
-        ...DEFAULT_AVAILABILITY_FORM,
+
+    // Student Form State
+    const [formPurpose, setFormPurpose] = useState('general_consultation');
+    const [formInternshipId, setFormInternshipId] = useState('');
+    const [formTargetCoordinatorId, setFormTargetCoordinatorId] = useState('');
+    const [formMessage, setFormMessage] = useState('');
+    const [formPreferredDates, setFormPreferredDates] = useState(['', '', '']);
+
+    // Coordinator Response State
+    const [respondingRequest, setRespondingRequest] = useState(null);
+    const [responseForm, setResponseForm] = useState({
+        date: '',
+        start_time: '09:00',
+        end_time: '09:30',
+        modality: 'Presencial',
+        location: '',
+        comments: '',
     });
+    const [rejectingRequest, setRejectingRequest] = useState(null);
+    const [rejectionReason, setRejectionReason] = useState('');
+    const [outcomeForms, setOutcomeForms] = useState({});
+
+    // Direct scheduling modal states
+    const [showDirectScheduleModal, setShowDirectScheduleModal] = useState(false);
+    const [directForm, setDirectForm] = useState({
+        internshipId: '',
+        date: '',
+        start_time: '09:00',
+        end_time: '09:30',
+        modality: 'Presencial',
+        location: '',
+        comments: '',
+    });
+
+    // Cancel / Reschedule modal state
+    const [cancellingAppointment, setCancellingAppointment] = useState(null);
+    const [cancelMode, setCancelMode] = useState('cancel');
+    const [cancelReason, setCancelReason] = useState('');
 
     const selectedDateKey = toDateKey(
         selectedDate.year,
@@ -692,184 +221,166 @@ export const InterviewSchedulingPage = () => {
         selectedDate.day,
     );
 
-    const loadSchedulingData = useCallback(async ({ clearMessage = true } = {}) => {
+    // Load data from endpoints
+    const loadData = useCallback(async ({ clearMessage = true } = {}) => {
         setLoading(true);
         if (clearMessage) {
             setMessage(null);
         }
 
         try {
-            const [slotsData, appointmentsData, internshipsData] = await Promise.all([
-                schedulingService.getAvailableSlots({
-                    date_from: toDateKey(
-                        today.getFullYear(),
-                        today.getMonth(),
-                        today.getDate(),
-                    ),
-                }),
-                schedulingService.getAppointments(),
-                isStudent
-                    ? internshipService.getMyInternships()
-                    : Promise.resolve([]),
-            ]);
+            // Config
+            const configData = await schedulingService.getSchedulingConfig();
+            setGeneralConfig(configData);
 
-            setAvailableSlots(slotsData);
+            // Appointments
+            const appointmentsData = await schedulingService.getAppointments();
             setAppointments(appointmentsData);
-            setInternships(internshipsData);
+
+            if (isStudent) {
+                // Requests me
+                const requestsData = await schedulingService.getMyRequests();
+                setMyRequests(requestsData);
+
+                // Internships (with lifecycle tracking)
+                const internshipsData = await internshipService.getMyInternships();
+                const withLifecycle = await Promise.all(
+                    internshipsData.map(async (internship) => {
+                        try {
+                            const lifecycle = await internshipService.getInternshipLifecycle(internship.id);
+                            return { ...internship, lifecycle };
+                        } catch (e) {
+                            return { ...internship, lifecycle: null };
+                        }
+                    })
+                );
+                setInternships(withLifecycle);
+            }
+
+            if (isAdmin) {
+                // Pending requests
+                const pendingData = await schedulingService.getPendingRequests();
+                setPendingRequests(pendingData);
+
+                // Load all internships for direct scheduling
+                try {
+                    const internshipsData = await internshipService.getInternships();
+                    const activeInternships = internshipsData.filter(
+                        (i) => i.status === 'approved' && i.completion_status !== 'finalized' && !i.is_cancelled
+                    );
+                    setInternships(activeInternships);
+                } catch (err) {
+                    console.error("Error loading internships for direct scheduling", err);
+                }
+            }
         } catch (error) {
             setMessage({ type: 'error', text: getErrorMessage(error) });
         } finally {
             setLoading(false);
         }
-    }, [isStudent, today]);
+    }, [isStudent, isAdmin]);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        loadSchedulingData();
-    }, [loadSchedulingData]);
+        loadData();
+    }, [loadData]);
 
+    // Handle Query Params
     useEffect(() => {
-        if (!selectedInternshipId && internships.length > 0) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setSelectedInternshipId(String(internships[0].id));
+        if (internships.length > 0) {
+            const params = new URLSearchParams(window.location.search);
+            const internshipId = params.get('internshipId');
+            const purpose = params.get('purpose');
+            
+            if (purpose) setFormPurpose(purpose);
+            if (internshipId) {
+                setFormInternshipId(internshipId);
+            } else {
+                setFormInternshipId(String(internships[0].id));
+            }
         }
-    }, [internships, selectedInternshipId]);
+    }, [internships]);
 
+    // Calendar Marker Logic
     const calendarMarkers = useMemo(() => {
         const markers = {};
-
-        [...availableSlots, ...appointments].forEach((slot) => {
-            markers[slot.date] = markers[slot.date] || [];
-            markers[slot.date].push(slot.id);
+        appointments.forEach((appt) => {
+            markers[appt.date] = markers[appt.date] || [];
+            markers[appt.date].push(appt.id);
         });
-
         return markers;
-    }, [availableSlots, appointments]);
+    }, [appointments]);
 
-    const upcomingSlots = useMemo(
-        () => [...availableSlots].sort((first, second) => {
-            const firstDate = `${first.date}T${first.start_time}`;
-            const secondDate = `${second.date}T${second.start_time}`;
-
-            return firstDate.localeCompare(secondDate);
-        }),
-        [availableSlots],
+    // Filtered Appointments on Selected Date
+    const selectedDayAppointments = useMemo(
+        () => appointments.filter((appt) => appt.date === selectedDateKey),
+        [appointments, selectedDateKey]
     );
 
-    const selectedDaySlots = useMemo(
-        () => availableSlots.filter((slot) => slot.date === selectedDateKey),
-        [availableSlots, selectedDateKey],
-    );
+    // Sort appointments chronologically
+    const orderedAppointments = useMemo(() => {
+        return [...appointments].sort((a, b) => {
+            const cmp = a.date.localeCompare(b.date);
+            if (cmp !== 0) return cmp;
+            return a.start_time.localeCompare(b.start_time);
+        });
+    }, [appointments]);
 
-    const selectedAppointment = useMemo(
-        () =>
-            appointments.find(
-                (appointment) => appointment.id === reschedulingAppointmentId,
-            ),
-        [appointments, reschedulingAppointmentId],
-    );
+    // Check if the student meets presentation requirements
+    const selectedInternship = useMemo(() => {
+        return internships.find(i => String(i.id) === String(formInternshipId));
+    }, [internships, formInternshipId]);
 
-    const visibleSlots = useMemo(() => {
-        if (!selectedAppointment) return selectedDaySlots;
+    const qualifiesForPresentation = useMemo(() => {
+        if (!selectedInternship) return false;
+        
+        const isCancelled = selectedInternship.is_cancelled;
+        const isFinalized = selectedInternship.completion_status === 'finalized';
+        const hasSelf = selectedInternship.lifecycle?.self_evaluation_submitted;
+        const hasSupervisor = selectedInternship.lifecycle?.supervisor_evaluation_submitted;
 
-        return selectedDaySlots.filter(
-            (slot) => slot.purpose === selectedAppointment.purpose,
-        );
-    }, [selectedAppointment, selectedDaySlots]);
+        return !isCancelled && !isFinalized && hasSelf && hasSupervisor;
+    }, [selectedInternship]);
 
-    const groupedVisibleSlots = useMemo(
-        () => groupSlotsByPurpose(visibleSlots),
-        [visibleSlots],
-    );
+    // Coordinadores activos para consultas generales (R6)
+    const activeCoordinators = Array.isArray(generalConfig?.active_coordinators)
+        ? generalConfig.active_coordinators
+        : [];
+    const noActiveCoordinators = isStudent && formPurpose === 'general_consultation' && activeCoordinators.length === 0;
 
-    const orderedAppointments = useMemo(
-        () => [...appointments].sort((first, second) => {
-            const firstDate = `${first.date}T${first.start_time}`;
-            const secondDate = `${second.date}T${second.start_time}`;
+    // Submit Scheduling Request (Student)
+    const handleCreateRequest = async (event) => {
+        event.preventDefault();
+        setMessage(null);
+        setSubmitting(true);
 
-            return firstDate.localeCompare(secondDate);
-        }),
-        [appointments],
-    );
-
-    useEffect(() => {
-        if (hasAutoSelectedDate || upcomingSlots.length === 0) return;
-
-        const hasSlotsOnSelectedDate = upcomingSlots.some(
-            (slot) => slot.date === selectedDateKey,
-        );
-
-        if (!hasSlotsOnSelectedDate) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setSelectedDate(dateKeyToCalendarValue(upcomingSlots[0].date));
+        const filteredDates = formPreferredDates.filter(Boolean);
+        if (filteredDates.length === 0) {
+            setMessage({ type: 'error', text: 'Debes seleccionar al menos una fecha preferida.' });
+            setSubmitting(false);
+            return;
         }
 
-        setHasAutoSelectedDate(true);
-    }, [hasAutoSelectedDate, selectedDateKey, upcomingSlots]);
-
-    const handleAvailabilityChange = (field, value) => {
-        setAvailabilityForm((current) => {
-            const next = { ...current, [field]: value };
-
-            if (
-                editingSlotId &&
-                (field === 'start_time' || field === 'end_time') &&
-                next.start_time &&
-                next.end_time
-            ) {
-                next.duration_minutes = getDurationMinutes(
-                    next.start_time,
-                    next.end_time,
-                );
-            }
-
-            return next;
-        });
-    };
-
-    const resetAvailabilityForm = useCallback(() => {
-        setEditingSlotId(null);
-        setAvailabilityForm({ ...DEFAULT_AVAILABILITY_FORM });
-    }, []);
-
-    const handleCreateAvailability = async (event) => {
-        event.preventDefault();
-        setSubmitting(true);
-        setMessage(null);
-
         try {
-            const payload = {
-                ...availabilityForm,
-                date: selectedDateKey,
-                duration_minutes: Number(availabilityForm.duration_minutes),
-                location: availabilityForm.location || null,
-                comments: availabilityForm.comments || null,
-            };
+            await schedulingService.createSchedulingRequest({
+                purpose: formPurpose,
+                internship_id: formPurpose === 'final_presentation' ? Number(formInternshipId) : null,
+                target_coordinator_id: formPurpose === 'general_consultation' ? Number(formTargetCoordinatorId) : null,
+                message: formMessage || null,
+                preferred_dates: filteredDates,
+            });
 
-            if (editingSlotId) {
-                await schedulingService.updateAvailability(editingSlotId, {
-                    date: payload.date,
-                    start_time: payload.start_time,
-                    end_time: payload.end_time,
-                    modality: payload.modality,
-                    purpose: payload.purpose,
-                    location: payload.location,
-                    timezone: 'America/Santiago',
-                    comments: payload.comments,
-                });
-                setMessage({
-                    type: 'success',
-                    text: 'Horario actualizado correctamente.',
-                });
-                resetAvailabilityForm();
-            } else {
-                await schedulingService.createAvailability(payload);
-                setMessage({
-                    type: 'success',
-                    text: 'Disponibilidad publicada correctamente.',
-                });
-            }
-            await loadSchedulingData({ clearMessage: false });
+            showToast({
+                type: 'success',
+                title: 'Solicitud enviada',
+                message: 'Tu solicitud de agendamiento ha sido registrada y está pendiente de respuesta.',
+            });
+
+            // Reset form
+            setFormMessage('');
+            setFormTargetCoordinatorId('');
+            setFormPreferredDates(['', '', '']);
+            setActiveTab('requests');
+            await loadData({ clearMessage: false });
         } catch (error) {
             setMessage({ type: 'error', text: getErrorMessage(error) });
         } finally {
@@ -877,80 +388,158 @@ export const InterviewSchedulingPage = () => {
         }
     };
 
-    const handleReserveSlot = async (slotId) => {
-        if (!selectedInternshipId) {
-            setMessage({
-                type: 'error',
-                text: 'Selecciona una práctica antes de reservar.',
+    // Cancel Request (Student)
+    const handleCancelRequest = async (requestId) => {
+        if (!window.confirm('¿Estás seguro de que deseas cancelar esta solicitud?')) return;
+        setSubmitting(true);
+        setMessage(null);
+
+        try {
+            await schedulingService.cancelRequest(requestId);
+            showToast({
+                type: 'success',
+                title: 'Solicitud cancelada',
+                message: 'La solicitud ha sido cancelada correctamente.',
             });
+            await loadData({ clearMessage: false });
+        } catch (error) {
+            setMessage({ type: 'error', text: getErrorMessage(error) });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    // Cancel Appointment (Student/Coordinator)
+    const handleCancelAppointment = async (appointmentId, reason) => {
+        setSubmitting(true);
+        setMessage(null);
+
+        try {
+            await schedulingService.cancelAppointment(appointmentId, reason);
+            showToast({
+                type: 'success',
+                title: 'Cita cancelada',
+                message: 'La cita agendada ha sido cancelada.',
+            });
+            await loadData({ clearMessage: false });
+        } catch (error) {
+            setMessage({ type: 'error', text: getErrorMessage(error) });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    // Open Cancel/Reschedule modal (reemplaza window.prompt - R7)
+    const startCancelAppointment = (appointment) => {
+        setCancellingAppointment(appointment);
+        setCancelMode('cancel');
+        setCancelReason('');
+        setMessage(null);
+    };
+
+    const closeCancelModal = () => {
+        setCancellingAppointment(null);
+        setCancelReason('');
+        setCancelMode('cancel');
+    };
+
+    const handleConfirmCancel = async (event) => {
+        event.preventDefault();
+        if (!cancellingAppointment) return;
+
+        const trimmedReason = cancelReason.trim();
+        if (!trimmedReason) {
+            setMessage({ type: 'error', text: 'Debes indicar una justificación.' });
+            return;
+        }
+
+        const prefix = cancelMode === 'reschedule'
+            ? 'Solicitud de reprogramación:'
+            : 'Solicitud de cancelación:';
+        const fullReason = `${prefix} ${trimmedReason}`;
+
+        const targetId = cancellingAppointment.id;
+        closeCancelModal();
+        await handleCancelAppointment(targetId, fullReason);
+    };
+
+    // Open Responding dialog (Coordinator)
+    const startResponse = (request) => {
+        const dates = parsePreferredDates(request.preferred_dates);
+        const defaultDate = dates[0] || '';
+        
+        setRespondingRequest(request);
+        setResponseForm({
+            date: defaultDate,
+            start_time: '09:00',
+            end_time: '09:30',
+            modality: 'Presencial',
+            location: '',
+            comments: '',
+        });
+        setMessage(null);
+    };
+
+    // Submit Response (Coordinator)
+    const handleSendResponse = async (event) => {
+        event.preventDefault();
+        if (!respondingRequest) return;
+        setSubmitting(true);
+        setMessage(null);
+
+        try {
+            await schedulingService.respondToRequest(respondingRequest.id, {
+                date: responseForm.date,
+                start_time: `${responseForm.start_time}:00`,
+                end_time: `${responseForm.end_time}:00`,
+                modality: responseForm.modality,
+                location: responseForm.location || null,
+                comments: responseForm.comments || null,
+            });
+
+            showToast({
+                type: 'success',
+                title: 'Cita agendada',
+                message: 'Se ha agendado la cita y notificado al estudiante.',
+            });
+
+            setRespondingRequest(null);
+            await loadData({ clearMessage: false });
+        } catch (error) {
+            setMessage({ type: 'error', text: getErrorMessage(error) });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    // Open Rejection dialog (Coordinator)
+    const startRejection = (request) => {
+        setRejectingRequest(request);
+        setRejectionReason('');
+        setMessage(null);
+    };
+
+    // Submit Rejection (Coordinator)
+    const handleSendRejection = async (event) => {
+        event.preventDefault();
+        if (!rejectingRequest) return;
+        if (!rejectionReason.trim()) {
+            setMessage({ type: 'error', text: 'Debes indicar un motivo de rechazo.' });
             return;
         }
 
         setSubmitting(true);
         setMessage(null);
-        setConfirmedAppointment(null);
 
         try {
-            let bookedAppointment;
-
-            if (reschedulingAppointmentId) {
-                bookedAppointment = await schedulingService.rescheduleAppointment(
-                    reschedulingAppointmentId,
-                    slotId,
-                );
-                setReschedulingAppointmentId(null);
-                setMessage({ type: 'success', text: 'Cita reprogramada.' });
-            } else {
-                bookedAppointment = await schedulingService.reserveSlot(
-                    slotId,
-                    selectedInternshipId,
-                );
-                setMessage({ type: 'success', text: 'Horario reservado.' });
-            }
-
-            setConfirmedAppointment(bookedAppointment);
-            setSelectedDate(dateKeyToCalendarValue(bookedAppointment.date));
-            await loadSchedulingData({ clearMessage: false });
-        } catch (error) {
-            const isConflict = error?.response?.status === 409;
-            setMessage({
-                type: 'error',
-                text: isConflict
-                    ? `${getErrorMessage(error)} La agenda fue actualizada.`
-                    : getErrorMessage(error),
+            await schedulingService.rejectRequest(rejectingRequest.id, rejectionReason);
+            showToast({
+                type: 'success',
+                title: 'Solicitud rechazada',
+                message: 'Se ha rechazado la solicitud de agendamiento.',
             });
-
-            if (isConflict) {
-                await loadSchedulingData({ clearMessage: false });
-            }
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const handleRequestCancelAppointment = (appointment) => {
-        setAppointmentPendingCancellation(appointment);
-    };
-
-    const handleCancelAppointment = async (appointmentId) => {
-        setSubmitting(true);
-        setMessage(null);
-
-        try {
-            await schedulingService.cancelAppointment(
-                appointmentId,
-                cancelReasons[appointmentId] || null,
-            );
-            setCancelReasons((current) => ({ ...current, [appointmentId]: '' }));
-            setReschedulingAppointmentId((current) =>
-                current === appointmentId ? null : current,
-            );
-            setConfirmedAppointment((current) =>
-                current?.id === appointmentId ? null : current,
-            );
-            setAppointmentPendingCancellation(null);
-            setMessage({ type: 'success', text: 'Cita cancelada.' });
-            await loadSchedulingData({ clearMessage: false });
+            setRejectingRequest(null);
+            await loadData({ clearMessage: false });
         } catch (error) {
             setMessage({ type: 'error', text: getErrorMessage(error) });
         } finally {
@@ -958,65 +547,7 @@ export const InterviewSchedulingPage = () => {
         }
     };
 
-    const handleCloseAvailability = async (slotId) => {
-        setSubmitting(true);
-        setMessage(null);
-
-        try {
-            await schedulingService.closeAvailability(slotId, null);
-            setMessage({ type: 'success', text: 'Horario cerrado.' });
-            await loadSchedulingData({ clearMessage: false });
-        } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const handleStartEditAvailability = (slot) => {
-        setEditingSlotId(slot.id);
-        setSelectedDate(dateKeyToCalendarValue(slot.date));
-        setAvailabilityForm({
-            start_time: slot.start_time.slice(0, 5),
-            end_time: slot.end_time.slice(0, 5),
-            duration_minutes: slot.duration_minutes,
-            modality: slot.modality,
-            purpose: slot.purpose,
-            location: slot.location || '',
-            comments: slot.comments || '',
-        });
-        setMessage(null);
-    };
-
-    const handleRequestDeleteAvailability = (slot) => {
-        setSlotPendingDeletion(slot);
-    };
-
-    const handleConfirmDeleteAvailability = async () => {
-        if (!slotPendingDeletion) return;
-
-        setSubmitting(true);
-        setMessage(null);
-
-        try {
-            await schedulingService.deleteAvailability(slotPendingDeletion.id);
-            if (editingSlotId === slotPendingDeletion.id) {
-                resetAvailabilityForm();
-            }
-            setSlotPendingDeletion(null);
-            setMessage({ type: 'success', text: 'Horario eliminado.' });
-            await loadSchedulingData({ clearMessage: false });
-        } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const setCancelReason = (appointmentId, reason) => {
-        setCancelReasons((current) => ({ ...current, [appointmentId]: reason }));
-    };
-
+    // Set Outcome fields
     const setOutcomeField = (appointmentId, field, value) => {
         setOutcomeForms((current) => {
             const currentForm = current[appointmentId] || DEFAULT_OUTCOME_FORM;
@@ -1044,6 +575,7 @@ export const InterviewSchedulingPage = () => {
         });
     };
 
+    // Submit Outcome (Coordinator)
     const handleRegisterOutcome = async (appointmentId) => {
         const outcome = outcomeForms[appointmentId] || DEFAULT_OUTCOME_FORM;
         setSubmitting(true);
@@ -1057,68 +589,158 @@ export const InterviewSchedulingPage = () => {
                     ? outcome.comments?.trim() || null
                     : null,
             });
+            
             setOutcomeForms((current) => {
                 const next = { ...current };
                 delete next[appointmentId];
                 return next;
             });
-            setMessage({ type: 'success', text: 'Resultado registrado correctamente.' });
-            await loadSchedulingData({ clearMessage: false });
-        } catch (error) {
-            const errorMessage = getErrorMessage(error);
-            const hasPendingRequirements = Array.isArray(
-                error?.response?.data?.detail?.pending_requirements,
-            );
-
-            setMessage({ type: 'error', text: errorMessage });
+            
             showToast({
-                type: hasPendingRequirements ? 'warning' : 'error',
-                title: hasPendingRequirements
-                    ? 'No se puede cerrar la presentación final'
-                    : 'No se pudo registrar el resultado',
-                message: errorMessage,
-                duration: 8000,
+                type: 'success',
+                title: 'Resultado registrado',
+                message: 'Se ha registrado el resultado de la cita correctamente.',
             });
+            await loadData({ clearMessage: false });
+        } catch (error) {
+            setMessage({ type: 'error', text: getErrorMessage(error) });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDirectSchedule = async (event) => {
+        event.preventDefault();
+        setSubmitting(true);
+        setMessage(null);
+
+        try {
+            await schedulingService.scheduleDirectAppointment({
+                internship_id: Number(directForm.internshipId),
+                date: directForm.date,
+                start_time: `${directForm.start_time}:00`,
+                end_time: `${directForm.end_time}:00`,
+                modality: directForm.modality,
+                location: directForm.location || null,
+                comments: directForm.comments || null,
+            });
+
+            showToast({
+                type: 'success',
+                title: 'Cita agendada',
+                message: 'Se ha agendado la presentación final directamente.',
+            });
+
+            setShowDirectScheduleModal(false);
+            setDirectForm({
+                internshipId: '',
+                date: '',
+                start_time: '09:00',
+                end_time: '09:30',
+                modality: 'Presencial',
+                location: '',
+                comments: '',
+            });
+            await loadData({ clearMessage: false });
+        } catch (error) {
+            setMessage({ type: 'error', text: getErrorMessage(error) });
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-ufro-bg flex flex-col">
+        <div className="min-h-screen bg-ufro-bg flex flex-col font-sans">
             <UserHeader />
 
             <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 py-8 sm:px-8">
-                <div className="mb-6 flex flex-col gap-2">
-                    <h2 className="text-3xl font-bold text-brand-medium sm:text-4xl">
-                        Gestión de horarios de entrevistas
-                    </h2>
-                    <p className="text-sm text-slate-500">
-                        {isAdmin
-                            ? 'Publica disponibilidad y revisa tus citas agendadas.'
-                            : 'Reserva o reprograma horarios disponibles para tus prácticas.'}
-                    </p>
+                <button
+                    onClick={() => navigate(getRedirectPathForRoles(user?.roles))}
+                    className="mb-6 flex w-fit items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition"
+                >
+                    <ArrowLeft size={16} />
+                    Volver al Dashboard
+                </button>
+                {/* Headers */}
+                <div className="mb-8 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 className="text-3xl font-black text-slate-900 sm:text-4xl">
+                            Agendar horas y consultas
+                        </h2>
+                        <p className="text-sm text-slate-500 mt-1">
+                            {isAdmin
+                                ? 'Responde solicitudes de agendamiento y califica resultados de presentaciones.'
+                                : 'Solicita horas para consultas generales o presentaciones finales de tus prácticas.'}
+                        </p>
+                    </div>
+                    {isAdmin && (
+                        <button
+                            onClick={() => setShowDirectScheduleModal(true)}
+                            className="flex items-center gap-2 rounded-2xl bg-[#d22864] hover:bg-[#b01e50] px-5 py-3 font-bold text-white shadow-md shadow-[#d22864]/10 transition"
+                        >
+                            <CalendarPlus size={18} />
+                            Agendar Presentación Directa
+                        </button>
+                    )}
                 </div>
 
+                {/* Notifications Panel */}
                 {message && (
                     <div
                         className={[
-                            'mb-6 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold',
+                            'mb-6 flex items-center gap-3 rounded-2xl border px-5 py-4 text-sm font-semibold shadow-sm',
                             message.type === 'success'
-                                ? 'border-green-200 bg-green-50 text-green-700'
-                                : 'border-red-200 bg-red-50 text-red-700',
+                                ? 'border-green-200 bg-green-50 text-green-800'
+                                : 'border-red-200 bg-red-50 text-red-800',
                         ].join(' ')}
                     >
                         {message.type === 'success' ? (
-                            <CheckCircle2 size={18} />
+                            <CheckCircle2 className="text-green-600 h-5 w-5 flex-shrink-0" />
                         ) : (
-                            <AlertCircle size={18} />
+                            <AlertCircle className="text-red-600 h-5 w-5 flex-shrink-0" />
                         )}
-                        {message.text}
+                        <span>{message.text}</span>
                     </div>
                 )}
 
+                {/* Navigation Tabs */}
+                <div className="mb-6 flex border-b border-slate-200">
+                    {isStudent && (
+                        <>
+                            <button
+                                onClick={() => setActiveTab('request')}
+                                className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'request' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Solicitar Hora
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('requests')}
+                                className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'requests' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Mis Solicitudes ({myRequests.length})
+                            </button>
+                        </>
+                    )}
+                    {isAdmin && (
+                        <button
+                            onClick={() => setActiveTab('requests')}
+                            className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'requests' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Solicitudes Pendientes ({pendingRequests.length})
+                        </button>
+                    )}
+                    <button
+                        onClick={() => setActiveTab('appointments')}
+                        className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'appointments' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Citas Agendadas ({appointments.length})
+                    </button>
+                </div>
+
+                {/* Dashboard Grid Layout */}
                 <div className="grid items-start gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+                    
+                    {/* Sidebar: Calendar & Stats */}
                     <aside className="space-y-4 xl:sticky xl:top-24">
                         <CalendarView
                             selectedDate={selectedDate}
@@ -1126,359 +748,836 @@ export const InterviewSchedulingPage = () => {
                             savedDates={calendarMarkers}
                         />
 
-                        {isAdmin && (
-                            <form
-                                onSubmit={handleCreateAvailability}
-                                className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md"
-                            >
-                                <div className="mb-5 flex items-center justify-between gap-3">
-                                    <div>
-                                        <h3 className="font-bold text-lg">
-                                            {editingSlotId
-                                                ? 'Editar disponibilidad'
-                                                : 'Publicar disponibilidad'}
-                                        </h3>
-                                        <p className="text-sm text-slate-500">
-                                            {selectedDate.day} de {MONTHS[selectedDate.month]}
-                                        </p>
-                                    </div>
-                                    <CalendarCheck className="text-brand-medium" />
-                                </div>
-
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <label className="text-sm font-semibold text-slate-700">
-                                        Inicio
-                                        <input
-                                            type="time"
-                                            value={availabilityForm.start_time}
-                                            onChange={(event) =>
-                                                handleAvailabilityChange(
-                                                    'start_time',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand-medium"
-                                            required
-                                        />
-                                    </label>
-
-                                    <label className="text-sm font-semibold text-slate-700">
-                                        Término
-                                        <input
-                                            type="time"
-                                            value={availabilityForm.end_time}
-                                            onChange={(event) =>
-                                                handleAvailabilityChange(
-                                                    'end_time',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand-medium"
-                                            required
-                                        />
-                                    </label>
-
-                                    <label className="text-sm font-semibold text-slate-700">
-                                        Duración
-                                        <input
-                                            type="number"
-                                            min="15"
-                                            max="240"
-                                            step="15"
-                                            value={availabilityForm.duration_minutes}
-                                            onChange={(event) =>
-                                                handleAvailabilityChange(
-                                                    'duration_minutes',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand-medium"
-                                            required
-                                            disabled={Boolean(editingSlotId)}
-                                        />
-                                    </label>
-
-                                    <label className="text-sm font-semibold text-slate-700">
-                                        Modalidad
-                                        <select
-                                            value={availabilityForm.modality}
-                                            onChange={(event) =>
-                                                handleAvailabilityChange(
-                                                    'modality',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand-medium"
-                                        >
-                                            {MODALITY_OPTIONS.map((option) => (
-                                                <option key={option} value={option}>
-                                                    {option}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-
-                                    <label className="text-sm font-semibold text-slate-700 sm:col-span-2">
-                                        Propósito
-                                        <select
-                                            value={availabilityForm.purpose}
-                                            onChange={(event) =>
-                                                handleAvailabilityChange(
-                                                    'purpose',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand-medium"
-                                        >
-                                            {PURPOSE_OPTIONS.map((option) => (
-                                                <option
-                                                    key={option.value}
-                                                    value={option.value}
-                                                >
-                                                    {option.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-
-                                    <label className="text-sm font-semibold text-slate-700 sm:col-span-2">
-                                        Ubicación o enlace
-                                        <input
-                                            type="text"
-                                            value={availabilityForm.location}
-                                            onChange={(event) =>
-                                                handleAvailabilityChange(
-                                                    'location',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand-medium"
-                                        />
-                                    </label>
-
-                                    <label className="text-sm font-semibold text-slate-700 sm:col-span-2">
-                                        Comentarios
-                                        <textarea
-                                            rows={3}
-                                            value={availabilityForm.comments}
-                                            onChange={(event) =>
-                                                handleAvailabilityChange(
-                                                    'comments',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-brand-medium"
-                                        />
-                                    </label>
-                                </div>
-
-                                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                                    <button
-                                        type="submit"
-                                        disabled={submitting}
-                                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-medium px-4 py-3 font-bold text-white transition hover:bg-brand-dark disabled:opacity-60"
-                                    >
-                                        <CalendarCheck size={18} />
-                                        {editingSlotId ? 'Guardar cambios' : 'Publicar bloques'}
-                                    </button>
-                                    {editingSlotId && (
-                                        <button
-                                            type="button"
-                                            onClick={resetAvailabilityForm}
-                                            className="rounded-xl bg-slate-100 px-4 py-3 font-bold text-slate-700 transition hover:bg-slate-200"
-                                        >
-                                            Cancelar edición
-                                        </button>
-                                    )}
-                                </div>
-                            </form>
-                        )}
-
-                        {isStudent && (
-                            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md">
-                                <h3 className="font-bold text-lg">
-                                    Práctica para la reserva
-                                </h3>
-                                <select
-                                    value={selectedInternshipId}
-                                    onChange={(event) =>
-                                        setSelectedInternshipId(event.target.value)
-                                    }
-                                    className="mt-4 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-brand-medium"
-                                >
-                                    {internships.map((internship) => (
-                                        <option key={internship.id} value={internship.id}>
-                                            #{internship.id} · {internship.org_name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {internships.length === 0 && (
-                                    <p className="mt-3 text-sm text-slate-500">
-                                        No tienes prácticas disponibles para agendar.
-                                    </p>
-                                )}
-                            </div>
-                        )}
-
-                        <section className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                             <StatsCard
-                                title="Horarios disponibles"
-                                value={availableSlots.length}
+                                title="Citas del Día"
+                                value={selectedDayAppointments.length}
                                 icon={Clock}
                             />
                             <StatsCard
-                                title="Citas agendadas"
-                                value={appointments.length}
-                                icon={Send}
-                            />
-                            <StatsCard
-                                title="Días con agenda"
+                                title="Días con Actividad"
                                 value={Object.keys(calendarMarkers).length}
                                 icon={CalendarIcon}
                             />
                         </section>
                     </aside>
 
-                    <div className="min-w-0 space-y-5">
+                    {/* Main Content Area */}
+                    <div className="min-w-0 space-y-6">
 
-                        {confirmedAppointment && (
-                            <BookingConfirmation
-                                appointment={confirmedAppointment}
-                                onDismiss={() => setConfirmedAppointment(null)}
-                            />
+                        {/* TAB 1: Request Scheduling Form (Student only) */}
+                        {isStudent && activeTab === 'request' && (
+                            <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-md">
+                                <h3 className="text-xl font-black text-slate-900 mb-2 flex items-center gap-2">
+                                    <CalendarPlus className="text-[#d22864]" />
+                                    Nueva Solicitud de Agendamiento
+                                </h3>
+                                <p className="text-sm text-slate-500 mb-6">
+                                    Completa la información para proponer tu disponibilidad. El coordinador asignará una hora oficial en base a tus sugerencias.
+                                </p>
+
+                                <form onSubmit={handleCreateRequest} className="space-y-5">
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="sm:col-span-2">
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">
+                                                Propósito del Agendamiento
+                                            </label>
+                                            <select
+                                                value={formPurpose}
+                                                onChange={(e) => setFormPurpose(e.target.value)}
+                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                            >
+                                                <option value="general_consultation">Consulta general presencial</option>
+                                                <option value="final_presentation">Entrevista / Presentación final</option>
+                                            </select>
+                                        </div>
+
+                                        {formPurpose === 'general_consultation' && (
+                                            <div className="sm:col-span-2">
+                                                <label className="block text-sm font-bold text-slate-700 mb-2">
+                                                    Coordinador destinatario
+                                                </label>
+                                                {activeCoordinators.length === 0 ? (
+                                                    <div className="rounded-2xl border border-amber-200 bg-amber-50 text-amber-800 text-xs font-semibold p-4 flex gap-2">
+                                                        <Info className="h-4 w-4 flex-shrink-0" />
+                                                        <span>
+                                                            No hay coordinadores con consultas generales habilitadas en este
+                                                            momento. Vuelve más tarde o solicita una presentación final.
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <select
+                                                        value={formTargetCoordinatorId}
+                                                        onChange={(e) => setFormTargetCoordinatorId(e.target.value)}
+                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                                        required
+                                                    >
+                                                        <option value="" disabled>Selecciona un coordinador</option>
+                                                        {activeCoordinators.map((coord) => (
+                                                            <option key={coord.id} value={coord.id}>
+                                                                {coord.first_name} {coord.last_name} ({coord.role_name || 'Coordinador'})
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {formPurpose === 'final_presentation' && (
+                                            <div className="sm:col-span-2">
+                                                <label className="block text-sm font-bold text-slate-700 mb-2">
+                                                    Selecciona tu Práctica
+                                                </label>
+                                                <select
+                                                    value={formInternshipId}
+                                                    onChange={(e) => setFormInternshipId(e.target.value)}
+                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                                    required
+                                                >
+                                                    <option value="" disabled>Selecciona una opción</option>
+                                                    {internships.map((internship) => (
+                                                        <option key={internship.id} value={internship.id}>
+                                                            #{internship.id} · {internship.org_name} ({internship.internship_type})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                
+                                                {/* Requisites feedback */}
+                                                {formInternshipId && (
+                                                    <div className={`mt-3 p-4 rounded-2xl border text-xs font-semibold ${qualifiesForPresentation ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                                                        <div className="flex gap-2">
+                                                            <Info className="h-4 w-4 flex-shrink-0" />
+                                                            <div>
+                                                                <p className="font-bold text-sm">Estado de Requisitos:</p>
+                                                                <ul className="mt-2 space-y-1 list-disc list-inside">
+                                                                    <li>Autoevaluación del Estudiante: {selectedInternship?.lifecycle?.self_evaluation_submitted ? '✅ Enviada' : '❌ Falta completar'}</li>
+                                                                    <li>Evaluación del Supervisor: {selectedInternship?.lifecycle?.supervisor_evaluation_submitted ? '✅ Enviada' : '❌ Falta completar'}</li>
+                                                                    <li>Práctica no cancelada ni finalizada: {selectedInternship && !selectedInternship.is_cancelled && selectedInternship.completion_status !== 'finalized' ? '✅ Sí' : '❌ No'}</li>
+                                                                </ul>
+                                                                {!qualifiesForPresentation && (
+                                                                    <p className="mt-3 font-black text-red-600">
+                                                                        ⚠️ No cumples con los prerrequisitos necesarios para agendar la entrevista final.
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div className="sm:col-span-2">
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">
+                                                Fechas Preferidas (Selecciona hasta 3 fechas)
+                                            </label>
+                                            <div className="grid gap-3 sm:grid-cols-3">
+                                                {formPreferredDates.map((dateValue, index) => (
+                                                    <div key={index} className="relative">
+                                                        <span className="absolute left-3 top-3.5 text-xs text-slate-400 font-bold">{index + 1}°</span>
+                                                        <input
+                                                            type="date"
+                                                            value={dateValue}
+                                                            onChange={(e) => {
+                                                                const updated = [...formPreferredDates];
+                                                                updated[index] = e.target.value;
+                                                                setFormPreferredDates(updated);
+                                                            }}
+                                                            min={today.toISOString().split('T')[0]}
+                                                            className="w-full rounded-2xl border border-slate-200 bg-white pl-8 pr-3 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                                            required={index === 0}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="sm:col-span-2">
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">
+                                                Mensaje u Observaciones (Opcional)
+                                            </label>
+                                            <textarea
+                                                rows={3}
+                                                value={formMessage}
+                                                onChange={(e) => setFormMessage(e.target.value)}
+                                                placeholder="Ej. Prefiero horario de tarde, o consultas específicas sobre mi portafolio."
+                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={submitting || (formPurpose === 'final_presentation' && !qualifiesForPresentation) || noActiveCoordinators}
+                                        className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] hover:bg-[#b01e50] px-6 py-4 font-bold text-white shadow-md shadow-[#d22864]/10 transition disabled:opacity-60"
+                                    >
+                                        <Send size={18} />
+                                        Enviar Solicitud de Agendamiento
+                                    </button>
+                                </form>
+                            </section>
                         )}
 
-                        <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md sm:p-6">
-                            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <h3 className="text-lg font-black text-slate-900">
-                                        Horarios del día seleccionado
-                                    </h3>
-                                    <p className="text-sm text-slate-500">
-                                        {formatDisplayDate(selectedDateKey)}
-                                    </p>
-                                </div>
-                                {reschedulingAppointmentId && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setReschedulingAppointmentId(null)}
-                                        className="flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-sm font-bold text-slate-600"
-                                    >
-                                        <XCircle size={16} /> Cancelar cambio
-                                    </button>
+                        {/* TAB 2: List of requests (My requests for Student; Pending requests for Coordinator) */}
+                        {activeTab === 'requests' && (
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-black text-slate-900">
+                                    {isAdmin ? 'Solicitudes Pendientes de Estudiantes' : 'Mis Solicitudes de Agendamiento'}
+                                </h3>
+
+                                {isAdmin && pendingRequests.length === 0 && (
+                                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-500 text-sm">
+                                        No hay solicitudes pendientes en este momento.
+                                    </div>
                                 )}
-                            </div>
 
-                            {loading ? (
-                                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                                    {Array.from({ length: 6 }).map((_, index) => (
-                                        <div
-                                            key={`slot-loading-${index}`}
-                                            className="h-28 animate-pulse rounded-xl bg-slate-100"
-                                        />
-                                    ))}
-                                </div>
-                            ) : groupedVisibleSlots.length === 0 ? (
-                                <EmptyScheduleState
-                                    isStudent={isStudent}
-                                    upcomingSlots={upcomingSlots}
-                                    reschedulingAppointmentId={reschedulingAppointmentId}
-                                    submitting={submitting}
-                                    onReserve={handleReserveSlot}
-                                    onSelectDate={setSelectedDate}
-                                />
-                            ) : (
-                                <div className="space-y-4">
-                                    {groupedVisibleSlots.map((group) => (
-                                        <SlotGroup
-                                            key={group.value}
-                                            group={group}
-                                            isAdmin={isAdmin}
-                                            submitting={submitting}
-                                            reschedulingAppointmentId={reschedulingAppointmentId}
-                                            onReserve={handleReserveSlot}
-                                            onEdit={handleStartEditAvailability}
-                                            onClose={handleCloseAvailability}
-                                            onDelete={handleRequestDeleteAvailability}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </section>
+                                {isStudent && myRequests.length === 0 && (
+                                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-500 text-sm">
+                                        No has realizado solicitudes de agendamiento.
+                                    </div>
+                                )}
 
-                        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
-                            <div className="mb-5 flex items-center justify-between">
-                                <h3 className="font-bold text-lg">Citas y resultados</h3>
-                                <RefreshCw
-                                    size={18}
-                                    className="text-slate-400"
-                                    aria-hidden="true"
-                                />
-                            </div>
+                                {isStudent && myRequests.map((req) => {
+                                    const preferredDatesList = parsePreferredDates(req.preferred_dates);
+                                    return (
+                                        <div key={req.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm space-y-4">
+                                            <div className="flex flex-wrap items-start justify-between gap-3">
+                                                <div>
+                                                    <h4 className="font-bold text-slate-900 text-lg">
+                                                        {purposeLabel(req.purpose)}
+                                                    </h4>
+                                                    <p className="text-xs text-slate-400 mt-1">
+                                                        Creada el: {req.created_at ? formatDisplayDate(req.created_at.split('T')[0]) : ''}
+                                                    </p>
+                                                </div>
+                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${getRequestStatusBadgeClasses(req.status)}`}>
+                                                    {REQUEST_STATUS_LABELS[req.status] || req.status}
+                                                </span>
+                                            </div>
 
-                            {orderedAppointments.length === 0 ? (
-                                <p className="text-sm text-slate-500">
-                                    No tienes citas agendadas.
-                                </p>
-                            ) : (
-                                <div className="space-y-3">
-                                    {orderedAppointments.map((appointment) => (
-                                        <AppointmentItem
-                                            key={appointment.id}
-                                            appointment={appointment}
-                                            isAdmin={isAdmin}
-                                            isHighlighted={
-                                                confirmedAppointment?.id ===
-                                                appointment.id
-                                            }
-                                            outcome={
-                                                outcomeForms[appointment.id]
-                                                || DEFAULT_OUTCOME_FORM
-                                            }
-                                            onOutcomeChange={setOutcomeField}
-                                            onCancel={handleRequestCancelAppointment}
-                                            onRegisterOutcome={handleRegisterOutcome}
-                                            onStartReschedule={
-                                                setReschedulingAppointmentId
-                                            }
-                                            isRescheduling={
-                                                reschedulingAppointmentId ===
-                                                appointment.id
-                                            }
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </section>
+                                            {req.internship_id && (
+                                                <p className="text-sm text-slate-600 font-semibold">
+                                                    Asociada a Práctica ID #{req.internship_id}
+                                                </p>
+                                            )}
+
+                                            <div className="text-sm bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fechas sugeridas:</p>
+                                                <p className="text-slate-700 font-medium">
+                                                    {preferredDatesList.map(d => formatDisplayDate(d)).join('  |  ')}
+                                                </p>
+                                            </div>
+
+                                            {req.message && (
+                                                <div className="text-sm">
+                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Mi mensaje:</p>
+                                                    <p className="text-slate-600 bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 italic">
+                                                        "{req.message}"
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {req.coordinator_response && (
+                                                <div className={`text-sm p-4 rounded-xl border ${req.status === 'rejected' ? 'bg-red-50/50 border-red-100 text-red-900' : 'bg-green-50/50 border-green-100 text-green-900'}`}>
+                                                    <p className="text-xs font-black uppercase tracking-wider mb-1">
+                                                        Respuesta del {req.resolved_by_role === 'Director' ? 'Director' : 'Coordinador'}:
+                                                    </p>
+                                                    <p className="italic">"{req.coordinator_response}"</p>
+                                                </div>
+                                            )}
+
+                                            {req.status === 'pending' && (
+                                                <div className="flex justify-end">
+                                                    <button
+                                                        onClick={() => handleCancelRequest(req.id)}
+                                                        disabled={submitting}
+                                                        className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 rounded-xl px-4 py-2 transition"
+                                                    >
+                                                        Cancelar Solicitud
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+
+                                {/* Coordinator Request Cards */}
+                                {isAdmin && pendingRequests.map((req) => {
+                                    const preferredDatesList = parsePreferredDates(req.preferred_dates);
+                                    return (
+                                        <div key={req.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm space-y-4">
+                                            <div className="flex flex-wrap items-start justify-between gap-3">
+                                                <div>
+                                                    <h4 className="font-bold text-slate-900 text-lg">
+                                                        {purposeLabel(req.purpose)}
+                                                    </h4>
+                                                    <p className="text-sm text-slate-500 font-semibold mt-1">
+                                                        Estudiante: {req.student?.first_name} {req.student?.last_name} ({req.student?.email})
+                                                    </p>
+                                                    {req.internship && (
+                                                        <p className="text-xs text-[#d22864] font-bold mt-1">
+                                                            Empresa: {req.internship.org_name} · Práctica #{req.internship_id}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <span className="bg-amber-100 text-amber-800 border border-amber-200 px-3 py-1 rounded-full text-xs font-bold">
+                                                    Pendiente
+                                                </span>
+                                            </div>
+
+                                            <div className="text-sm bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-1">
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fechas preferidas propuestas:</p>
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {preferredDatesList.map((d, i) => (
+                                                        <span key={i} className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 shadow-xs">
+                                                            {formatDisplayDate(d)}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {req.message && (
+                                                <div className="text-sm">
+                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Mensaje del estudiante:</p>
+                                                    <p className="text-slate-600 bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 italic">
+                                                        "{req.message}"
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            <div className="flex gap-2 justify-end">
+                                                <button
+                                                    onClick={() => startResponse(req)}
+                                                    className="flex items-center gap-1.5 text-xs font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl px-4 py-2.5 transition shadow-sm"
+                                                >
+                                                    <Check size={14} /> Agendar Cita
+                                                </button>
+                                                <button
+                                                    onClick={() => startRejection(req)}
+                                                    className="flex items-center gap-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 rounded-xl px-4 py-2.5 transition"
+                                                >
+                                                    <X size={14} /> Rechazar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </section>
+                        )}
+
+                        {/* TAB 3: Confirmed Appointments (Citas agendadas) */}
+                        {activeTab === 'appointments' && (
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-black text-slate-900">
+                                    Citas Confirmadas en el Sistema
+                                </h3>
+
+                                {appointments.length === 0 && (
+                                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-500 text-sm">
+                                        No tienes citas confirmadas registradas.
+                                    </div>
+                                )}
+
+                                {orderedAppointments.map((appointment) => (
+                                    <div key={appointment.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm space-y-4">
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
+                                            <div>
+                                                <h4 className="font-bold text-slate-900 text-lg">
+                                                    {purposeLabel(appointment.purpose)}
+                                                </h4>
+                                                <p className="text-sm font-semibold text-slate-600 mt-1">
+                                                    {formatDisplayDate(appointment.date)} · {formatSlotTime(appointment)}
+                                                </p>
+                                                {isAdmin && appointment.student && (
+                                                    <p className="text-xs text-slate-400 mt-1">
+                                                        Estudiante: {appointment.student.first_name} {appointment.student.last_name} ({appointment.student.email})
+                                                    </p>
+                                                )}
+                                                {isStudent && appointment.owner && (
+                                                    <p className="text-xs text-slate-400 mt-1">
+                                                        Organizado por: {appointment.owner.first_name} {appointment.owner.last_name}
+                                                        {appointment.owner.role_name ? ` (${appointment.owner.role_name})` : ''}
+                                                    </p>
+                                                )}
+                                                {appointment.internship_id && (
+                                                    <p className="text-xs text-[#d22864] font-bold mt-1">
+                                                        Práctica ID #{appointment.internship_id}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusBadgeClasses(appointment.status)}`}>
+                                                    {STATUS_LABELS[appointment.status] || appointment.status}
+                                                </span>
+                                                {appointment.result && (
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${getResultBadgeClasses(appointment.result)}`}>
+                                                        {RESULT_LABELS[appointment.result] || appointment.result}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {appointment.location && (
+                                            <p className="text-sm flex items-center gap-1.5 text-slate-500">
+                                                <MapPin size={14} className="text-slate-400" />
+                                                <span>Ubicación: {appointment.location}</span>
+                                            </p>
+                                        )}
+
+                                        {appointment.comments && (
+                                            <div className="text-sm bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Notas / Comentarios:</p>
+                                                <p className="text-slate-600 italic">"{appointment.comments}"</p>
+                                            </div>
+                                        )}
+
+                                        {/* Coordinator Registers Outcome */}
+                                        {isAdmin && appointment.status === 'scheduled' && (
+                                            <div className="mt-4 p-4 border border-slate-100 bg-slate-50 rounded-2xl space-y-4">
+                                                <p className="text-sm font-bold text-slate-800">Registrar Asistencia y Calificación:</p>
+                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Asistencia</label>
+                                                        <select
+                                                            value={outcomeForms[appointment.id]?.attendance_status || DEFAULT_OUTCOME_FORM.attendance_status}
+                                                            onChange={(e) => setOutcomeField(appointment.id, 'attendance_status', e.target.value)}
+                                                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#d22864]"
+                                                        >
+                                                            {APPOINTMENT_STATUS_OPTIONS.map(opt => (
+                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    {outcomeForms[appointment.id]?.attendance_status !== 'no_show' && (
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Calificación</label>
+                                                            <select
+                                                                value={outcomeForms[appointment.id]?.result || DEFAULT_OUTCOME_FORM.result}
+                                                                onChange={(e) => setOutcomeField(appointment.id, 'result', e.target.value)}
+                                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#d22864]"
+                                                            >
+                                                                {RESULT_OPTIONS.map(opt => (
+                                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <div className="sm:col-span-2">
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Observaciones</label>
+                                                        <textarea
+                                                            rows={2}
+                                                            value={outcomeForms[appointment.id]?.comments || ''}
+                                                            onChange={(e) => setOutcomeField(appointment.id, 'comments', e.target.value)}
+                                                            placeholder={outcomeForms[appointment.id]?.attendance_status === 'no_show' ? 'Indica detalles de la inasistencia...' : 'Observaciones de la evaluación...'}
+                                                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#d22864]"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex gap-2 justify-end">
+                                                    <button
+                                                        onClick={() => handleRegisterOutcome(appointment.id)}
+                                                        disabled={submitting}
+                                                        className="text-xs font-bold text-white bg-[#d22864] hover:bg-[#b01e50] rounded-xl px-4 py-2 transition"
+                                                    >
+                                                        Confirmar Resultado
+                                                    </button>
+                                                    <button
+                                                        onClick={() => startCancelAppointment(appointment)}
+                                                        disabled={submitting}
+                                                        className="text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl px-4 py-2 border border-transparent transition"
+                                                    >
+                                                        Cancelar Cita
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Student cancels appointment */}
+                                        {isStudent && appointment.status === 'scheduled' && (
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => startCancelAppointment(appointment)}
+                                                    disabled={submitting}
+                                                    className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 rounded-xl px-4 py-2 transition"
+                                                >
+                                                    Solicitar Cancelación o Modificación
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </section>
+                        )}
                     </div>
                 </div>
             </main>
 
-            <DeleteAvailabilityDialog
-                slot={slotPendingDeletion}
-                submitting={submitting}
-                onCancel={() => setSlotPendingDeletion(null)}
-                onConfirm={handleConfirmDeleteAvailability}
-            />
+            {/* DIALOGS AND MODALS */}
 
-            <CancelAppointmentDialog
-                appointment={appointmentPendingCancellation}
-                reason={
-                    appointmentPendingCancellation
-                        ? cancelReasons[appointmentPendingCancellation.id] || ''
-                        : ''
-                }
-                submitting={submitting}
-                onReasonChange={(reason) =>
-                    appointmentPendingCancellation
-                        && setCancelReason(appointmentPendingCancellation.id, reason)
-                }
-                onCancel={() => setAppointmentPendingCancellation(null)}
-                onConfirm={() =>
-                    appointmentPendingCancellation
-                    && handleCancelAppointment(appointmentPendingCancellation.id)
-                }
-            />
+            {/* Modal: Agendar / Responder Solicitud */}
+            {respondingRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4 py-6">
+                    <section className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 className="text-xl font-black text-slate-900">
+                                Agendar Cita
+                            </h3>
+                            <button onClick={() => setRespondingRequest(null)} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="text-sm bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-1">
+                            <p className="font-bold text-slate-800">Solicitud: {purposeLabel(respondingRequest.purpose)}</p>
+                            <p className="text-slate-500">Estudiante: {respondingRequest.student?.first_name} {respondingRequest.student?.last_name}</p>
+                            <p className="text-slate-500 text-xs">
+                                Fechas sugeridas: {parsePreferredDates(respondingRequest.preferred_dates).map(d => formatDisplayDate(d)).join(', ')}
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleSendResponse} className="space-y-4">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Fecha Asignada</label>
+                                    <input
+                                        type="date"
+                                        value={responseForm.date}
+                                        onChange={(e) => setResponseForm(prev => ({ ...prev, date: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Hora Inicio</label>
+                                    <input
+                                        type="time"
+                                        value={responseForm.start_time}
+                                        onChange={(e) => setResponseForm(prev => ({ ...prev, start_time: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Hora Término</label>
+                                    <input
+                                        type="time"
+                                        value={responseForm.end_time}
+                                        onChange={(e) => setResponseForm(prev => ({ ...prev, end_time: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        required
+                                    />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Modalidad</label>
+                                    <select
+                                        value={responseForm.modality}
+                                        onChange={(e) => setResponseForm(prev => ({ ...prev, modality: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                    >
+                                        {MODALITY_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                                    </select>
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Ubicación / Enlace de Reunión</label>
+                                    <input
+                                        type="text"
+                                        value={responseForm.location}
+                                        onChange={(e) => setResponseForm(prev => ({ ...prev, location: e.target.value }))}
+                                        placeholder="Ej. Oficina 302, o link de Teams / Meet"
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                    />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Comentarios o Instrucciones</label>
+                                    <textarea
+                                        rows={2}
+                                        value={responseForm.comments}
+                                        onChange={(e) => setResponseForm(prev => ({ ...prev, comments: e.target.value }))}
+                                        placeholder="Mensaje aclaratorio para el estudiante..."
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 justify-end pt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setRespondingRequest(null)}
+                                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-sm font-bold text-white transition shadow-sm"
+                                >
+                                    Confirmar y Agendar
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            )}
+
+            {/* Modal: Rechazar Solicitud */}
+            {rejectingRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4 py-6">
+                    <section className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 className="text-xl font-black text-slate-900">
+                                Rechazar Solicitud
+                            </h3>
+                            <button onClick={() => setRejectingRequest(null)} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="text-sm text-slate-600">
+                            Estás por rechazar la solicitud de consulta/presentación de <strong>{rejectingRequest.student?.first_name} {rejectingRequest.student?.last_name}</strong>.
+                        </div>
+
+                        <form onSubmit={handleSendRejection} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">Motivo de Rechazo</label>
+                                <textarea
+                                    rows={3}
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                    placeholder="Explica detalladamente por qué se rechaza la solicitud (ej. no cumple con el informe final, proponer otras fechas por correo, etc.)"
+                                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex gap-2 justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setRejectingRequest(null)}
+                                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-sm font-bold text-white transition shadow-sm"
+                                >
+                                    Rechazar Solicitud
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            )}
+
+            {/* Modal: Solicitar cancelación o modificación (R7) */}
+            {cancellingAppointment && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4 py-6">
+                    <section className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 className="text-xl font-black text-slate-900">
+                                Solicitar cancelación o modificación
+                            </h3>
+                            <button onClick={closeCancelModal} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="text-sm text-slate-600">
+                            Indica qué acción solicitas sobre tu cita del{' '}
+                            <strong>{formatDisplayDate(cancellingAppointment.date)}</strong> a las{' '}
+                            <strong>{formatSlotTime(cancellingAppointment)}</strong>. La coordinación revisará tu solicitud.
+                        </div>
+
+                        <form onSubmit={handleConfirmCancel} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setCancelMode('cancel')}
+                                    className={`rounded-2xl border-2 px-4 py-3 text-sm font-bold transition text-left ${
+                                        cancelMode === 'cancel'
+                                            ? 'border-red-500 bg-red-50 text-red-700'
+                                            : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                                    }`}
+                                >
+                                    <XCircle className="h-5 w-5 mb-1" />
+                                    Cancelar Cita
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCancelMode('reschedule')}
+                                    className={`rounded-2xl border-2 px-4 py-3 text-sm font-bold transition text-left ${
+                                        cancelMode === 'reschedule'
+                                            ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                                            : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                                    }`}
+                                >
+                                    <Clock className="h-5 w-5 mb-1" />
+                                    Solicitar Reprogramación
+                                </button>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">
+                                    Justificación
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    value={cancelReason}
+                                    onChange={(e) => setCancelReason(e.target.value)}
+                                    placeholder={
+                                        cancelMode === 'reschedule'
+                                            ? 'Explica por qué necesitas reprogramar y, si lo sabes, fechas alternativas.'
+                                            : 'Explica el motivo de la cancelación de la cita.'
+                                    }
+                                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex gap-2 justify-end">
+                                <button
+                                    type="button"
+                                    onClick={closeCancelModal}
+                                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className={`px-5 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-sm disabled:opacity-60 ${
+                                        cancelMode === 'reschedule'
+                                            ? 'bg-[#d22864] hover:bg-[#b01e50]'
+                                            : 'bg-red-600 hover:bg-red-700'
+                                    }`}
+                                >
+                                    {cancelMode === 'reschedule' ? 'Enviar Solicitud' : 'Confirmar Cancelación'}
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            )}
+
+            {/* Modal: Agendar Presentación Directamente (Coordinador/Director) */}
+            {showDirectScheduleModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4 py-6">
+                    <section className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl space-y-4 overflow-y-auto max-h-[90vh]">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 className="text-xl font-black text-slate-900">
+                                Agendar Presentación Directa
+                            </h3>
+                            <button onClick={() => setShowDirectScheduleModal(false)} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleDirectSchedule} className="space-y-4">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">
+                                        Selecciona la Práctica del Estudiante
+                                    </label>
+                                    <select
+                                        value={directForm.internshipId}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, internshipId: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        required
+                                    >
+                                        <option value="" disabled>Selecciona una práctica</option>
+                                        {internships.map((internship) => (
+                                            <option key={internship.id} value={internship.id}>
+                                                #{internship.id} · {internship.student?.first_name} {internship.student?.last_name} · {internship.org_name} ({internship.internship_type})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Fecha de la Cita</label>
+                                    <input
+                                        type="date"
+                                        value={directForm.date}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, date: e.target.value }))}
+                                        min={today.toISOString().split('T')[0]}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Hora Inicio</label>
+                                    <input
+                                        type="time"
+                                        value={directForm.start_time}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, start_time: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Hora Término</label>
+                                    <input
+                                        type="time"
+                                        value={directForm.end_time}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, end_time: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                        required
+                                    />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Modalidad</label>
+                                    <select
+                                        value={directForm.modality}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, modality: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                    >
+                                        {MODALITY_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                                    </select>
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Ubicación / Enlace de Reunión</label>
+                                    <input
+                                        type="text"
+                                        value={directForm.location}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, location: e.target.value }))}
+                                        placeholder="Ej. Oficina 302, o link de Teams / Meet"
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                    />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-1">Comentarios o Notas</label>
+                                    <textarea
+                                        rows={2}
+                                        value={directForm.comments}
+                                        onChange={(e) => setDirectForm(prev => ({ ...prev, comments: e.target.value }))}
+                                        placeholder="Comentarios adicionales sobre la presentación..."
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 justify-end pt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDirectScheduleModal(false)}
+                                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="px-5 py-2.5 rounded-xl bg-[#d22864] hover:bg-[#b01e50] text-sm font-bold text-white transition shadow-sm"
+                                >
+                                    Agendar Cita
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            )}
 
             <Footer />
         </div>

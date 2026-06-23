@@ -62,4 +62,50 @@ export const schedulingService = {
   async deleteAvailability(slotId) {
     await api.delete(`/scheduling/availability/${slotId}`);
   },
+
+  async createSchedulingRequest(data) {
+    const response = await api.post('/scheduling/requests', data);
+    return response.data;
+  },
+
+  async getMyRequests() {
+    const response = await api.get('/scheduling/requests/me');
+    return response.data;
+  },
+
+  async getPendingRequests() {
+    const response = await api.get('/scheduling/requests');
+    return response.data;
+  },
+
+  async respondToRequest(requestId, data) {
+    const response = await api.post(`/scheduling/requests/${requestId}/respond`, data);
+    return response.data;
+  },
+
+  async rejectRequest(requestId, reason) {
+    const response = await api.post(`/scheduling/requests/${requestId}/reject`, { reason });
+    return response.data;
+  },
+
+  async cancelRequest(requestId) {
+    const response = await api.post(`/scheduling/requests/${requestId}/cancel`);
+    return response.data;
+  },
+
+  async getSchedulingConfig() {
+    const response = await api.get('/scheduling/config');
+    return response.data;
+  },
+
+  async updateSchedulingConfig(data) {
+    const response = await api.patch('/scheduling/config', data);
+    return response.data;
+  },
+
+  async scheduleDirectAppointment(data) {
+    const response = await api.post('/scheduling/appointments/direct', data);
+    return response.data;
+  },
 };
+

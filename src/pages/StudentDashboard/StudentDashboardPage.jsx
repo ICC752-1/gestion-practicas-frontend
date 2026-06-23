@@ -25,11 +25,13 @@ import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
 import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
+import { schedulingService } from "../../services/schedulingService";
 import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
 import { canUploadDocuments } from "../../services/documentService";
 import { dataPortabilityService } from "../../services/dataPortabilityService";
 import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
 import { useToast } from "../../context/useToast";
+import { useNotifications } from "../../hooks/useNotifications";
 
 // --- Constants ---
 const STATUS_LABELS = {
@@ -246,34 +248,49 @@ const PracticeCard = ({ internship, lifecycle }) => {
             Ver Seguimiento
             <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
           </button>
-          <button
-            onClick={() => navigate(`/autoevaluacion/${internship.id}`)}
-            className={`w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border transition-all ${
-              canSelfEvaluate
-                ? 'border-[#d22864]/20 bg-[#fff0f6] text-[#d22864] hover:bg-[#ffe3ee]'
-                : 'border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100'
-            }`}
-          >
-            Autoevaluación
-            <ClipboardCheck size={18} />
-          </button>
+          {lifecycle?.current_step === "Presentación final por agendar" ? (
+            <button
+              onClick={() => navigate(`/entrevistas?internshipId=${internship.id}&purpose=final_presentation`)}
+              className="w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border border-[#d22864]/20 bg-[#fff0f6] text-[#d22864] hover:bg-[#ffe3ee] transition-all"
+            >
+              Agendar Presentación
+              <Calendar size={18} />
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate(`/autoevaluacion/${internship.id}`)}
+              className={`w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border transition-all ${
+                canSelfEvaluate
+                  ? 'border-[#d22864]/20 bg-[#fff0f6] text-[#d22864] hover:bg-[#ffe3ee]'
+                  : 'border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              Autoevaluación
+              <ClipboardCheck size={18} />
+            </button>
+          )}
         </div>
       </div>
     </motion.div>
   );
 };
 
-const QuickAction = ({ icon: Icon, title, desc, onClick, primary, disabled }) => (
+const QuickAction = ({ icon: Icon, title, desc, onClick, primary, disabled, badge }) => (
   <motion.button
     whileHover={!disabled ? { y: -5, scale: 1.02 } : {}}
     onClick={!disabled ? onClick : undefined}
-    className={`p-6 rounded-[2rem] text-left flex flex-col gap-4 transition-all duration-300 ${
+    className={`relative p-6 rounded-[2rem] text-left flex flex-col gap-4 transition-all duration-300 ${
       disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' :
       primary
         ? 'bg-[#d22864] text-white shadow-xl shadow-[#d22864]/20'
         : 'bg-white text-gray-900 shadow-lg shadow-gray-200/50 border border-gray-50 hover:border-[#d22864]/20'
     }`}
   >
+    {badge ? (
+      <span className="absolute top-4 right-4 min-w-[22px] h-[22px] px-1.5 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[11px] font-bold leading-none shadow-md">
+        {badge > 9 ? '9+' : badge}
+      </span>
+    ) : null}
     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${primary && !disabled ? 'bg-white/20' : 'bg-[#d22864]/10 text-[#d22864]'}`}>
       <Icon size={24} />
     </div>
@@ -290,8 +307,10 @@ export const StudentDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { notifications } = useNotifications(50, true);
   const [internships, setInternships] = useState([]);
   const [lifecyclesById, setLifecyclesById] = useState({});
+  const [generalConfig, setGeneralConfig] = useState({ general_consultations_enabled: false, active_coordinators: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -300,8 +319,15 @@ export const StudentDashboardPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await internshipService.getMyInternships();
+      
+      const [data, config] = await Promise.all([
+        internshipService.getMyInternships(),
+        schedulingService.getSchedulingConfig().catch(() => ({ general_consultations_enabled: false }))
+      ]);
+      
       setInternships(data);
+      setGeneralConfig(config);
+
       const lifecycleEntries = await Promise.all(
         data.map(async (internship) => {
           try {
@@ -364,6 +390,23 @@ export const StudentDashboardPage = () => {
     : "Estudiante";
 
   const canUpload = internships.some(canUploadDocuments);
+
+  const hasQualifyingInternship = internships.some(internship => {
+    const lifecycle = lifecyclesById[internship.id];
+    return !internship.is_cancelled &&
+           internship.completion_status !== 'finalized' &&
+           lifecycle?.self_evaluation_submitted &&
+           lifecycle?.supervisor_evaluation_submitted;
+  });
+
+  const hasActiveCoordinators = Array.isArray(generalConfig?.active_coordinators)
+    && generalConfig.active_coordinators.length > 0;
+
+  const isSchedulingActionEnabled = hasActiveCoordinators || hasQualifyingInternship;
+
+  const appointmentNotificationsCount = notifications.filter(
+    (notification) => !notification.is_read && notification.event_type === 'appointment_scheduled'
+  ).length;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans selection:bg-[#d22864]/10 selection:text-[#d22864]">
@@ -496,10 +539,12 @@ export const StudentDashboardPage = () => {
                 />
                 <QuickAction
                   icon={Calendar}
-                  title="Agendar Entrevista"
-                  desc="Reserva o reprograma horarios disponibles"
+                  title="Agendar horas y consultas"
+                  desc={hasActiveCoordinators
+                    ? "Solicita consultas generales o presentación final"
+                    : "Solicita presentación final de tu práctica"}
                   onClick={() => navigate('/entrevistas')}
-                  disabled={internships.length === 0}
+                  badge={appointmentNotificationsCount}
                 />
                 <QuickAction
                   icon={FileText}

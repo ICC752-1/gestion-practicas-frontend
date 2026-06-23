@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, Check, CheckCircle2, XCircle, Send, FileText, RefreshCw } from 'lucide-react';
+import { Bell, Check, CheckCircle2, XCircle, Send, FileText, RefreshCw, CalendarCheck } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useAuth } from '../../context/useAuth';
 
@@ -10,6 +10,8 @@ const EVENT_META = {
   internship_rejected: { label: 'Solicitud de práctica rechazada', icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' },
   internship_derived: { label: 'Expediente DIRAE derivado', icon: Send, color: 'text-[#d22864]', bg: 'bg-[#fff0f6]' },
   requirement_status_changed: { label: 'Cambio en requisito', icon: FileText, color: 'text-[#d22864]', bg: 'bg-[#fff0f6]' },
+  appointment_scheduled: { label: 'Cita agendada', icon: CalendarCheck, color: 'text-[#d22864]', bg: 'bg-[#fff0f6]' },
+  presentation_approved: { label: 'Presentación final aprobada', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
   custom: { label: 'Notificación', icon: Bell, color: 'text-gray-600', bg: 'bg-gray-100' },
 };
 
