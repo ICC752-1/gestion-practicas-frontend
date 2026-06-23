@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     AlertCircle,
+    ArrowLeft,
     Calendar as CalendarIcon,
     CalendarCheck,
     CheckCircle2,
@@ -23,6 +25,7 @@ import { useAuth } from '../../context/useAuth';
 import { useToast } from '../../context/useToast';
 import { internshipService } from '../../services/internshipService';
 import { schedulingService } from '../../services/schedulingService';
+import { getRedirectPathForRoles } from '../../services/roleRouting';
 
 const MONTHS = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -154,6 +157,7 @@ const parsePreferredDates = (dates) => {
 
 export const InterviewSchedulingPage = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const { showToast } = useToast();
     const today = useMemo(() => new Date(), []);
     const roleNames = useMemo(() => getRoleNames(user), [user]);
@@ -650,6 +654,13 @@ export const InterviewSchedulingPage = () => {
             <UserHeader />
 
             <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 py-8 sm:px-8">
+                <button
+                    onClick={() => navigate(getRedirectPathForRoles(user?.roles))}
+                    className="mb-6 flex w-fit items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition"
+                >
+                    <ArrowLeft size={16} />
+                    Volver al Dashboard
+                </button>
                 {/* Headers */}
                 <div className="mb-8 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
