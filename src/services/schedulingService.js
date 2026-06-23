@@ -107,5 +107,17 @@ export const schedulingService = {
     const response = await api.post('/scheduling/appointments/direct', data);
     return response.data;
   },
+
+  async confirmAppointment(appointmentId) {
+    const response = await api.patch(`/scheduling/appointments/${appointmentId}/confirm`);
+    return response.data;
+  },
+
+  async updateAppointmentDocument(appointmentId, documentId) {
+    const response = await api.patch(`/scheduling/appointments/${appointmentId}/document`, {
+      document_id: Number(documentId),
+    });
+    return response.data;
+  },
 };
 

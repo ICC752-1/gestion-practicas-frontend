@@ -16,6 +16,9 @@ import {
     MessageSquare,
     Info,
     CalendarPlus,
+    Upload,
+    FileText,
+    Download,
 } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
@@ -24,6 +27,7 @@ import { StatsCard } from '../../components/InterviewScheduling/StatsCard';
 import { useAuth } from '../../context/useAuth';
 import { useToast } from '../../context/useToast';
 import { internshipService } from '../../services/internshipService';
+import { documentService } from '../../services/documentService';
 import { schedulingService } from '../../services/schedulingService';
 import { getRedirectPathForRoles } from '../../services/roleRouting';
 
@@ -183,6 +187,7 @@ export const InterviewSchedulingPage = () => {
     const [formTargetCoordinatorId, setFormTargetCoordinatorId] = useState('');
     const [formMessage, setFormMessage] = useState('');
     const [formPreferredDates, setFormPreferredDates] = useState(['', '', '']);
+    const [slidesFile, setSlidesFile] = useState(null);
 
     // Coordinator Response State
     const [respondingRequest, setRespondingRequest] = useState(null);
@@ -361,12 +366,31 @@ export const InterviewSchedulingPage = () => {
         }
 
         try {
+            let documentId = null;
+            if (formPurpose === 'final_presentation' && slidesFile) {
+                // 1. Obtener tipos de documentos
+                const docTypes = await documentService.getDocumentTypes();
+                const slidesType = docTypes.find(t => t.name === 'Diapositivas de Presentación');
+                if (!slidesType) {
+                    throw new Error('Tipo documental "Diapositivas de Presentación" no configurado.');
+                }
+                
+                // 2. Subir el documento
+                const uploadedDoc = await documentService.uploadDocument(
+                    Number(formInternshipId),
+                    slidesType.id,
+                    slidesFile
+                );
+                documentId = uploadedDoc.id;
+            }
+
             await schedulingService.createSchedulingRequest({
                 purpose: formPurpose,
                 internship_id: formPurpose === 'final_presentation' ? Number(formInternshipId) : null,
                 target_coordinator_id: formPurpose === 'general_consultation' ? Number(formTargetCoordinatorId) : null,
                 message: formMessage || null,
                 preferred_dates: filteredDates,
+                document_id: documentId,
             });
 
             showToast({
@@ -379,6 +403,7 @@ export const InterviewSchedulingPage = () => {
             setFormMessage('');
             setFormTargetCoordinatorId('');
             setFormPreferredDates(['', '', '']);
+            setSlidesFile(null);
             setActiveTab('requests');
             await loadData({ clearMessage: false });
         } catch (error) {
@@ -424,6 +449,80 @@ export const InterviewSchedulingPage = () => {
             await loadData({ clearMessage: false });
         } catch (error) {
             setMessage({ type: 'error', text: getErrorMessage(error) });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleConfirmAppointment = async (appointmentId) => {
+        setSubmitting(true);
+        setMessage(null);
+        try {
+            await schedulingService.confirmAppointment(appointmentId);
+            showToast({
+                type: 'success',
+                title: 'Asistencia confirmada',
+                message: 'Tu asistencia a la cita ha sido confirmada exitosamente.',
+            });
+            await loadData({ clearMessage: false });
+        } catch (error) {
+            setMessage({ type: 'error', text: getErrorMessage(error) });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleUploadSlides = async (appointment, file) => {
+        if (!file) return;
+        setSubmitting(true);
+        setMessage(null);
+        try {
+            const docTypes = await documentService.getDocumentTypes();
+            const slidesType = docTypes.find(t => t.name === 'Diapositivas de Presentación');
+            if (!slidesType) {
+                throw new Error('Tipo de documento "Diapositivas de Presentación" no configurado.');
+            }
+
+            const uploadedDoc = await documentService.uploadDocument(
+                appointment.internship_id,
+                slidesType.id,
+                file
+            );
+
+            await schedulingService.updateAppointmentDocument(appointment.id, uploadedDoc.id);
+
+            showToast({
+                type: 'success',
+                title: 'Diapositivas subidas',
+                message: 'Tus diapositivas han sido cargadas y vinculadas exitosamente.',
+            });
+            await loadData({ clearMessage: false });
+        } catch (error) {
+            setMessage({ type: 'error', text: getErrorMessage(error) });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDownloadDocument = async (doc) => {
+        if (!doc?.id) return;
+        setSubmitting(true);
+        try {
+            const blob = await documentService.downloadDocument(doc.id);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = doc.file_name || doc.name || `${doc.document_type?.name || 'documento'}.${doc.extension || 'pdf'}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            showToast({
+                type: 'error',
+                title: 'Error de descarga',
+                message: 'No se pudo descargar el documento.',
+            });
         } finally {
             setSubmitting(false);
         }
@@ -900,10 +999,49 @@ export const InterviewSchedulingPage = () => {
                                                 value={formMessage}
                                                 onChange={(e) => setFormMessage(e.target.value)}
                                                 placeholder="Ej. Prefiero horario de tarde, o consultas específicas sobre mi portafolio."
-                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
-                                            />
-                                        </div>
-                                    </div>
+                                                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
+                                             />
+                                         </div>
+
+                                         {formPurpose === 'final_presentation' && (
+                                             <div className="sm:col-span-2">
+                                                 <label className="block text-sm font-bold text-slate-700 mb-2">
+                                                     Diapositivas de Presentación (Opcional)
+                                                 </label>
+                                                 <div className="mt-1 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 px-6 py-6 transition hover:border-[#d22864] bg-slate-50/50">
+                                                     <Upload className="mx-auto h-10 w-10 text-slate-400 mb-2" />
+                                                     <div className="flex text-sm text-slate-600 justify-center items-center">
+                                                         <label className="relative cursor-pointer rounded-md font-bold text-[#d22864] hover:text-[#b01e50] focus-within:outline-none">
+                                                             <span>Subir un archivo</span>
+                                                             <input
+                                                                 type="file"
+                                                                 accept=".ppt,.pptx,.pdf,.doc,.docx"
+                                                                 className="sr-only"
+                                                                 onChange={(e) => setSlidesFile(e.target.files[0])}
+                                                             />
+                                                         </label>
+                                                         <p className="pl-1">o arrastrar y soltar</p>
+                                                     </div>
+                                                     <p className="text-xs text-slate-400 mt-1">
+                                                         Formatos admitidos: PPT, PPTX, PDF, DOC, DOCX
+                                                     </p>
+                                                     {slidesFile && (
+                                                         <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                                                             <FileText size={14} className="text-[#d22864]" />
+                                                             <span>{slidesFile.name}</span>
+                                                             <button
+                                                                 type="button"
+                                                                 onClick={() => setSlidesFile(null)}
+                                                                 className="text-red-500 hover:text-red-700 font-bold ml-1"
+                                                             >
+                                                                 ✕
+                                                             </button>
+                                                         </div>
+                                                     )}
+                                                 </div>
+                                             </div>
+                                         )}
+                                     </div>
 
                                     <button
                                         type="submit"
@@ -1127,8 +1265,76 @@ export const InterviewSchedulingPage = () => {
                                             <div className="text-sm bg-slate-50 p-3 rounded-xl border border-slate-100">
                                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Notas / Comentarios:</p>
                                                 <p className="text-slate-600 italic">"{appointment.comments}"</p>
-                                            </div>
-                                        )}
+                                             </div>
+                                         )}
+
+                                         {/* Material y Confirmación de Asistencia */}
+                                         {appointment.purpose === 'final_presentation' && (
+                                             <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                                                 {/* Documento (Diapositivas) */}
+                                                 <div className="flex flex-col gap-1">
+                                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Diapositivas de Presentación</span>
+                                                     {appointment.document ? (
+                                                         <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 w-fit">
+                                                             <FileText size={15} className="text-[#d22864] flex-shrink-0" />
+                                                             <span className="text-xs font-semibold text-slate-700 max-w-[200px] truncate">{appointment.document.name || 'diapositivas'}</span>
+                                                             <button
+                                                                 type="button"
+                                                                 onClick={() => handleDownloadDocument(appointment.document)}
+                                                                 className="text-slate-400 hover:text-[#d22864] transition p-1"
+                                                                 title="Descargar diapositivas"
+                                                             >
+                                                                 <Download size={14} />
+                                                             </button>
+                                                         </div>
+                                                     ) : (
+                                                         <div className="flex items-center gap-2">
+                                                             {isStudent && appointment.status === 'scheduled' ? (
+                                                                 <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-[#d22864] bg-[#d22864]/5 hover:bg-[#d22864]/10 border border-[#d22864]/20 rounded-xl px-3 py-2 transition">
+                                                                     <Upload size={13} />
+                                                                     <span>Subir Diapositivas</span>
+                                                                     <input
+                                                                         type="file"
+                                                                         accept=".ppt,.pptx,.pdf,.doc,.docx"
+                                                                         className="sr-only"
+                                                                         onChange={(e) => handleUploadSlides(appointment, e.target.files[0])}
+                                                                     />
+                                                                 </label>
+                                                             ) : (
+                                                                 <span className="text-xs text-slate-400 italic">No se han subido diapositivas</span>
+                                                             )}
+                                                         </div>
+                                                     )}
+                                                 </div>
+
+                                                 {/* Confirmación de Asistencia */}
+                                                 <div className="flex flex-col gap-1 items-end">
+                                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Confirmación de Asistencia</span>
+                                                     {appointment.is_confirmed ? (
+                                                         <span className="flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+                                                             <CheckCircle2 size={13} className="text-emerald-600" />
+                                                             Asistencia Confirmada
+                                                         </span>
+                                                     ) : (
+                                                         <div className="flex items-center gap-2">
+                                                             {isStudent && appointment.status === 'scheduled' ? (
+                                                                 <button
+                                                                     onClick={() => handleConfirmAppointment(appointment.id)}
+                                                                     disabled={submitting}
+                                                                     className="flex items-center gap-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-3 py-2 transition shadow-sm"
+                                                                 >
+                                                                     <Check size={13} /> Confirmar Asistencia
+                                                                 </button>
+                                                             ) : (
+                                                                 <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                                                                     Pendiente de Confirmación
+                                                                 </span>
+                                                             )}
+                                                         </div>
+                                                     )}
+                                                 </div>
+                                             </div>
+                                         )}
 
                                         {/* Coordinator Registers Outcome */}
                                         {isAdmin && appointment.status === 'scheduled' && (

@@ -15,11 +15,15 @@ import {
   Send,
   ShieldAlert,
   UploadCloud,
+  Building2,
+  User,
 } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import { documentService } from '../../services/documentService';
 import { internshipService } from '../../services/internshipService';
+import { selfEvaluationService } from '../../services/selfEvaluationService';
+import { supervisorEvaluationService } from '../../services/supervisorEvaluationService';
 import { useToast } from '../../context/useToast';
 
 const DOCUMENT_STATUS = {
@@ -61,6 +65,22 @@ const PACKAGE_REASONS = {
 };
 
 const allowedUploadExtensions = ['pdf', 'docx', 'jpg', 'png', 'zip'];
+
+// --- Constants for evaluations ---
+const SUPERVISOR_CRITERIA_LABELS = {
+  technical_performance: { label: 'Desempeño técnico', desc: 'Aplica conocimientos y herramientas acordes a las tareas asignadas.' },
+  responsibility: { label: 'Responsabilidad', desc: 'Cumple horarios, compromisos y entregas solicitadas.' },
+  communication: { label: 'Comunicación', desc: 'Informa avances, dificultades y requerimientos con claridad.' },
+  teamwork: { label: 'Trabajo en equipo', desc: 'Se integra adecuadamente con el equipo laboral.' },
+  autonomy: { label: 'Autonomía y aprendizaje', desc: 'Aprende, propone soluciones y ejecuta tareas con supervisión.' },
+};
+
+const RECOMMENDATION_LABELS = {
+  recommended: 'Recomendado',
+  recommended_with_observations: 'Recomendado con observaciones',
+  not_recommended: 'No recomendado',
+};
+
 
 const formatDate = (value) => {
   if (!value) return 'Sin fecha';
@@ -131,6 +151,9 @@ export const SecretaryDashboardPage = () => {
   const [uploadError, setUploadError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [exportError, setExportError] = useState('');
+  const [selfEvaluationForm, setSelfEvaluationForm] = useState(null);
+  const [supervisorEvaluation, setSupervisorEvaluation] = useState(null);
+  const [activeTab, setActiveTab] = useState('documents');
 
   // Estados para Bandeja de Entrada Global
   const [allInternships, setAllInternships] = useState([]);
@@ -228,12 +251,33 @@ export const SecretaryDashboardPage = () => {
       setPackageData(packageResponse);
       setDiraeTracking(trackingData);
       setDocumentTypes(typesData);
+      setActiveTab('documents');
+
+      // Cargar autoevaluación
+      try {
+        const selfForm = await selfEvaluationService.getForm(internshipId);
+        setSelfEvaluationForm(selfForm);
+      } catch (err) {
+        console.warn("Could not load self evaluation", err);
+        setSelfEvaluationForm(null);
+      }
+
+      // Cargar evaluación del supervisor
+      try {
+        const superEval = await supervisorEvaluationService.getEvaluation(internshipId);
+        setSupervisorEvaluation(superEval);
+      } catch (err) {
+        console.warn("Could not load supervisor evaluation", err);
+        setSupervisorEvaluation(null);
+      }
     } catch (error) {
       setPageError(getErrorMessage(error, 'No se pudo cargar el expediente solicitado.'));
       setInternship(null);
       setDocuments([]);
       setPackageData(null);
       setDiraeTracking([]);
+      setSelfEvaluationForm(null);
+      setSupervisorEvaluation(null);
     } finally {
       setLoading(false);
     }
@@ -554,12 +598,50 @@ export const SecretaryDashboardPage = () => {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
-                      Documentos visibles para Secretaría
-                    </p>
+              {/* Tab Navigation */}
+              <div className="mt-6 flex border-b border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('documents')}
+                  className={`px-6 py-3 text-sm font-bold border-b-2 transition ${
+                    activeTab === 'documents'
+                      ? 'border-[#d22864] text-[#d22864]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Documentos y Diapositivas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('registration')}
+                  className={`px-6 py-3 text-sm font-bold border-b-2 transition ${
+                    activeTab === 'registration'
+                      ? 'border-[#d22864] text-[#d22864]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Ficha de Inscripción
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('evaluations')}
+                  className={`px-6 py-3 text-sm font-bold border-b-2 transition ${
+                    activeTab === 'evaluations'
+                      ? 'border-[#d22864] text-[#d22864]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Evaluaciones
+                </button>
+              </div>
+
+              {activeTab === 'documents' && (
+                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+                        Documentos visibles para Secretaría
+                      </p>
                     <h3 className="mt-1 text-xl font-black text-gray-900">
                       Revisión documental
                     </h3>
@@ -624,6 +706,238 @@ export const SecretaryDashboardPage = () => {
                   ))}
                 </div>
               </div>
+              )}
+
+              {/* Pestaña 2: Ficha de Inscripción */}
+              {activeTab === 'registration' && (
+                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm space-y-6">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Ficha de inscripción</p>
+                    <h3 className="mt-1 text-xl font-black text-gray-900">Datos registrados de la práctica</h3>
+                  </div>
+
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {/* Sección Empresa */}
+                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center gap-2">
+                        <Building2 size={16} className="text-[#d22864]" />
+                        Organización / Empresa
+                      </h4>
+                      <div className="space-y-3 text-sm">
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Nombre</span>
+                          <span className="font-semibold text-gray-800">{internship?.org_name || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Dirección</span>
+                          <span className="font-semibold text-gray-800">{internship?.internship_address || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Ciudad</span>
+                          <span className="font-semibold text-gray-800">{internship?.city || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Teléfono</span>
+                          <span className="font-semibold text-gray-800">{internship?.org_phone || 'No registrado'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección Supervisor */}
+                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center gap-2">
+                        <User size={16} className="text-[#d22864]" />
+                        Supervisor/a de Práctica
+                      </h4>
+                      <div className="space-y-3 text-sm">
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Nombre</span>
+                          <span className="font-semibold text-gray-800">{internship?.supervisor_name || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Correo Electrónico</span>
+                          <span className="font-semibold text-gray-800">{internship?.supervisor_email || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Teléfono</span>
+                          <span className="font-semibold text-gray-800">{internship?.supervisor_phone || 'No registrado'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Cargo / Función</span>
+                          <span className="font-semibold text-gray-800">{internship?.supervisor_role || 'No registrado'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección Detalles de Práctica */}
+                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100 md:col-span-2">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center gap-2">
+                        <FileText size={16} className="text-[#d22864]" />
+                        Detalles del Proceso
+                      </h4>
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Tipo de Práctica</span>
+                          <span className="font-semibold text-gray-800">{internship?.internship_type || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Modalidad</span>
+                          <span className="font-semibold text-gray-800">{internship?.modality || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Período</span>
+                          <span className="font-semibold text-gray-800">{internship?.internship_period || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Horario de Trabajo</span>
+                          <span className="font-semibold text-gray-800">{internship?.schedule || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Horas Semanales</span>
+                          <span className="font-semibold text-gray-800">{internship?.working_hours || '-'} hrs</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Fechas</span>
+                          <span className="font-semibold text-gray-800">
+                            {internship?.start_date ? formatDate(internship.start_date) : '-'} — {internship?.end_date ? formatDate(internship.end_date) : '-'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Pestaña 3: Evaluaciones */}
+              {activeTab === 'evaluations' && (
+                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm space-y-6">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Evaluaciones del Proceso</p>
+                    <h3 className="mt-1 text-xl font-black text-gray-900">Autoevaluación Estudiante y Evaluación Supervisor</h3>
+                  </div>
+
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    {/* Autoevaluación Alumno */}
+                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <User size={16} className="text-[#d22864]" />
+                          Autoevaluación Alumno
+                        </span>
+                        {selfEvaluationForm?.evaluation ? (
+                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
+                            Entregada
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
+                            Pendiente
+                          </span>
+                        )}
+                      </h4>
+
+                      {selfEvaluationForm?.evaluation ? (
+                        <div className="space-y-4">
+                          <div className="space-y-3">
+                            {selfEvaluationForm.criteria?.map((criterion) => {
+                              const score = selfEvaluationForm.evaluation.responses[criterion.key];
+                              return (
+                                <div key={criterion.key} className="bg-white p-3 rounded-xl border border-gray-100 flex items-center justify-between gap-4 text-xs">
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-gray-800">{criterion.label}</p>
+                                    <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{criterion.description}</p>
+                                  </div>
+                                  <span className="bg-[#fff0f6] text-[#d22864] font-black h-8 w-8 rounded-lg flex items-center justify-center text-sm shadow-xs flex-shrink-0">
+                                    {score || '-'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {selfEvaluationForm.evaluation.observations && (
+                            <div className="bg-white p-3 rounded-xl border border-gray-100 text-xs">
+                              <span className="block font-bold text-gray-400 uppercase tracking-wide mb-1">Observaciones / Comentarios:</span>
+                              <p className="text-gray-600 italic">“{selfEvaluationForm.evaluation.observations}”</p>
+                            </div>
+                          )}
+                          <div className="text-[10px] text-gray-400 font-semibold">
+                            Fecha de envío: {selfEvaluationForm.evaluation.submitted_at ? formatDateTime(selfEvaluationForm.evaluation.submitted_at) : '-'}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm font-semibold text-gray-500 italic text-center py-8">
+                          El estudiante aún no ha completado la autoevaluación.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Evaluación Supervisor */}
+                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Building2 size={16} className="text-[#d22864]" />
+                          Evaluación Supervisor
+                        </span>
+                        {supervisorEvaluation ? (
+                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
+                            Entregada
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
+                            Pendiente
+                          </span>
+                        )}
+                      </h4>
+
+                      {supervisorEvaluation ? (
+                        <div className="space-y-4">
+                          <div className="space-y-3">
+                            {Object.entries(SUPERVISOR_CRITERIA_LABELS).map(([key, info]) => {
+                              const score = supervisorEvaluation.criteria_scores[key];
+                              return (
+                                <div key={key} className="bg-white p-3 rounded-xl border border-gray-100 flex items-center justify-between gap-4 text-xs">
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-gray-800">{info.label}</p>
+                                    <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{info.desc}</p>
+                                  </div>
+                                  <span className="bg-[#fff0f6] text-[#d22864] font-black h-8 w-8 rounded-lg flex items-center justify-center text-sm shadow-xs flex-shrink-0">
+                                    {score || '-'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="bg-white p-3 rounded-xl border border-gray-100 text-xs space-y-2">
+                            <div>
+                              <span className="block font-bold text-gray-400 uppercase tracking-wide mb-1">Recomendación:</span>
+                              <span className={`inline-flex rounded-full px-2.5 py-0.5 font-bold ${
+                                supervisorEvaluation.recommendation === 'recommended' ? 'bg-green-50 text-green-700' :
+                                supervisorEvaluation.recommendation === 'recommended_with_observations' ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'
+                              }`}>
+                                {RECOMMENDATION_LABELS[supervisorEvaluation.recommendation] || supervisorEvaluation.recommendation}
+                              </span>
+                            </div>
+                            {supervisorEvaluation.observations && (
+                              <div>
+                                <span className="block font-bold text-gray-400 uppercase tracking-wide mb-1">Observaciones / Comentarios:</span>
+                                <p className="text-gray-600 italic">“{supervisorEvaluation.observations}”</p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-gray-400 font-semibold">
+                            Evaluador: {supervisorEvaluation.supervisor_name_snapshot} ({supervisorEvaluation.supervisor_email_snapshot})<br />
+                            Fecha de envío: {supervisorEvaluation.submitted_at ? formatDateTime(supervisorEvaluation.submitted_at) : '-'}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm font-semibold text-gray-500 italic text-center py-8">
+                          El supervisor aún no ha completado la evaluación de la práctica.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
 
             <aside className="space-y-6">
