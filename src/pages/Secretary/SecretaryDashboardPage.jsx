@@ -1,6 +1,8 @@
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useState, useEffect, useMemo } from 'react';
 import {
   AlertCircle,
+  ArrowLeft,
+  Check,
   CheckCircle2,
   Download,
   Eye,
@@ -114,7 +116,6 @@ export const SecretaryDashboardPage = () => {
   const [pageError, setPageError] = useState('');
   const [documentStatusFilter, setDocumentStatusFilter] = useState('all');
   const [documentTypeFilter, setDocumentTypeFilter] = useState('all');
-  const [exportabilityFilter, setExportabilityFilter] = useState('all');
   const [documentSearch, setDocumentSearch] = useState('');
   const deferredDocumentSearch = useDeferredValue(documentSearch);
   const [reviewDocumentId, setReviewDocumentId] = useState(null);
@@ -131,12 +132,67 @@ export const SecretaryDashboardPage = () => {
   const [uploading, setUploading] = useState(false);
   const [exportError, setExportError] = useState('');
 
+  // Estados para Bandeja de Entrada Global
+  const [allInternships, setAllInternships] = useState([]);
+  const [globalLoading, setGlobalLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [degreeFilter, setDegreeFilter] = useState('all');
+  const [diraeStatusFilter, setDiraeStatusFilter] = useState('all');
+
+  const loadAllInternships = async () => {
+    setGlobalLoading(true);
+    setPageError('');
+    try {
+      const data = await internshipService.getInternships();
+      const filtered = data.filter(item => 
+        item.completion_status === 'finalized' || item.dirae_status !== 'not_started'
+      );
+      setAllInternships(filtered);
+    } catch (error) {
+      console.error("Failed to load internships for secretary dashboard", error);
+      setPageError(getErrorMessage(error, 'No se pudo cargar el listado de expedientes.'));
+    } finally {
+      setGlobalLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAllInternships();
+  }, []);
+
+  const uniqueDegrees = useMemo(() => {
+    return [...new Set(allInternships.map(item => item.student?.degree).filter(Boolean))];
+  }, [allInternships]);
+
+  const filteredInternships = useMemo(() => {
+    return allInternships.filter(item => {
+      const studentName = item.student ? `${item.student.first_name} ${item.student.last_name}` : '';
+      const matchesSearch = !globalSearch.trim() ||
+        studentName.toLowerCase().includes(globalSearch.toLowerCase()) ||
+        item.student?.rut?.toLowerCase().includes(globalSearch.toLowerCase()) ||
+        String(item.id).includes(globalSearch) ||
+        item.org_name?.toLowerCase().includes(globalSearch.toLowerCase());
+
+      const matchesDegree = degreeFilter === 'all' || item.student?.degree === degreeFilter;
+      const matchesDirae = diraeStatusFilter === 'all' || item.dirae_status === diraeStatusFilter;
+
+      return matchesSearch && matchesDegree && matchesDirae;
+    });
+  }, [allInternships, globalSearch, degreeFilter, diraeStatusFilter]);
+
+  const readyIdsInCurrentFilter = useMemo(() => {
+    return filteredInternships.filter(item => item.dirae_status === 'ready').map(item => item.id);
+  }, [filteredInternships]);
+
+  const allReadySelected = useMemo(() => {
+    if (readyIdsInCurrentFilter.length === 0) return false;
+    return readyIdsInCurrentFilter.every(id => selectedIds.includes(id));
+  }, [readyIdsInCurrentFilter, selectedIds]);
+
   const activeDiraeStatus = packageData?.dirae_status || internship?.dirae_status || 'not_started';
   const diraeStatus = DIRAE_STATUS[activeDiraeStatus] || DIRAE_STATUS.not_started;
   const student = packageData?.student;
-  const packageMatchesExportability = exportabilityFilter === 'all'
-    || (exportabilityFilter === 'exportable' && packageData?.exportable)
-    || (exportabilityFilter === 'blocked' && packageData && !packageData.exportable);
   const searchText = deferredDocumentSearch.trim().toLowerCase();
   const filteredDocuments = documents.filter((document) => {
     const statusMatches = documentStatusFilter === 'all' || document.status === documentStatusFilter;
@@ -241,6 +297,7 @@ export const SecretaryDashboardPage = () => {
       setReviewDocumentId(null);
       setReviewComment('');
       await refreshActiveExpediente();
+      await loadAllInternships();
     } catch (error) {
       setReviewError(getErrorMessage(error, 'No se pudo registrar la revisión.'));
     } finally {
@@ -248,20 +305,23 @@ export const SecretaryDashboardPage = () => {
     }
   };
 
-  const handleExportCsv = async () => {
-    if (!activeInternshipId) return;
+  const handleExportCsv = async (ids = null) => {
+    const idsToExport = ids || (activeInternshipId ? [activeInternshipId] : []);
+    if (idsToExport.length === 0) return;
     setDiraeActionLoading('export');
     setExportError('');
 
     try {
-      const exportResponse = await documentService.exportDiraeDocumentPackages([activeInternshipId]);
+      const exportResponse = await documentService.exportDiraeDocumentPackages(idsToExport);
       downloadBlob(exportResponse.blob, exportResponse.filename);
       showToast({
         type: 'success',
         title: 'Exportación local generada',
-        message: 'El CSV fue generado y el expediente quedó marcado como exportado localmente.',
+        message: 'El CSV fue generado y el/los expediente(s) marcado(s) como exportado(s) localmente.',
       });
+      setSelectedIds([]);
       await refreshActiveExpediente();
+      await loadAllInternships();
     } catch (error) {
       const detail = error.response?.data?.detail;
       const reasons = detail?.internships?.[0]?.reasons || [];
@@ -291,6 +351,7 @@ export const SecretaryDashboardPage = () => {
         message: 'El estado del expediente DIRAE cambió a revisión local.',
       });
       await refreshActiveExpediente();
+      await loadAllInternships();
     } catch (error) {
       setExportError(getErrorMessage(error, 'No se pudo iniciar la revisión DIRAE.'));
     } finally {
@@ -317,6 +378,7 @@ export const SecretaryDashboardPage = () => {
         message: 'El expediente quedó observado para rectificación documental.',
       });
       await refreshActiveExpediente();
+      await loadAllInternships();
     } catch (error) {
       setExportError(getErrorMessage(error, 'No se pudo reabrir el expediente.'));
     } finally {
@@ -355,6 +417,7 @@ export const SecretaryDashboardPage = () => {
         message: 'El documento administrativo fue cargado al expediente.',
       });
       await refreshActiveExpediente();
+      await loadAllInternships();
     } catch (error) {
       setUploadError(getErrorMessage(error, 'No se pudo adjuntar el documento.'));
     } finally {
@@ -409,9 +472,9 @@ export const SecretaryDashboardPage = () => {
           </div>
 
           <div className="mt-6 rounded-2xl border border-sky-100 bg-sky-50 p-4 text-sm font-semibold text-sky-800">
-            El backend actual no entrega listado global para Secretaría. Esta vista opera
-            expedientes por ID y consume la política backend: documentos sensibles no se
-            listan ni descargan para este rol.
+            Bandeja de entrada global para Secretaría de Carrera. Desde aquí puede listar, buscar,
+            filtrar y exportar expedientes a DIRAE en lote. Por políticas del backend,
+            los documentos de carácter confidencial/sensible no se listan ni descargan para este rol.
           </div>
         </section>
 
@@ -435,12 +498,26 @@ export const SecretaryDashboardPage = () => {
           </section>
         )}
 
-        {!loading && packageData && packageMatchesExportability && (
+        {!loading && packageData && (
           <div className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
             <section className="space-y-6">
               <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveInternshipId(null);
+                        setPackageData(null);
+                        setInternship(null);
+                        setSelectedIds([]);
+                        loadAllInternships();
+                      }}
+                      className="mb-3 inline-flex items-center gap-1 text-xs font-black text-gray-500 hover:text-[#d22864] transition"
+                    >
+                      <ArrowLeft className="h-3 w-3" />
+                      Volver a la bandeja
+                    </button>
                     <p className="text-xs font-black uppercase tracking-widest text-gray-400">
                       Expediente #{activeInternshipId}
                     </p>
@@ -486,7 +563,7 @@ export const SecretaryDashboardPage = () => {
                       Revisión documental
                     </h3>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-4 lg:min-w-[680px]">
+                  <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[500px]">
                     <input
                       value={documentSearch}
                       onChange={(event) => setDocumentSearch(event.target.value)}
@@ -512,15 +589,6 @@ export const SecretaryDashboardPage = () => {
                       <option value="uploaded">Cargado</option>
                       <option value="approved">Aprobado</option>
                       <option value="observed">Observado</option>
-                    </select>
-                    <select
-                      value={exportabilityFilter}
-                      onChange={(event) => setExportabilityFilter(event.target.value)}
-                      className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm font-bold outline-none focus:border-[#d22864]/30"
-                    >
-                      <option value="all">Exportabilidad</option>
-                      <option value="exportable">Exportable</option>
-                      <option value="blocked">No exportable</option>
                     </select>
                   </div>
                 </div>
@@ -587,11 +655,165 @@ export const SecretaryDashboardPage = () => {
           </div>
         )}
 
-        {!loading && packageData && !packageMatchesExportability && (
-          <section className="mt-8 rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
-            <p className="text-sm font-black uppercase tracking-widest text-gray-400">
-              El expediente cargado no coincide con el filtro de exportabilidad seleccionado.
-            </p>
+        {!loading && !activeInternshipId && (
+          <section className="mt-8 space-y-6">
+            {/* Filtros de la bandeja global */}
+            <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center flex-1">
+                <div className="relative max-w-md w-full">
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={globalSearch}
+                    onChange={(e) => setGlobalSearch(e.target.value)}
+                    placeholder="Buscar por estudiante, RUT u organización"
+                    className="w-full rounded-2xl border border-gray-100 bg-gray-50 py-2.5 pl-10 pr-4 text-xs font-semibold text-gray-800 outline-none focus:border-[#d22864]/30 focus:bg-white transition"
+                  />
+                </div>
+                <select
+                  value={degreeFilter}
+                  onChange={(e) => setDegreeFilter(e.target.value)}
+                  className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                >
+                  <option value="all">Todas las carreras</option>
+                  {uniqueDegrees.map((deg) => (
+                    <option key={deg} value={deg}>{deg}</option>
+                  ))}
+                </select>
+                <select
+                  value={diraeStatusFilter}
+                  onChange={(e) => setDiraeStatusFilter(e.target.value)}
+                  className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                >
+                  <option value="all">Todos los estados DIRAE</option>
+                  <option value="not_started">No iniciado</option>
+                  <option value="in_review">En revisión local</option>
+                  <option value="observed">Observado</option>
+                  <option value="ready">Listo para exportar</option>
+                  <option value="exported">Exportado a DIRAE</option>
+                </select>
+              </div>
+
+              {/* Botón de exportación masiva */}
+              <button
+                type="button"
+                onClick={() => handleExportCsv(selectedIds)}
+                disabled={selectedIds.length === 0 || diraeActionLoading === 'export'}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-5 py-3 text-xs font-black text-white shadow-md shadow-[#d22864]/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
+              >
+                {diraeActionLoading === 'export' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                Exportar Lote ({selectedIds.length})
+              </button>
+            </div>
+
+            {/* Listado / Tabla */}
+            <div className="rounded-3xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+              {globalLoading ? (
+                <div className="py-20 text-center">
+                  <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#d22864]" />
+                  <p className="mt-3 text-xs font-black uppercase tracking-widest text-gray-400">Cargando bandeja global...</p>
+                </div>
+              ) : filteredInternships.length === 0 ? (
+                <div className="py-20 text-center text-gray-400">
+                  <FileText className="mx-auto h-12 w-12 text-gray-300" />
+                  <p className="mt-4 text-sm font-black uppercase tracking-wider text-gray-500">No se encontraron expedientes</p>
+                  <p className="mt-1 text-xs text-gray-400">Asegúrate de que existan prácticas finalizadas o en revisión local.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/55 text-[10px] font-black uppercase tracking-wider text-gray-400">
+                        <th className="py-4 px-6 w-12">
+                          <input
+                            type="checkbox"
+                            disabled={readyIdsInCurrentFilter.length === 0}
+                            checked={allReadySelected}
+                            onChange={() => {
+                              if (allReadySelected) {
+                                setSelectedIds(prev => prev.filter(id => !readyIdsInCurrentFilter.includes(id)));
+                              } else {
+                                setSelectedIds(prev => [...new Set([...prev, ...readyIdsInCurrentFilter])]);
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-[#d22864] focus:ring-[#d22864]"
+                          />
+                        </th>
+                        <th className="py-4 px-6">ID / Estudiante</th>
+                        <th className="py-4 px-6">Carrera</th>
+                        <th className="py-4 px-6">Organización / Tipo</th>
+                        <th className="py-4 px-6">Estado Práctica</th>
+                        <th className="py-4 px-6">Expediente DIRAE</th>
+                        <th className="py-4 px-6 text-center">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm">
+                      {filteredInternships.map((item) => {
+                        const diraeStatusInfo = DIRAE_STATUS[item.dirae_status] || DIRAE_STATUS.not_started;
+                        const isSelectable = item.dirae_status === 'ready';
+
+                        return (
+                          <tr key={item.id} className="hover:bg-gray-50/50 transition">
+                            <td className="py-4 px-6">
+                              <input
+                                type="checkbox"
+                                disabled={!isSelectable}
+                                checked={selectedIds.includes(item.id)}
+                                onChange={() => {
+                                  setSelectedIds(prev =>
+                                    prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
+                                  );
+                                }}
+                                className="h-4 w-4 rounded border-gray-300 text-[#d22864] focus:ring-[#d22864] disabled:opacity-40 disabled:cursor-not-allowed"
+                              />
+                            </td>
+                            <td className="py-4 px-6">
+                              <div>
+                                <p className="font-bold text-gray-900">{item.student ? `${item.student.first_name} ${item.student.last_name}` : 'Estudiante sin nombre'}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">ID: #{item.id} · RUT: {item.student?.rut || 'Sin RUT'}</p>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className="text-xs text-gray-500 font-semibold">{item.student?.degree || 'Sin carrera'}</span>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div>
+                                <p className="font-bold text-gray-800">{item.org_name}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">{item.internship_type}</p>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div>
+                                <span className="inline-flex rounded-full bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                                  {COMPLETION_STATUS[item.completion_status] || item.completion_status}
+                                </span>
+                                {item.final_result === 'passed' && (
+                                  <span className="ml-1 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Aprobada</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${diraeStatusInfo.className}`}>
+                                {diraeStatusInfo.label}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <button
+                                type="button"
+                                onClick={() => loadExpediente(item.id)}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-gray-50 hover:bg-[#fff0f6] hover:text-[#d22864] px-4 py-2 text-xs font-black text-gray-700 transition"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                                Revisar
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </section>
         )}
       </main>
