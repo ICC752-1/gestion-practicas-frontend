@@ -670,7 +670,7 @@ export const InterviewSchedulingPage = () => {
                 nextForm.result = DEFAULT_OUTCOME_FORM.result;
             }
 
-            if (!shouldShowOutcomeComments(nextForm)) {
+            if (field !== 'comments' && !shouldShowOutcomeComments(nextForm)) {
                 nextForm.comments = '';
             }
 
@@ -1416,14 +1416,21 @@ export const InterviewSchedulingPage = () => {
                                                     <button
                                                         onClick={() => handleRegisterOutcome(appointment.id)}
                                                         disabled={submitting}
-                                                        className="text-xs font-bold text-white bg-[#d22864] hover:bg-[#b01e50] rounded-xl px-4 py-2 transition"
+                                                        className="text-xs font-bold text-white bg-[#d22864] hover:bg-[#b01e50] rounded-xl px-4 py-2 transition flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
                                                     >
-                                                        Confirmar Resultado
+                                                        {submitting ? (
+                                                            <>
+                                                                <RefreshCw size={13} className="animate-spin" />
+                                                                Guardando...
+                                                            </>
+                                                        ) : (
+                                                            'Confirmar Resultado'
+                                                        )}
                                                     </button>
                                                     <button
                                                         onClick={() => startCancelAppointment(appointment)}
                                                         disabled={submitting}
-                                                        className="text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl px-4 py-2 border border-transparent transition"
+                                                        className="text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl px-4 py-2 border border-transparent transition disabled:opacity-60 disabled:cursor-not-allowed"
                                                     >
                                                         Cancelar Cita
                                                     </button>
