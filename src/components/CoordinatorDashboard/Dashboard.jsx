@@ -78,7 +78,7 @@ const Dashboard = ({
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group hover:cursor-pointer"
         >
           <div className="w-16 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors flex-shrink-0">
             <FileText className="w-6 h-6 text-[#B5305F] group-hover:text-white transition-colors" />
