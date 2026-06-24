@@ -528,7 +528,7 @@ export const SuperadminUsersPage = () => {
           {/* Formulario Lateral: Crear Usuario */}
           <form onSubmit={handleCreateUser} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm h-fit">
             <h2 className="text-xl font-black text-gray-900">Crear usuario</h2>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-gray-500 leading-relaxed">
               El sistema enviará un enlace de activación al correo indicado. El usuario definirá su contraseña desde ese enlace.
             </p>
             <div className="mt-5 grid gap-3">

@@ -438,7 +438,7 @@ export const PracticeDetailPage = () => {
                 {canManageSchoolInsurance && (
                   <div className="mt-5 space-y-4 border-t border-amber-100 pt-5">
                     <label className="block">
-                      <span className="text-sm font-bold text-gray-700">Observación administrative</span>
+                      <span className="text-sm font-bold text-gray-700">Observación administrativa</span>
                       <textarea
                         value={insuranceNotes}
                         onChange={(event) => setInsuranceNotes(event.target.value)}
@@ -591,7 +591,7 @@ export const PracticeDetailPage = () => {
 
                       return (
                         <div key={entry.id} className="relative group">
-                          {/* Circle on the left line con dimensiones de develop */}
+                          {/* Circle on the left line unificado */}
                           <div className={`absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white shadow-sm transition-transform group-hover:scale-110 ${getTimelineCircleColor(historyTitle, entry.status)}`} />
 
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-4">
@@ -636,5 +636,3 @@ export const PracticeDetailPage = () => {
     </div>
   );
 };
-
-export default PracticeDetailPage;

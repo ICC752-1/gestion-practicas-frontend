@@ -70,10 +70,8 @@ export const StudentTable = ({ students = [] }) => {
     return matchesSearch && matchesDegree && matchesCompany;
   });
 
-  // Conservamos tu layout de rejilla CSS Grid local
   const gridLayoutClass = "grid grid-cols-[1.4fr_1fr_1.3fr_1.1fr_0.9fr] items-center gap-3 px-4 py-4 w-full";
 
-  // Incorporamos la lógica asíncrona de revisión de develop
   const handleOpenDetails = async (internship) => {
     setOpeningId(internship.id);
     try {
@@ -161,7 +159,7 @@ export const StudentTable = ({ students = [] }) => {
         </div>
       </div>
 
-      {/* Contenedor de la Tabla Estructurada */}
+      {/* Contenedor de la Tabla Estructurada - SIN OVERFLOW NI MIN-W */}
       <div className="w-full rounded-xl border border-gray-100 bg-white shadow-sm">
         <div className="w-full table-layout-fixed">
           
@@ -183,7 +181,7 @@ export const StudentTable = ({ students = [] }) => {
                 return (
                   <div key={student.id} className={`${gridLayoutClass} hover:bg-gray-50/40 transition-colors`}>
                     
-                    {/* Estudiante */}
+                    {/* Estudiante (Con min-w-0 para activar el truncado fluido) */}
                     <div className="flex flex-col min-w-0">
                       <span className="font-bold text-gray-800 leading-tight text-sm truncate">
                         {student.student ? `${student.student.first_name} ${student.student.last_name}` : 'Estudiante no registrado'}
@@ -191,7 +189,7 @@ export const StudentTable = ({ students = [] }) => {
                       <span className="text-xs text-gray-400 font-medium truncate mt-0.5">{student.student?.email}</span>
                     </div>
 
-                    {/* Carrera (Corregido el conflicto de etiquetas <td> con estructura Grid fluida) */}
+                    {/* Carrera (Se corrigió la etiqueta td invasiva de develop para mantener la rejilla CSS Grid limpia) */}
                     <div className="min-w-0">
                       <p className="text-sm text-gray-600 font-medium truncate">
                         {student.student?.degree || student.student?.cod_degree || 'N/A'}
@@ -218,7 +216,7 @@ export const StudentTable = ({ students = [] }) => {
                       <button
                         onClick={() => handleOpenDetails(student)}
                         disabled={openingId === student.id}
-                        className="text-[#d22864] font-bold hover:underline text-sm transition-all disabled:opacity-50 disabled:no-underline"
+                        className="text-[#d22864] font-bold hover:underline text-sm transition-all disabled:opacity-50"
                       >
                         {openingId === student.id ? 'Abriendo...' : 'Ver detalles'}
                       </button>

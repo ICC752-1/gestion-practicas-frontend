@@ -95,7 +95,7 @@ const Dashboard = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/entrevistas')}
-          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group relative"
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group relative hover:cursor-pointer"
         >
           {pendingRequestsCount > 0 && (
             <span className="absolute top-4 right-4 min-w-[22px] h-[22px] px-1.5 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[11px] font-bold leading-none shadow-md">
@@ -115,7 +115,7 @@ const Dashboard = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/cartas-presentacion')}
-          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group hover:cursor-pointer"
         >
           <div className="w-16 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors flex-shrink-0">
             <Mail className="w-6 h-6 text-[#B5305F] group-hover:text-white transition-colors" />
@@ -127,7 +127,7 @@ const Dashboard = ({
         </motion.button>
       </div>
        
-      {/* Sección de la Tabla con contenedor id para el Smooth Scroll de develop */}
+      {/* Sección de la Tabla envuelta con el id correspondiente para el scroll automático */}
       <div id="management-section">
         <Management
           students={students}

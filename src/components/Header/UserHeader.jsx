@@ -20,164 +20,160 @@ const ADMIN_TOGGLE_ROLES = new Set([
 const DIRECTOR_ROLE = "Director de carrera";
 
 export const UserHeader = () => {
-  const { user, logout } = useAuth();
-  const location = useLocation();
-  const { showToast } = useToast();
+    const { user, logout } = useAuth();
+    const location = useLocation();
+    const { showToast } = useToast();
 
-  const userName = user
-    ? `${user.first_name} ${user.last_name}`
-    : "Usuario";
+    const userName = user
+        ? `${user.first_name} ${user.last_name}`
+        : "Usuario";
 
-  const roleNames = normalizeRoleNames(user?.roles);
-  const userRole = getDisplayRoleForRoles(roleNames);
-  const dashboardPath = getRedirectPathForRoles(roleNames);
+    const roleNames = normalizeRoleNames(user?.roles);
+    const userRole = getDisplayRoleForRoles(roleNames);
+    const dashboardPath = getRedirectPathForRoles(roleNames);
 
-  const isAdminToggle = roleNames.some((role) => ADMIN_TOGGLE_ROLES.has(role));
-  const isDirector = roleNames.includes(DIRECTOR_ROLE);
+    const isAdminToggle = roleNames.some((role) => ADMIN_TOGGLE_ROLES.has(role));
+    const isDirector = roleNames.includes(DIRECTOR_ROLE);
 
-  const [configOpen, setConfigOpen] = useState(false);
-  const [config, setConfig] = useState({
-    general_consultations_enabled: false,
-    internship_applications_disabled: false,
-  });
-  const [configLoading, setConfigLoading] = useState(false);
-  const [configSaving, setConfigSaving] = useState(false);
-  const configRef = useRef(null);
+    const [configOpen, setConfigOpen] = useState(false);
+    const [config, setConfig] = useState({
+        general_consultations_enabled: false,
+        internship_applications_disabled: false,
+    });
+    const [configLoading, setConfigLoading] = useState(false);
+    const [configSaving, setConfigSaving] = useState(false);
+    const configRef = useRef(null);
 
-  const navItems = [
-    {
-      label: "Dashboard",
-      to: dashboardPath,
-      active: location.pathname === dashboardPath
-        || location.pathname.startsWith(`${dashboardPath}/`),
-    },
-    {
-      label: "Preguntas Frecuentes",
-      to: "/faq",
-      active: location.pathname === "/faq",
-    },
-    {
-      label: "Carta de Presentación",
-      to: "/cartas-presentacion",
-      active: location.pathname === "/cartas-presentacion",
-    },
-    {
-      label: "Requisitos",
-      to: "#",
-      active: false,
-    },
-  ];
+    const navItems = [
+      {
+        label: "Dashboard",
+        to: dashboardPath,
+        active: location.pathname === dashboardPath
+          || location.pathname.startsWith(`${dashboardPath}/`),
+      },
+      {
+        label: "Preguntas Frecuentes",
+        to: "/faq",
+        active: location.pathname === "/faq",
+      },
+      {
+        label: "Carta de Presentación",
+        to: "/cartas-presentacion",
+        active: location.pathname === "/cartas-presentacion",
+      },
+      {
+        label: "Requisitos",
+        to: "#",
+        active: false,
+      },
+    ];
 
-  const handleLogout = () => {
-    logout();
-  };
-
-  const fetchConfig = async () => {
-    if (!isAdminToggle) return;
-    setConfigLoading(true);
-    try {
-      const data = await schedulingService.getSchedulingConfig();
-      setConfig({
-        general_consultations_enabled: Boolean(data?.general_consultations_enabled),
-        internship_applications_disabled: Boolean(data?.internship_applications_disabled),
-      });
-    } catch (e) {
-      console.error("Failed to load scheduling config", e);
-    } finally {
-      setConfigLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchConfig();
-  }, [isAdminToggle]);
-
-  // Cierra el popover al hacer click fuera
-  useEffect(() => {
-    if (!configOpen) return;
-
-    const handleClickOutside = (event) => {
-      if (configRef.current && !configRef.current.contains(event.target)) {
-        setConfigOpen(false);
-      }
+    const handleLogout = () => {
+        logout();
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [configOpen]);
+    const fetchConfig = async () => {
+        if (!isAdminToggle) return;
+        setConfigLoading(true);
+        try {
+            const data = await schedulingService.getSchedulingConfig();
+            setConfig({
+                general_consultations_enabled: Boolean(data?.general_consultations_enabled),
+                internship_applications_disabled: Boolean(data?.internship_applications_disabled),
+            });
+        } catch (e) {
+            console.error("Failed to load scheduling config", e);
+        } finally {
+            setConfigLoading(false);
+        }
+    };
 
-  const handleToggleConsultations = async () => {
-    const nextVal = !config.general_consultations_enabled;
-    const previousVal = config.general_consultations_enabled;
-    setConfigSaving(true);
-    try {
-      await schedulingService.updateSchedulingConfig({
-        general_consultations_enabled: nextVal,
-      });
-      setConfig((prev) => ({ ...prev, general_consultations_enabled: nextVal }));
-      showToast({
-        type: 'success',
-        title: 'Configuración actualizada',
-        message: nextVal
-          ? 'Has habilitado las consultas generales.'
-          : 'Has deshabilitado las consultas generales.',
-      });
-    } catch (e) {
-      showToast({
-        type: 'error',
-        title: 'No se pudo actualizar',
-        message: e?.response?.data?.detail || 'Intenta nuevamente.',
-      });
-    } finally {
-      setConfigSaving(false);
-    }
-  };
+    useEffect(() => {
+        fetchConfig();
+    }, [isAdminToggle]);
 
-  const handleToggleApplications = async () => {
-    const nextVal = !config.internship_applications_disabled;
-    setConfigSaving(true);
-    try {
-      await schedulingService.updateSchedulingConfig({
-        internship_applications_disabled: nextVal,
-      });
-      setConfig((prev) => ({ ...prev, internship_applications_disabled: nextVal }));
-      showToast({
-        type: 'success',
-        title: 'Configuración actualizada',
-        message: nextVal
-          ? 'La inscripción de prácticas fue desactivada.'
-          : 'La inscripción de prácticas fue reactivada.',
-      });
-    } catch (e) {
-      showToast({
-        type: 'error',
-        title: 'No se pudo actualizar',
-        message: e?.response?.data?.detail || 'Intenta nuevamente.',
-      });
-    } finally {
-      setConfigSaving(false);
-    }
-  };
+    useEffect(() => {
+        if (!configOpen) return;
+        const handleClickOutside = (event) => {
+            if (configRef.current && !configRef.current.contains(event.target)) {
+                setConfigOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [configOpen]);
 
-  // LÓGICA RESPONSIVA MEJORADA RETENIDA: Evita desbordamientos tipográficos en pantallas intermedias
-  const getNavLinkClass = (isActive) => [
-    "inline-flex items-center justify-center gap-1.5 rounded-lg border-2 font-bold transition-colors flex-shrink-0 text-center whitespace-nowrap",
-    "px-2 py-1 text-xs lg:px-2 lg:py-1 lg:text-[11px] xl:px-3 xl:py-1.5 xl:text-sm",
-    isActive
-      ? "border-[#d22864] bg-[#d22864] text-white shadow-sm"
-      : "border-transparent text-[#d22864] hover:border-[#d22864] hover:bg-[#d22864]/5",
-  ].join(" ");
+    const handleToggleConsultations = async () => {
+        const nextVal = !config.general_consultations_enabled;
+        setConfigSaving(true);
+        try {
+            await schedulingService.updateSchedulingConfig({
+                general_consultations_enabled: nextVal,
+            });
+            setConfig((prev) => ({ ...prev, general_consultations_enabled: nextVal }));
+            showToast({
+                type: 'success',
+                title: 'Configuración actualizada',
+                message: nextVal
+                    ? 'Has habilitado las consultas generales.'
+                    : 'Has deshabilitado las consultas generales.',
+            });
+        } catch (e) {
+            showToast({
+                type: 'error',
+                title: 'No se pudo actualizar',
+                message: e?.response?.data?.detail || 'Intenta nuevamente.',
+            });
+        } finally {
+            setConfigSaving(false);
+        }
+    };
+
+    const handleToggleApplications = async () => {
+        const nextVal = !config.internship_applications_disabled;
+        setConfigSaving(true);
+        try {
+            await schedulingService.updateSchedulingConfig({
+                internship_applications_disabled: nextVal,
+            });
+            setConfig((prev) => ({ ...prev, internship_applications_disabled: nextVal }));
+            showToast({
+                type: 'success',
+                title: 'Configuración actualizada',
+                message: nextVal
+                    ? 'La inscripción de prácticas fue desactivada.'
+                    : 'La inscripción de prácticas fue reactivada.',
+            });
+        } catch (e) {
+            showToast({
+                type: 'error',
+                title: 'No se pudo actualizar',
+                message: e?.response?.data?.detail || 'Intenta nuevamente.',
+            });
+        } finally {
+            setConfigSaving(false);
+        }
+    };
+
+    // Tu getNavLinkClass responsivo: compacto en lg, normal en xl
+    const getNavLinkClass = (isActive) => [
+      "inline-flex items-center justify-center gap-1.5 rounded-lg border-2 font-bold transition-colors flex-shrink-0 text-center whitespace-nowrap",
+      "px-2 py-1 text-xs lg:px-2 lg:py-1 lg:text-[11px] xl:px-3 xl:py-1.5 xl:text-sm",
+      isActive
+        ? "border-[#d22864] bg-[#d22864] text-white shadow-sm"
+        : "border-transparent text-[#d22864] hover:border-[#d22864] hover:bg-[#d22864]/5",
+    ].join(" ");
 
   return (
     <header
-      className="sticky top-0 z-50 flex min-h-[72px] w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm overflow-hidden"
-      style={{ padding: '0.5rem clamp(0.5rem, 2vw, 2.5rem)', gap: '0.5rem' }}
-    >
+        className="sticky top-0 z-50 flex min-h-[72px] w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm"
+        style={{ padding: '0.5rem clamp(0.5rem, 2vw, 2.5rem)', gap: '0.5rem' }}
+      >
       <div className="flex lg:grid lg:grid-cols-[auto_1fr_auto] xl:grid-cols-[1fr_auto_1fr] items-center justify-between w-full gap-2 xl:gap-4">
-        
+
         {/* Left: Logo + Title */}
         <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0">
-          <div className="bg-[#d22864] rounded-xl shadow-sm flex-shrink-0 p-1.5" style={{ padding: 'clamp(4px, 0.6vw, 8px)' }}>
+          <div className="bg-[#d22864] rounded-xl shadow-sm flex-shrink-0" style={{ padding: 'clamp(4px, 0.6vw, 8px)' }}>
             <img
               style={{ width: 'clamp(44px, 4.5vw, 60px)', height: 'clamp(44px, 4.5vw, 60px)' }}
               className="object-contain"
@@ -186,12 +182,14 @@ export const UserHeader = () => {
             />
           </div>
           <div className="flex flex-col leading-tight pr-2">
-            <h1 className="font-bold tracking-tight text-[#d22864]"
+            <h1
+              className="font-bold tracking-tight text-[#d22864]"
               style={{ fontSize: 'clamp(0.8rem, 2.2vw, 1.25rem)' }}
             >
               Sistema de Gestión de Prácticas
             </h1>
-            <p className="font-semibold text-[#d22864] hidden sm:block mt-0.5"
+            <p
+              className="font-semibold text-[#d22864] hidden sm:block mt-0.5"
               style={{ fontSize: 'clamp(0.65rem, 0.9vw, 0.75rem)' }}
             >
               Facultad de Ingeniería y Ciencias
@@ -199,7 +197,7 @@ export const UserHeader = () => {
           </div>
         </div>
 
-        {/* Center: Nav */}
+        {/* Center: Nav — visible desde lg */}
         <nav aria-label="Principal" className="hidden lg:flex items-center justify-center gap-1 xl:gap-2">
           {navItems.map((item) => (
             <Link
@@ -214,9 +212,9 @@ export const UserHeader = () => {
         </nav>
 
         {/* Right: Actions */}
-        <div className="flex items-center flex-shrink-0 justify-end gap-2 xl:gap-4">
+        <div className="flex items-center flex-shrink-0 justify-end gap-2 xl:gap-3">
 
-          {/* Dashboard link móvil */}
+          {/* Dashboard link móvil (oculto en lg+) */}
           <Link
             to={dashboardPath}
             aria-current={navItems[0].active ? "page" : undefined}
@@ -229,9 +227,10 @@ export const UserHeader = () => {
             Dashboard
           </Link>
 
+          {/* Campana — completamente fuera del configRef */}
           <NotificationBell />
 
-          <div className="h-7 w-px bg-gray-200 flex-shrink-0 hidden sm:block"></div>
+          <div className="h-7 w-px bg-gray-200 flex-shrink-0 hidden sm:block" />
 
           {/* Nombre y Rol */}
           <div className="hidden md:flex flex-col items-end leading-none max-w-[120px] xl:max-w-[240px] truncate">
@@ -245,7 +244,7 @@ export const UserHeader = () => {
             >{userRole}</span>
           </div>
 
-          {/* Settings popover for admin roles (Encargado / Director) */}
+          {/* Settings popover — configRef solo envuelve este bloque */}
           {isAdminToggle && (
             <div className="relative" ref={configRef}>
               <button
@@ -267,7 +266,6 @@ export const UserHeader = () => {
                   </div>
 
                   <div className="px-5 py-4 space-y-5">
-                    {/* Consultas Generales toggle */}
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-bold text-gray-800">Consultas Generales</p>
@@ -282,15 +280,12 @@ export const UserHeader = () => {
                         }`}
                         aria-label="Alternar consultas generales"
                       >
-                        <span
-                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                            config.general_consultations_enabled ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                        />
+                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          config.general_consultations_enabled ? 'translate-x-5' : 'translate-x-0'
+                        }`} />
                       </button>
                     </div>
 
-                    {/* Inscripción de Prácticas toggle (sólo Director) */}
                     {isDirector && (
                       <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
                         <div>
@@ -306,11 +301,9 @@ export const UserHeader = () => {
                           }`}
                           aria-label="Alternar inscripción de prácticas"
                         >
-                          <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                              config.internship_applications_disabled ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
+                          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                            config.internship_applications_disabled ? 'translate-x-5' : 'translate-x-0'
+                          }`} />
                         </button>
                       </div>
                     )}
@@ -340,6 +333,7 @@ export const UserHeader = () => {
             />
           </div>
 
+          {/* Logout */}
           <button
             onClick={handleLogout}
             className="text-[#d22864] hover:bg-red-50 hover:text-red-600 rounded-lg transition-all flex-shrink-0"
@@ -348,8 +342,8 @@ export const UserHeader = () => {
           >
             <LogOut size={18} strokeWidth={2.5} />
           </button>
-        </div>
 
+        </div>
       </div>
     </header>
   );
