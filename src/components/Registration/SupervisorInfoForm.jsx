@@ -20,6 +20,7 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
   const validateForm = () => {
     const newErrors = {};
     const phonePattern = /^\+?[0-9]+$/;
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
     if (!formData.supervisorName.trim()) {
       newErrors.supervisorName = 'El nombre del supervisor es obligatorio.';
@@ -39,6 +40,8 @@ export const SupervisorInfoForm = ({ onNext, onBack, initialData = {} }) => {
 
     if (!formData.supervisorEmail.trim()) {
       newErrors.supervisorEmail = 'El correo electrónico es obligatorio.';
+    } else if (!emailPattern.test(formData.supervisorEmail.trim())) {
+      newErrors.supervisorEmail = 'Ingrese un correo válido (ej: supervisor@empresa.cl).';
     }
 
     if (!formData.supervisorPhone.trim()) {

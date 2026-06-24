@@ -36,8 +36,8 @@ const STATUS_LABELS = {
   1: 'Pendiente',
   2: 'En revisión DIRAE',
   3: 'En revisión',
-  4: 'Aprobada',
-  5: 'Rechazada'
+  4: 'Solicitud Aprobada',
+  5: 'Solicitud Rechazada'
 };
 
 const STATUS_STYLES = {
@@ -135,12 +135,47 @@ const buildHistorySubtitle = (entry) => {
     return reason;
   }
 
-  return HISTORY_DEFAULT_SUBTITLES[metadata.action]
-    || null;
+  return HISTORY_DEFAULT_SUBTITLES[metadata.action] || null;
+};
+
+const getTimelineItemStyles = (status) => {
+  switch (status) {
+    case 'completed':
+      return {
+        border: 'border-emerald-500',
+        text: 'text-emerald-600',
+        bg: 'bg-emerald-50',
+        line: 'bg-emerald-500',
+      };
+    case 'current':
+      return {
+        border: 'border-blue-500',
+        text: 'text-blue-600',
+        bg: 'bg-blue-50 ring-4 ring-blue-100 animate-pulse',
+        line: 'bg-blue-500',
+      };
+    case 'blocked':
+      return {
+        border: 'border-red-200',
+        text: 'text-red-400',
+        bg: 'bg-red-50',
+        line: 'bg-red-200',
+      };
+    case 'pending':
+    default:
+      return {
+        border: 'border-gray-200',
+        text: 'text-gray-400',
+        bg: 'bg-gray-50',
+        line: 'bg-gray-200',
+      };
+  }
 };
 
 // --- Timeline Item ---
 const TimelineItem = ({ step, index, isLast }) => {
+  const styles = getTimelineItemStyles(step.status);
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -148,19 +183,18 @@ const TimelineItem = ({ step, index, isLast }) => {
       transition={{ delay: index * 0.05 }}
       className="flex gap-6 relative items-start"
     >
-
       {!isLast && (
-        <div className="absolute left-[19px] top-7 w-[2px] h-[calc(100%-16px)] bg-[#d22864]" />
+        <div className={`absolute left-[19.5px] top-10 w-[2px] h-[calc(100%-24px)] ${styles.line}`} />
       )}
       
       <div className="flex flex-col items-center z-10 flex-shrink-0 mt-0.5">
-        <div className="w-10 h-10 rounded-full border-2 border-[#d22864] bg-white flex items-center justify-center text-[#d22864] shadow-sm">
+        <div className={`w-10 h-10 rounded-full border-2 ${styles.border} ${styles.bg} flex items-center justify-center ${styles.text} shadow-sm`}>
           {step.icon}
         </div>
       </div>
       
-      <div className="flex-1 pb-10 min-w-0">
-        <h3 className="font-semibold text-gray-800 text-base md:text-lg leading-tight">
+      <div className="flex-1 pb-10 pt-2 min-w-0">
+        <h3 className={`font-semibold text-base md:text-lg leading-tight ${step.status === 'pending' || step.status === 'blocked' ? 'text-gray-400' : 'text-gray-800'}`}>
           {step.title}
         </h3>
         {step.subtitle && <p className="text-gray-400 text-xs md:text-sm mt-0.5">{step.subtitle}</p>}
@@ -202,6 +236,7 @@ export const SeguimientoPage = () => {
 
   const [internship, setInternship] = useState(null);
   const [tracking, setTracking] = useState([]);
+  const [lifecycle, setLifecycle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showOrgDetails, setShowOrgDetails] = useState(false);
@@ -221,17 +256,20 @@ export const SeguimientoPage = () => {
       const [
         internshipData,
         trackingData,
+        lifecycleData,
         documentsData,
         actionData,
       ] = await Promise.all([
         internshipService.getInternshipById(internshipId),
         internshipService.getInternshipTracking(internshipId),
+        internshipService.getInternshipLifecycle(internshipId).catch(() => null),
         documentService.getInternshipDocuments(internshipId),
         internshipService.getStudentActions(internshipId),
       ]);
 
       setInternship(internshipData);
       setTracking(trackingData);
+      setLifecycle(lifecycleData);
       setDocuments(documentsData);
       setStudentActions(actionData);
     } catch (err) {
@@ -252,26 +290,57 @@ export const SeguimientoPage = () => {
     }
   }, [fetchData, internshipId]);
 
-  const timelineItems = tracking.map((entry) => {
-    const title = buildHistoryTitle(entry);
+  const timelineSource = lifecycle?.events?.length ? lifecycle.events : tracking;
+  const timelineItems = timelineSource.map((entry) => {
+    const isLifecycleEntry = Boolean(entry.type);
+    const title = isLifecycleEntry ? entry.title : buildHistoryTitle(entry);
+    const dateValue = entry.occurred_at || entry.changed_at;
 
     return {
       id: entry.id,
       title,
-      subtitle: buildHistorySubtitle(entry),
+      subtitle: isLifecycleEntry ? entry.description : buildHistorySubtitle(entry),
       isMajor: true,
       icon: getStatusIcon(title),
-      actor: entry.actor ? `${entry.actor.first_name} ${entry.actor.last_name}` : 'Sistema',
-      date: new Date(entry.changed_at).toLocaleDateString('es-CL', {
+      actor: entry.actor ? `${entry.actor.first_name} ${entry.actor.last_name}` : null,
+      date: dateValue ? new Date(dateValue).toLocaleDateString('es-CL', {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit'
-      })
+      }) : null,
+      status: isLifecycleEntry ? entry.status : 'completed',
     };
   });
 
-  const { key: currentStatus, label: currentStatusLabel } = getStatusDisplay(internship);
+  let currentStatus;
+  let currentStatusLabel;
+
+  if (internship?.is_cancelled) {
+    currentStatus = 'cancelled';
+    currentStatusLabel = 'Anulada';
+  } else if (lifecycle) {
+    currentStatusLabel = lifecycle.current_step;
+    if (lifecycle.progress_percentage >= 100) {
+      currentStatus = internship?.final_result === 'failed' ? 'final_failed' : 'final_passed';
+    } else if (lifecycle.progress_percentage > 35) {
+      currentStatus = 'in_progress';
+    } else {
+      currentStatus = internship?.status_id || 1;
+    }
+  } else {
+    const statusDisplay = getStatusDisplay(internship);
+    currentStatus = statusDisplay.key;
+    currentStatusLabel = statusDisplay.label;
+  }
+
   const statusStyle = STATUS_STYLES[currentStatus] || STATUS_STYLES[1];
-  const administrativeProgress = getInternshipAdministrativeProgress(internship);
+
+  const administrativeProgress = lifecycle
+    ? {
+        percentage: lifecycle.progress_percentage,
+        label: lifecycle.current_step,
+        color: lifecycle.progress_percentage >= 100 ? 'bg-green-500' : 'bg-[#d22864]',
+      }
+    : getInternshipAdministrativeProgress(internship);
 
   const handleRetry = () => {
     fetchData();
@@ -372,7 +441,7 @@ export const SeguimientoPage = () => {
               </div>
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-4 text-xs font-bold text-gray-600">
-                  <span>{administrativeProgress.label}</span>
+                  <span>{lifecycle ? 'Avance de práctica' : administrativeProgress.label}</span>
                   <span>{administrativeProgress.percentage}%</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-white/70">
@@ -381,6 +450,9 @@ export const SeguimientoPage = () => {
                     style={{ width: `${administrativeProgress.percentage}%` }}
                   />
                 </div>
+                {lifecycle && (
+                  <p className="mt-2 text-xs font-semibold text-gray-500">{administrativeProgress.label}</p>
+                )}
               </div>
             </motion.div>
 
@@ -389,6 +461,31 @@ export const SeguimientoPage = () => {
               actions={studentActions}
               onUpdated={fetchData}
             />
+
+            {lifecycle?.supervisor_evaluation_submitted && 
+             lifecycle?.self_evaluation_submitted &&
+             !internship?.is_cancelled && 
+             internship?.completion_status !== 'finalized' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 mb-8 border border-gray-100 flex flex-col items-center text-center gap-4"
+              >
+                <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-600">
+                  <CheckCircle2 size={24} />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-gray-900">¡Evaluaciones Completadas!</h4>
+                  <p className="text-sm text-gray-500 mt-1">Cumples con los requisitos para agendar tu entrevista o presentación final.</p>
+                </div>
+                <button
+                  onClick={() => navigate(`/entrevistas?internshipId=${internshipId}&purpose=final_presentation`)}
+                  className="px-6 py-3 rounded-2xl bg-[#d22864] hover:bg-[#b01e50] font-bold text-white shadow-md shadow-[#d22864]/10 transition"
+                >
+                  Solicitar Entrevista / Presentación Final
+                </button>
+              </motion.div>
+            )}
 
             {/* Practice Details */}
             <motion.div
@@ -549,7 +646,7 @@ export const SeguimientoPage = () => {
                 Historial de Seguimiento
               </h3>
 
-              {tracking.length === 0 ? (
+              {timelineItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <InboxIcon className="w-12 h-12 text-gray-300 mb-4" />
                   <p className="text-gray-500">No hay registros de seguimiento aún</p>

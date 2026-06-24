@@ -88,7 +88,9 @@ export const DocumentList = ({
                     {doc.document_type?.name || 'Documento'}
                   </h4>
                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                    Subido el {doc.upload_date ? new Date(doc.upload_date).toLocaleDateString('es-CL') : 'Fecha no disponible'}
+                    Subido el {doc.upload_date
+                      ? new Date(doc.upload_date.endsWith('Z') ? doc.upload_date : doc.upload_date + 'Z').toLocaleDateString('es-CL')
+                      : 'Fecha no disponible'}
                   </p>
                 </div>
             </div>

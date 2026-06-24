@@ -16,6 +16,7 @@ const Dashboard = ({
   stats: apiStats,
   statusFilter,
   onStatusFilterChange,
+  pendingRequestsCount = 0,
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth(); // Extraemos el usuario para obtener su nombre
@@ -50,25 +51,25 @@ const Dashboard = ({
         <StatCard 
           label="Solicitudes totales" 
           value={stats.total} 
-          Icon={Users} 
+          Icon={StatCard.Icon || Users} 
           variant="default"
         />
         <StatCard 
           label="Solicitudes pendientes" 
           value={stats.pending} 
-          Icon={Clock} 
+          Icon={StatCard.Icon || Clock} 
           variant="alert"
         />
         <StatCard 
           label="Solicitudes en revisión" 
           value={stats.inReview} 
-          Icon={AlertCircle} 
+          Icon={StatCard.Icon || AlertCircle} 
           variant="progress"
         />
         <StatCard 
           label="Solicitudes aprobadas" 
           value={stats.approved} 
-          Icon={CheckCircle} 
+          Icon={StatCard.Icon || CheckCircle} 
           variant="success"
         />
       </div>
@@ -78,6 +79,7 @@ const Dashboard = ({
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          onClick={() => document.getElementById('management-section')?.scrollIntoView({ behavior: 'smooth' })}
           className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group hover:cursor-pointer"
         >
           <div className="w-16 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors flex-shrink-0">
@@ -93,14 +95,19 @@ const Dashboard = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/entrevistas')}
-          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group relative"
         >
+          {pendingRequestsCount > 0 && (
+            <span className="absolute top-4 right-4 min-w-[22px] h-[22px] px-1.5 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[11px] font-bold leading-none shadow-md">
+              {pendingRequestsCount}
+            </span>
+          )}
           <div className="w-16 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors flex-shrink-0">
             <Calendar className="w-6 h-6 text-[#B5305F] group-hover:text-white transition-colors" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-800 leading-tight">Configurar Horarios</h3>
-            <p className="text-sm text-gray-400 mt-0.5">Gestiona tus horarios disponibles para las entrevistas</p>
+            <h3 className="text-lg font-bold text-gray-800 leading-tight">Agenda y Consultas</h3>
+            <p className="text-sm text-gray-400 mt-0.5">Revisa solicitudes de estudiantes, agenda citas directas y califica presentaciones</p>
           </div>
         </motion.button>
 
@@ -120,12 +127,14 @@ const Dashboard = ({
         </motion.button>
       </div>
        
-      {/* Sección de la Tabla */}
-      <Management
-        students={students}
-        statusFilter={statusFilter}
-        onStatusFilterChange={onStatusFilterChange}
-      />
+      {/* Sección de la Tabla con contenedor id para el Smooth Scroll de develop */}
+      <div id="management-section">
+        <Management
+          students={students}
+          statusFilter={statusFilter}
+          onStatusFilterChange={onStatusFilterChange}
+        />
+      </div>
     </div>
   );
 };

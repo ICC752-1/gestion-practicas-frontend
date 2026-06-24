@@ -3,15 +3,16 @@ import { Inbox, Filter, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import { getAdminBasePathForRoles } from '../../services/roleRouting';
+import { internshipService } from '../../services/internshipService';
 
 export const StudentTable = ({ students = [] }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const adminBasePath = getAdminBasePathForRoles(user?.roles);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
   const [degreeFilter, setDegreeFilter] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
+  const [openingId, setOpeningId] = useState(null);
 
   // FE4: Normalizar estado
   const getNormalizedStatus = (internship) => {
@@ -23,28 +24,24 @@ export const StudentTable = ({ students = [] }) => {
     const statusLabel = status?.title || status || '';
     const statusStr = String(statusLabel).toLowerCase();
     if (statusStr.includes('revisi') || status === 'in_review') return { label: 'En Revisión', color: 'bg-blue-500', value: 'En Revisión' };
-    if (statusStr.includes('aprob') || status === 'approved') return { label: 'Aprobada', color: 'bg-emerald-500', value: 'Aprobada' };
+    if (statusStr.includes('aprob') || status === 'approved') return { label: 'Solicitud Aprobada', color: 'bg-emerald-500', value: 'Aprobada' };
     if (statusStr.includes('rechaz') || status === 'rejected') return { label: 'Rechazada', color: 'bg-red-500', value: 'Rechazada' };
     if (!status || statusStr === 'pendiente' || status === 'submitted' || status === 'submited') return { label: 'Pendiente', color: 'bg-amber-500', value: 'Práctica Pendiente' };
     return { label: statusLabel || 'Pendiente', color: 'bg-gray-500', value: statusLabel || 'Pendiente' };
   };
 
   const uniqueDegrees = useMemo(() => {
-    return [...new Set(students.map(s => s.student?.degree).filter(Boolean))];
+    return [...new Set(students.map(s => s.student?.degree || s.student?.cod_degree).filter(Boolean))];
   }, [students]);
 
   const uniqueCompanies = useMemo(() => {
     return [...new Set(students.map(s => s.org_name).filter(Boolean))];
   }, [students]);
 
-  const uniqueStatuses = useMemo(() => {
-    return [...new Set(students.map(s => getNormalizedStatus(s).value).filter(Boolean))];
-  }, [students]);
-
   const filteredStudents = students.filter(s => {
     const name = s.student ? `${s.student.first_name} ${s.student.last_name}`.toLowerCase() : '';
     const email = s.student?.email?.toLowerCase() || '';
-    const degree = s.student?.degree?.toLowerCase() || '';
+    const degree = (s.student?.degree || s.student?.cod_degree || '').toLowerCase();
     const org = s.org_name?.toLowerCase() || '';
     
     const city = s.city?.toLowerCase() || '';
@@ -67,16 +64,29 @@ export const StudentTable = ({ students = [] }) => {
       endDate.includes(term)
     );
 
-    const normalizedStatus = getNormalizedStatus(s).value;
-
-    const matchesStatus = statusFilter === '' || normalizedStatus === statusFilter;
-    const matchesDegree = degreeFilter === '' || s.student?.degree === degreeFilter;
+    const matchesDegree = degreeFilter === '' || (s.student?.degree || s.student?.cod_degree) === degreeFilter;
     const matchesCompany = companyFilter === '' || s.org_name === companyFilter;
 
-    return matchesSearch && matchesStatus && matchesDegree && matchesCompany;
+    return matchesSearch && matchesDegree && matchesCompany;
   });
 
+  // Conservamos tu layout de rejilla CSS Grid local
   const gridLayoutClass = "grid grid-cols-[1.4fr_1fr_1.3fr_1.1fr_0.9fr] items-center gap-3 px-4 py-4 w-full";
+
+  // Incorporamos la lógica asíncrona de revisión de develop
+  const handleOpenDetails = async (internship) => {
+    setOpeningId(internship.id);
+    try {
+      await internshipService.startReview(internship.id);
+    } catch (error) {
+      console.error('No se pudo iniciar revisión automáticamente:', error);
+    } finally {
+      setOpeningId(null);
+      navigate(`${adminBasePath}/practica/${internship.id}`, {
+        state: { student: internship.student },
+      });
+    }
+  };
 
   if (students.length === 0) {
     return (
@@ -117,17 +127,6 @@ export const StudentTable = ({ students = [] }) => {
             <Filter size={16} />
             <span>Filtros:</span>
           </div>
-          
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-9 px-2 bg-white border border-gray-200 rounded-lg outline-none text-xs font-medium focus:border-[#d22864] max-w-[180px] truncate cursor-pointer"
-          >
-            <option value="">Todos los estados</option>
-            {uniqueStatuses.map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
 
           <select 
             value={degreeFilter}
@@ -151,9 +150,9 @@ export const StudentTable = ({ students = [] }) => {
             ))}
           </select>
           
-          {(statusFilter || degreeFilter || companyFilter) && (
+          {(degreeFilter || companyFilter) && (
             <button 
-              onClick={() => { setStatusFilter(''); setDegreeFilter(''); setCompanyFilter(''); }}
+              onClick={() => { setDegreeFilter(''); setCompanyFilter(''); }}
               className="text-xs text-[#d22864] font-bold hover:underline sm:ml-auto flex-shrink-0"
             >
               Limpiar filtros
@@ -162,7 +161,7 @@ export const StudentTable = ({ students = [] }) => {
         </div>
       </div>
 
-      {/* Contenedor de la Tabla Estructurada - SIN OVERFLOW NI MIN-W */}
+      {/* Contenedor de la Tabla Estructurada */}
       <div className="w-full rounded-xl border border-gray-100 bg-white shadow-sm">
         <div className="w-full table-layout-fixed">
           
@@ -184,7 +183,7 @@ export const StudentTable = ({ students = [] }) => {
                 return (
                   <div key={student.id} className={`${gridLayoutClass} hover:bg-gray-50/40 transition-colors`}>
                     
-                    {/* Estudiante (Con min-w-0 para activar el truncado fluido) */}
+                    {/* Estudiante */}
                     <div className="flex flex-col min-w-0">
                       <span className="font-bold text-gray-800 leading-tight text-sm truncate">
                         {student.student ? `${student.student.first_name} ${student.student.last_name}` : 'Estudiante no registrado'}
@@ -192,9 +191,11 @@ export const StudentTable = ({ students = [] }) => {
                       <span className="text-xs text-gray-400 font-medium truncate mt-0.5">{student.student?.email}</span>
                     </div>
 
-                    {/* Carrera */}
+                    {/* Carrera (Corregido el conflicto de etiquetas <td> con estructura Grid fluida) */}
                     <div className="min-w-0">
-                      <p className="text-sm text-gray-600 font-medium truncate">{student.student?.degree || 'N/A'}</p>
+                      <p className="text-sm text-gray-600 font-medium truncate">
+                        {student.student?.degree || student.student?.cod_degree || 'N/A'}
+                      </p>
                     </div>
 
                     {/* Empresa */}
@@ -215,10 +216,11 @@ export const StudentTable = ({ students = [] }) => {
                     {/* Acciones */}
                     <div className="text-center whitespace-nowrap min-w-0">
                       <button
-                        onClick={() => navigate(`${adminBasePath}/practica/${student.id}`, { state: { student: student.student } })}
-                        className="text-[#d22864] font-bold hover:underline text-sm transition-all"
+                        onClick={() => handleOpenDetails(student)}
+                        disabled={openingId === student.id}
+                        className="text-[#d22864] font-bold hover:underline text-sm transition-all disabled:opacity-50 disabled:no-underline"
                       >
-                        Ver detalles
+                        {openingId === student.id ? 'Abriendo...' : 'Ver detalles'}
                       </button>
                     </div>
                   </div>

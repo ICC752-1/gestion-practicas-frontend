@@ -1,6 +1,8 @@
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useState, useEffect, useMemo } from 'react';
 import {
   AlertCircle,
+  ArrowLeft,
+  Check,
   CheckCircle2,
   Download,
   Eye,
@@ -13,11 +15,15 @@ import {
   Send,
   ShieldAlert,
   UploadCloud,
+  Building2,
+  User,
 } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import { documentService } from '../../services/documentService';
 import { internshipService } from '../../services/internshipService';
+import { selfEvaluationService } from '../../services/selfEvaluationService';
+import { supervisorEvaluationService } from '../../services/supervisorEvaluationService';
 import { useToast } from '../../context/useToast';
 
 const DOCUMENT_STATUS = {
@@ -60,14 +66,44 @@ const PACKAGE_REASONS = {
 
 const allowedUploadExtensions = ['pdf', 'docx', 'jpg', 'png', 'zip'];
 
+// --- Constants for evaluations ---
+const SUPERVISOR_CRITERIA_LABELS = {
+  technical_performance: { label: 'Desempeño técnico', desc: 'Aplica conocimientos y herramientas acordes a las tareas asignadas.' },
+  responsibility: { label: 'Responsabilidad', desc: 'Cumple horarios, compromisos y entregas solicitadas.' },
+  communication: { label: 'Comunicación', desc: 'Informa avances, dificultades y requerimientos con claridad.' },
+  teamwork: { label: 'Trabajo en equipo', desc: 'Se integra adecuadamente con el equipo laboral.' },
+  autonomy: { label: 'Autonomía y aprendizaje', desc: 'Aprende, propone soluciones y ejecuta tareas con supervisión.' },
+};
+
+const RECOMMENDATION_LABELS = {
+  recommended: 'Recomendado',
+  recommended_with_observations: 'Recomendado con observaciones',
+  not_recommended: 'No recomendado',
+};
+
+
 const formatDate = (value) => {
   if (!value) return 'Sin fecha';
-  return new Date(value).toLocaleDateString('es-CL');
+  // Date-only strings (YYYY-MM-DD) are treated as local calendar dates
+  return new Date(value + 'T00:00:00').toLocaleDateString('es-CL');
+};
+
+// Parses a UTC-naive datetime string from the backend by appending 'Z' so JS
+// correctly interprets it as UTC before converting to local time for display.
+const parseUTCDateTime = (value) => {
+  if (!value) return null;
+  // If it already has timezone info, use as-is
+  if (value.endsWith('Z') || value.includes('+') || (value.includes('-') && value.lastIndexOf('-') > 10)) {
+    return new Date(value);
+  }
+  return new Date(value + 'Z');
 };
 
 const formatDateTime = (value) => {
   if (!value) return 'Sin fecha';
-  return new Date(value).toLocaleString('es-CL');
+  const d = parseUTCDateTime(value);
+  if (!d || isNaN(d)) return 'Sin fecha';
+  return d.toLocaleString('es-CL');
 };
 
 const getStatusTitle = (internship) => {
@@ -114,7 +150,6 @@ export const SecretaryDashboardPage = () => {
   const [pageError, setPageError] = useState('');
   const [documentStatusFilter, setDocumentStatusFilter] = useState('all');
   const [documentTypeFilter, setDocumentTypeFilter] = useState('all');
-  const [exportabilityFilter, setExportabilityFilter] = useState('all');
   const [documentSearch, setDocumentSearch] = useState('');
   const deferredDocumentSearch = useDeferredValue(documentSearch);
   const [reviewDocumentId, setReviewDocumentId] = useState(null);
@@ -130,13 +165,71 @@ export const SecretaryDashboardPage = () => {
   const [uploadError, setUploadError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [exportError, setExportError] = useState('');
+  const [selfEvaluationForm, setSelfEvaluationForm] = useState(null);
+  const [supervisorEvaluation, setSupervisorEvaluation] = useState(null);
+  const [activeTab, setActiveTab] = useState('documents');
+
+  // Estados para Bandeja de Entrada Global
+  const [allInternships, setAllInternships] = useState([]);
+  const [globalLoading, setGlobalLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [degreeFilter, setDegreeFilter] = useState('all');
+  const [diraeStatusFilter, setDiraeStatusFilter] = useState('all');
+
+  const loadAllInternships = async () => {
+    setGlobalLoading(true);
+    setPageError('');
+    try {
+      const data = await internshipService.getInternships();
+      const filtered = data.filter(item => 
+        item.completion_status === 'finalized' || item.dirae_status !== 'not_started'
+      );
+      setAllInternships(filtered);
+    } catch (error) {
+      console.error("Failed to load internships for secretary dashboard", error);
+      setPageError(getErrorMessage(error, 'No se pudo cargar el listado de expedientes.'));
+    } finally {
+      setGlobalLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAllInternships();
+  }, []);
+
+  const uniqueDegrees = useMemo(() => {
+    return [...new Set(allInternships.map(item => item.student?.degree).filter(Boolean))];
+  }, [allInternships]);
+
+  const filteredInternships = useMemo(() => {
+    return allInternships.filter(item => {
+      const studentName = item.student ? `${item.student.first_name} ${item.student.last_name}` : '';
+      const matchesSearch = !globalSearch.trim() ||
+        studentName.toLowerCase().includes(globalSearch.toLowerCase()) ||
+        item.student?.rut?.toLowerCase().includes(globalSearch.toLowerCase()) ||
+        String(item.id).includes(globalSearch) ||
+        item.org_name?.toLowerCase().includes(globalSearch.toLowerCase());
+
+      const matchesDegree = degreeFilter === 'all' || item.student?.degree === degreeFilter;
+      const matchesDirae = diraeStatusFilter === 'all' || item.dirae_status === diraeStatusFilter;
+
+      return matchesSearch && matchesDegree && matchesDirae;
+    });
+  }, [allInternships, globalSearch, degreeFilter, diraeStatusFilter]);
+
+  const readyIdsInCurrentFilter = useMemo(() => {
+    return filteredInternships.filter(item => item.dirae_status === 'ready').map(item => item.id);
+  }, [filteredInternships]);
+
+  const allReadySelected = useMemo(() => {
+    if (readyIdsInCurrentFilter.length === 0) return false;
+    return readyIdsInCurrentFilter.every(id => selectedIds.includes(id));
+  }, [readyIdsInCurrentFilter, selectedIds]);
 
   const activeDiraeStatus = packageData?.dirae_status || internship?.dirae_status || 'not_started';
   const diraeStatus = DIRAE_STATUS[activeDiraeStatus] || DIRAE_STATUS.not_started;
   const student = packageData?.student;
-  const packageMatchesExportability = exportabilityFilter === 'all'
-    || (exportabilityFilter === 'exportable' && packageData?.exportable)
-    || (exportabilityFilter === 'blocked' && packageData && !packageData.exportable);
   const searchText = deferredDocumentSearch.trim().toLowerCase();
   const filteredDocuments = documents.filter((document) => {
     const statusMatches = documentStatusFilter === 'all' || document.status === documentStatusFilter;
@@ -172,12 +265,33 @@ export const SecretaryDashboardPage = () => {
       setPackageData(packageResponse);
       setDiraeTracking(trackingData);
       setDocumentTypes(typesData);
+      setActiveTab('documents');
+
+      // Cargar autoevaluación
+      try {
+        const selfForm = await selfEvaluationService.getForm(internshipId);
+        setSelfEvaluationForm(selfForm);
+      } catch (err) {
+        console.warn("Could not load self evaluation", err);
+        setSelfEvaluationForm(null);
+      }
+
+      // Cargar evaluación del supervisor
+      try {
+        const superEval = await supervisorEvaluationService.getEvaluation(internshipId);
+        setSupervisorEvaluation(superEval);
+      } catch (err) {
+        console.warn("Could not load supervisor evaluation", err);
+        setSupervisorEvaluation(null);
+      }
     } catch (error) {
       setPageError(getErrorMessage(error, 'No se pudo cargar el expediente solicitado.'));
       setInternship(null);
       setDocuments([]);
       setPackageData(null);
       setDiraeTracking([]);
+      setSelfEvaluationForm(null);
+      setSupervisorEvaluation(null);
     } finally {
       setLoading(false);
     }
@@ -241,6 +355,7 @@ export const SecretaryDashboardPage = () => {
       setReviewDocumentId(null);
       setReviewComment('');
       await refreshActiveExpediente();
+      await loadAllInternships();
     } catch (error) {
       setReviewError(getErrorMessage(error, 'No se pudo registrar la revisión.'));
     } finally {
@@ -248,25 +363,39 @@ export const SecretaryDashboardPage = () => {
     }
   };
 
-  const handleExportCsv = async () => {
-    if (!activeInternshipId) return;
+  const handleExportCsv = async (ids = null) => {
+    const idsToExport = ids || (activeInternshipId ? [activeInternshipId] : []);
+    if (idsToExport.length === 0) return;
     setDiraeActionLoading('export');
     setExportError('');
 
     try {
-      const exportResponse = await documentService.exportDiraeDocumentPackages([activeInternshipId]);
+      const exportResponse = await documentService.exportDiraeDocumentPackages(idsToExport);
       downloadBlob(exportResponse.blob, exportResponse.filename);
       showToast({
         type: 'success',
         title: 'Exportación local generada',
-        message: 'El CSV fue generado y el expediente quedó marcado como exportado localmente.',
+        message: 'El CSV fue generado y el/los expediente(s) marcado(s) como exportado(s) localmente.',
       });
+      setSelectedIds([]);
       await refreshActiveExpediente();
+      await loadAllInternships();
     } catch (error) {
+      console.error('Error exporting DIRAE CSV:', error);
       const detail = error.response?.data?.detail;
-      const reasons = detail?.internships?.[0]?.reasons || [];
-      const readableReasons = reasons.map((reason) => PACKAGE_REASONS[reason] || reason).join(' ');
-      setExportError(readableReasons || getErrorMessage(error, 'No se pudo exportar el expediente.'));
+      console.error('Error detail:', detail);
+      // detail = { message: string, internships: [{ internship_id, reasons: string[] }] }
+      const internshipErrors = detail?.internships || [];
+      const allReasons = internshipErrors.flatMap((i) => i.reasons || []);
+      const uniqueReasons = [...new Set(allReasons)];
+      const readableReasons = uniqueReasons
+        .map((reason) => PACKAGE_REASONS[reason] || reason)
+        .join(' ');
+      setExportError(
+        readableReasons ||
+        (typeof detail?.message === 'string' ? detail.message : null) ||
+        getErrorMessage(error, 'No se pudo exportar el expediente.')
+      );
     } finally {
       setDiraeActionLoading('');
     }
@@ -291,6 +420,7 @@ export const SecretaryDashboardPage = () => {
         message: 'El estado del expediente DIRAE cambió a revisión local.',
       });
       await refreshActiveExpediente();
+      await loadAllInternships();
     } catch (error) {
       setExportError(getErrorMessage(error, 'No se pudo iniciar la revisión DIRAE.'));
     } finally {
@@ -317,6 +447,7 @@ export const SecretaryDashboardPage = () => {
         message: 'El expediente quedó observado para rectificación documental.',
       });
       await refreshActiveExpediente();
+      await loadAllInternships();
     } catch (error) {
       setExportError(getErrorMessage(error, 'No se pudo reabrir el expediente.'));
     } finally {
@@ -355,6 +486,7 @@ export const SecretaryDashboardPage = () => {
         message: 'El documento administrativo fue cargado al expediente.',
       });
       await refreshActiveExpediente();
+      await loadAllInternships();
     } catch (error) {
       setUploadError(getErrorMessage(error, 'No se pudo adjuntar el documento.'));
     } finally {
@@ -409,9 +541,8 @@ export const SecretaryDashboardPage = () => {
           </div>
 
           <div className="mt-6 rounded-2xl border border-sky-100 bg-sky-50 p-4 text-sm font-semibold text-sky-800">
-            El backend actual no entrega listado global para Secretaría. Esta vista opera
-            expedientes por ID y consume la política backend: documentos sensibles no se
-            listan ni descargan para este rol.
+            Bandeja de entrada global para Secretaría de Carrera. Desde aquí puede listar, buscar,
+            filtrar y exportar expedientes a DIRAE en lote.
           </div>
         </section>
 
@@ -435,12 +566,26 @@ export const SecretaryDashboardPage = () => {
           </section>
         )}
 
-        {!loading && packageData && packageMatchesExportability && (
+        {!loading && packageData && (
           <div className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
             <section className="space-y-6">
               <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveInternshipId(null);
+                        setPackageData(null);
+                        setInternship(null);
+                        setSelectedIds([]);
+                        loadAllInternships();
+                      }}
+                      className="mb-3 inline-flex items-center gap-1 text-xs font-black text-gray-500 hover:text-[#d22864] transition"
+                    >
+                      <ArrowLeft className="h-3 w-3" />
+                      Volver a la bandeja
+                    </button>
                     <p className="text-xs font-black uppercase tracking-widest text-gray-400">
                       Expediente #{activeInternshipId}
                     </p>
@@ -476,17 +621,55 @@ export const SecretaryDashboardPage = () => {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
-                      Documentos visibles para Secretaría
-                    </p>
+              {/* Tab Navigation */}
+              <div className="mt-6 flex border-b border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('documents')}
+                  className={`px-6 py-3 text-sm font-bold border-b-2 transition ${
+                    activeTab === 'documents'
+                      ? 'border-[#d22864] text-[#d22864]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Documentos y Diapositivas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('registration')}
+                  className={`px-6 py-3 text-sm font-bold border-b-2 transition ${
+                    activeTab === 'registration'
+                      ? 'border-[#d22864] text-[#d22864]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Ficha de Inscripción
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('evaluations')}
+                  className={`px-6 py-3 text-sm font-bold border-b-2 transition ${
+                    activeTab === 'evaluations'
+                      ? 'border-[#d22864] text-[#d22864]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Evaluaciones
+                </button>
+              </div>
+
+              {activeTab === 'documents' && (
+                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+                        Documentos visibles para Secretaría
+                      </p>
                     <h3 className="mt-1 text-xl font-black text-gray-900">
                       Revisión documental
                     </h3>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-4 lg:min-w-[680px]">
+                  <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[500px]">
                     <input
                       value={documentSearch}
                       onChange={(event) => setDocumentSearch(event.target.value)}
@@ -512,15 +695,6 @@ export const SecretaryDashboardPage = () => {
                       <option value="uploaded">Cargado</option>
                       <option value="approved">Aprobado</option>
                       <option value="observed">Observado</option>
-                    </select>
-                    <select
-                      value={exportabilityFilter}
-                      onChange={(event) => setExportabilityFilter(event.target.value)}
-                      className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm font-bold outline-none focus:border-[#d22864]/30"
-                    >
-                      <option value="all">Exportabilidad</option>
-                      <option value="exportable">Exportable</option>
-                      <option value="blocked">No exportable</option>
                     </select>
                   </div>
                 </div>
@@ -555,6 +729,238 @@ export const SecretaryDashboardPage = () => {
                   ))}
                 </div>
               </div>
+              )}
+
+              {/* Pestaña 2: Ficha de Inscripción */}
+              {activeTab === 'registration' && (
+                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm space-y-6">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Ficha de inscripción</p>
+                    <h3 className="mt-1 text-xl font-black text-gray-900">Datos registrados de la práctica</h3>
+                  </div>
+
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {/* Sección Empresa */}
+                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center gap-2">
+                        <Building2 size={16} className="text-[#d22864]" />
+                        Organización / Empresa
+                      </h4>
+                      <div className="space-y-3 text-sm">
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Nombre</span>
+                          <span className="font-semibold text-gray-800">{internship?.org_name || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Dirección</span>
+                          <span className="font-semibold text-gray-800">{internship?.internship_address || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Ciudad</span>
+                          <span className="font-semibold text-gray-800">{internship?.city || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Teléfono</span>
+                          <span className="font-semibold text-gray-800">{internship?.org_phone || 'No registrado'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección Supervisor */}
+                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center gap-2">
+                        <User size={16} className="text-[#d22864]" />
+                        Supervisor/a de Práctica
+                      </h4>
+                      <div className="space-y-3 text-sm">
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Nombre</span>
+                          <span className="font-semibold text-gray-800">{internship?.supervisor_name || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Correo Electrónico</span>
+                          <span className="font-semibold text-gray-800">{internship?.supervisor_email || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Teléfono</span>
+                          <span className="font-semibold text-gray-800">{internship?.supervisor_phone || 'No registrado'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Cargo / Función</span>
+                          <span className="font-semibold text-gray-800">{internship?.supervisor_role || 'No registrado'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección Detalles de Práctica */}
+                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100 md:col-span-2">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center gap-2">
+                        <FileText size={16} className="text-[#d22864]" />
+                        Detalles del Proceso
+                      </h4>
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Tipo de Práctica</span>
+                          <span className="font-semibold text-gray-800">{internship?.internship_type || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Modalidad</span>
+                          <span className="font-semibold text-gray-800">{internship?.modality || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Período</span>
+                          <span className="font-semibold text-gray-800">{internship?.internship_period || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Horario de Trabajo</span>
+                          <span className="font-semibold text-gray-800">{internship?.schedule || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Horas Semanales</span>
+                          <span className="font-semibold text-gray-800">{internship?.working_hours || '-'} hrs</span>
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-gray-400">Fechas</span>
+                          <span className="font-semibold text-gray-800">
+                            {internship?.start_date ? formatDate(internship.start_date) : '-'} — {internship?.end_date ? formatDate(internship.end_date) : '-'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Pestaña 3: Evaluaciones */}
+              {activeTab === 'evaluations' && (
+                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm space-y-6">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Evaluaciones del Proceso</p>
+                    <h3 className="mt-1 text-xl font-black text-gray-900">Autoevaluación Estudiante y Evaluación Supervisor</h3>
+                  </div>
+
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    {/* Autoevaluación Alumno */}
+                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <User size={16} className="text-[#d22864]" />
+                          Autoevaluación Alumno
+                        </span>
+                        {selfEvaluationForm?.evaluation ? (
+                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
+                            Entregada
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
+                            Pendiente
+                          </span>
+                        )}
+                      </h4>
+
+                      {selfEvaluationForm?.evaluation ? (
+                        <div className="space-y-4">
+                          <div className="space-y-3">
+                            {selfEvaluationForm.criteria?.map((criterion) => {
+                              const score = selfEvaluationForm.evaluation.responses[criterion.key];
+                              return (
+                                <div key={criterion.key} className="bg-white p-3 rounded-xl border border-gray-100 flex items-center justify-between gap-4 text-xs">
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-gray-800">{criterion.label}</p>
+                                    <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{criterion.description}</p>
+                                  </div>
+                                  <span className="bg-[#fff0f6] text-[#d22864] font-black h-8 w-8 rounded-lg flex items-center justify-center text-sm shadow-xs flex-shrink-0">
+                                    {score || '-'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {selfEvaluationForm.evaluation.observations && (
+                            <div className="bg-white p-3 rounded-xl border border-gray-100 text-xs">
+                              <span className="block font-bold text-gray-400 uppercase tracking-wide mb-1">Observaciones / Comentarios:</span>
+                              <p className="text-gray-600 italic">“{selfEvaluationForm.evaluation.observations}”</p>
+                            </div>
+                          )}
+                          <div className="text-[10px] text-gray-400 font-semibold">
+                            Fecha de envío: {selfEvaluationForm.evaluation.submitted_at ? formatDateTime(selfEvaluationForm.evaluation.submitted_at) : '-'}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm font-semibold text-gray-500 italic text-center py-8">
+                          El estudiante aún no ha completado la autoevaluación.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Evaluación Supervisor */}
+                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Building2 size={16} className="text-[#d22864]" />
+                          Evaluación Supervisor
+                        </span>
+                        {supervisorEvaluation ? (
+                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
+                            Entregada
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
+                            Pendiente
+                          </span>
+                        )}
+                      </h4>
+
+                      {supervisorEvaluation ? (
+                        <div className="space-y-4">
+                          <div className="space-y-3">
+                            {Object.entries(SUPERVISOR_CRITERIA_LABELS).map(([key, info]) => {
+                              const score = supervisorEvaluation.criteria_scores[key];
+                              return (
+                                <div key={key} className="bg-white p-3 rounded-xl border border-gray-100 flex items-center justify-between gap-4 text-xs">
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-gray-800">{info.label}</p>
+                                    <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{info.desc}</p>
+                                  </div>
+                                  <span className="bg-[#fff0f6] text-[#d22864] font-black h-8 w-8 rounded-lg flex items-center justify-center text-sm shadow-xs flex-shrink-0">
+                                    {score || '-'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="bg-white p-3 rounded-xl border border-gray-100 text-xs space-y-2">
+                            <div>
+                              <span className="block font-bold text-gray-400 uppercase tracking-wide mb-1">Recomendación:</span>
+                              <span className={`inline-flex rounded-full px-2.5 py-0.5 font-bold ${
+                                supervisorEvaluation.recommendation === 'recommended' ? 'bg-green-50 text-green-700' :
+                                supervisorEvaluation.recommendation === 'recommended_with_observations' ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'
+                              }`}>
+                                {RECOMMENDATION_LABELS[supervisorEvaluation.recommendation] || supervisorEvaluation.recommendation}
+                              </span>
+                            </div>
+                            {supervisorEvaluation.observations && (
+                              <div>
+                                <span className="block font-bold text-gray-400 uppercase tracking-wide mb-1">Observaciones / Comentarios:</span>
+                                <p className="text-gray-600 italic">“{supervisorEvaluation.observations}”</p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-gray-400 font-semibold">
+                            Evaluador: {supervisorEvaluation.supervisor_name_snapshot} ({supervisorEvaluation.supervisor_email_snapshot})<br />
+                            Fecha de envío: {supervisorEvaluation.submitted_at ? formatDateTime(supervisorEvaluation.submitted_at) : '-'}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm font-semibold text-gray-500 italic text-center py-8">
+                          El supervisor aún no ha completado la evaluación de la práctica.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
 
             <aside className="space-y-6">
@@ -587,11 +993,165 @@ export const SecretaryDashboardPage = () => {
           </div>
         )}
 
-        {!loading && packageData && !packageMatchesExportability && (
-          <section className="mt-8 rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
-            <p className="text-sm font-black uppercase tracking-widest text-gray-400">
-              El expediente cargado no coincide con el filtro de exportabilidad seleccionado.
-            </p>
+        {!loading && !activeInternshipId && (
+          <section className="mt-8 space-y-6">
+            {/* Filtros de la bandeja global */}
+            <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center flex-1">
+                <div className="relative max-w-md w-full">
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={globalSearch}
+                    onChange={(e) => setGlobalSearch(e.target.value)}
+                    placeholder="Buscar por estudiante, RUT u organización"
+                    className="w-full rounded-2xl border border-gray-100 bg-gray-50 py-2.5 pl-10 pr-4 text-xs font-semibold text-gray-800 outline-none focus:border-[#d22864]/30 focus:bg-white transition"
+                  />
+                </div>
+                <select
+                  value={degreeFilter}
+                  onChange={(e) => setDegreeFilter(e.target.value)}
+                  className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                >
+                  <option value="all">Todas las carreras</option>
+                  {uniqueDegrees.map((deg) => (
+                    <option key={deg} value={deg}>{deg}</option>
+                  ))}
+                </select>
+                <select
+                  value={diraeStatusFilter}
+                  onChange={(e) => setDiraeStatusFilter(e.target.value)}
+                  className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                >
+                  <option value="all">Todos los estados DIRAE</option>
+                  <option value="not_started">No iniciado</option>
+                  <option value="in_review">En revisión local</option>
+                  <option value="observed">Observado</option>
+                  <option value="ready">Listo para exportar</option>
+                  <option value="exported">Exportado a DIRAE</option>
+                </select>
+              </div>
+
+              {/* Botón de exportación masiva */}
+              <button
+                type="button"
+                onClick={() => handleExportCsv(selectedIds)}
+                disabled={selectedIds.length === 0 || diraeActionLoading === 'export'}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-5 py-3 text-xs font-black text-white shadow-md shadow-[#d22864]/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
+              >
+                {diraeActionLoading === 'export' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                Exportar Lote ({selectedIds.length})
+              </button>
+            </div>
+
+            {/* Listado / Tabla */}
+            <div className="rounded-3xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+              {globalLoading ? (
+                <div className="py-20 text-center">
+                  <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#d22864]" />
+                  <p className="mt-3 text-xs font-black uppercase tracking-widest text-gray-400">Cargando bandeja global...</p>
+                </div>
+              ) : filteredInternships.length === 0 ? (
+                <div className="py-20 text-center text-gray-400">
+                  <FileText className="mx-auto h-12 w-12 text-gray-300" />
+                  <p className="mt-4 text-sm font-black uppercase tracking-wider text-gray-500">No se encontraron expedientes</p>
+                  <p className="mt-1 text-xs text-gray-400">Asegúrate de que existan prácticas finalizadas o en revisión local.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/55 text-[10px] font-black uppercase tracking-wider text-gray-400">
+                        <th className="py-4 px-6 w-12">
+                          <input
+                            type="checkbox"
+                            disabled={readyIdsInCurrentFilter.length === 0}
+                            checked={allReadySelected}
+                            onChange={() => {
+                              if (allReadySelected) {
+                                setSelectedIds(prev => prev.filter(id => !readyIdsInCurrentFilter.includes(id)));
+                              } else {
+                                setSelectedIds(prev => [...new Set([...prev, ...readyIdsInCurrentFilter])]);
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-[#d22864] focus:ring-[#d22864]"
+                          />
+                        </th>
+                        <th className="py-4 px-6">ID / Estudiante</th>
+                        <th className="py-4 px-6">Carrera</th>
+                        <th className="py-4 px-6">Organización / Tipo</th>
+                        <th className="py-4 px-6">Estado Práctica</th>
+                        <th className="py-4 px-6">Expediente DIRAE</th>
+                        <th className="py-4 px-6 text-center">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm">
+                      {filteredInternships.map((item) => {
+                        const diraeStatusInfo = DIRAE_STATUS[item.dirae_status] || DIRAE_STATUS.not_started;
+                        const isSelectable = item.dirae_status === 'ready';
+
+                        return (
+                          <tr key={item.id} className="hover:bg-gray-50/50 transition">
+                            <td className="py-4 px-6">
+                              <input
+                                type="checkbox"
+                                disabled={!isSelectable}
+                                checked={selectedIds.includes(item.id)}
+                                onChange={() => {
+                                  setSelectedIds(prev =>
+                                    prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
+                                  );
+                                }}
+                                className="h-4 w-4 rounded border-gray-300 text-[#d22864] focus:ring-[#d22864] disabled:opacity-40 disabled:cursor-not-allowed"
+                              />
+                            </td>
+                            <td className="py-4 px-6">
+                              <div>
+                                <p className="font-bold text-gray-900">{item.student ? `${item.student.first_name} ${item.student.last_name}` : 'Estudiante sin nombre'}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">ID: #{item.id} · RUT: {item.student?.rut || 'Sin RUT'}</p>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className="text-xs text-gray-500 font-semibold">{item.student?.degree || 'Sin carrera'}</span>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div>
+                                <p className="font-bold text-gray-800">{item.org_name}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">{item.internship_type}</p>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div>
+                                <span className="inline-flex rounded-full bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                                  {COMPLETION_STATUS[item.completion_status] || item.completion_status}
+                                </span>
+                                {item.final_result === 'passed' && (
+                                  <span className="ml-1 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Aprobada</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${diraeStatusInfo.className}`}>
+                                {diraeStatusInfo.label}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <button
+                                type="button"
+                                onClick={() => loadExpediente(item.id)}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-gray-50 hover:bg-[#fff0f6] hover:text-[#d22864] px-4 py-2 text-xs font-black text-gray-700 transition"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                                Revisar
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </section>
         )}
       </main>
@@ -698,7 +1258,7 @@ const DocumentCard = ({
             value={reviewComment}
             onChange={(event) => onReviewCommentChange(event.target.value)}
             placeholder="Comentario de revisión"
-            className="mt-3 h-24 w-full resize-none rounded-2xl border border-gray-100 bg-white p-3 text-sm font-semibold outline-none focus:border-[#d22864]/30"
+            className="mt-3 h-24 w-full resize-none rounded-2xl border border-gray-100 bg-white p-3 text-sm font-semibold text-gray-800 outline-none focus:border-[#d22864]/30"
           />
           {reviewError && <p className="mt-2 text-sm font-bold text-red-600">{reviewError}</p>}
           <button
@@ -767,7 +1327,7 @@ const DiraePackagePanel = ({
     <div className="mt-5 space-y-3">
       <button
         type="button"
-        onClick={onExport}
+        onClick={() => onExport()}
         disabled={!packageData.exportable || actionLoading === 'export'}
         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:bg-gray-300"
       >
@@ -824,7 +1384,7 @@ const ActionBox = ({ label, placeholder, value, loading, onChange, onSubmit, ico
       value={value}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
-      className="mt-2 h-20 w-full resize-none rounded-xl border border-gray-100 bg-white p-3 text-sm font-semibold outline-none focus:border-[#d22864]/30"
+      className="mt-2 h-20 w-full resize-none rounded-xl border border-gray-100 bg-white p-3 text-sm font-semibold text-gray-800 outline-none focus:border-[#d22864]/30"
     />
     <button
       type="button"
@@ -854,7 +1414,7 @@ const AdministrativeUploadPanel = ({
       <div>
         <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Adjunto administrativo</p>
         <p className="mt-1 text-sm font-semibold text-gray-500">
-          Secretaría solo puede adjuntar tipos administrativos no sensibles autorizados por backend.
+          Secretaría solo puede adjuntar tipos administrativos no sensibles.
         </p>
       </div>
     </div>
