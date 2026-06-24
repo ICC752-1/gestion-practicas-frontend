@@ -1,60 +1,62 @@
-# Gestión Prácticas DCI - Frontend
+# Frontend - Gestion de Practicas DCI
 
-Este repositorio contiene el frontend para el sistema de Gestión de Prácticas DCI, construido con [React](https://react.dev/) y [Vite](https://vitejs.dev/).
+React/Vite frontend for the Gestion de Practicas DCI platform.
 
-## Requisitos Previos
-
-Asegúrate de tener instalados los siguientes requerimientos en tu sistema antes de inicializar el proyecto:
-
-- **Node.js**: Se recomienda la versión `22` o superior (puedes usar `nvm install 22` si utilizas Node Version Manager).
-- **npm**: Gestor de paquetes que viene incluido con Node.js.
-
-## Solución de Problemas (Linux)
-
-Si al intentar ejecutar el proyecto en Linux te encuentras con el error `ENOSPC: System limit for number of file watchers reached`, significa que el sistema ha alcanzado el límite de archivos que puede observar al mismo tiempo. Para solucionarlo, ejecuta los siguientes comandos en tu terminal:
+## Local Development
 
 ```bash
-# Aumentar el límite actual de forma inmediata
-sudo sysctl fs.inotify.max_user_watches=524288
-
-# Hacer el cambio permanente para que persista tras reiniciar
-echo "fs.inotify.max_user_watches=524288" | sudo tee -a /etc/sysctl.conf
-sudo sysctl -p
+npm ci
+npm run dev
 ```
 
-## Paso a Paso para Inicializar el Repositorio
+Set the local backend URL in `.env.local`:
 
-Sigue estos pasos para descargar, configurar e iniciar el proyecto de forma local:
+```env
+VITE_API_URL=http://localhost:8000
+```
 
-1. **Ubicarse en el directorio principal**
-   Asegúrate de estar ubicado en la raíz del repositorio (la carpeta `gestion-practicas-frontend`).
+## Verification
 
-2. **Acceder a la carpeta de la aplicación React**
-   El código principal del frontend se encuentra alojado dentro del subdirectorio `practicas-dci`:
-   ```bash
-   cd practicas-dci
-   ```
+```bash
+npm run lint
+npm run build
+```
 
-3. **Instalar las dependencias**
-   Instala todos los paquetes requeridos por el proyecto utilizando `npm`:
-   ```bash
-   npm install
-   ```
+## Docker Image
 
-4. **Ejecutar el servidor de desarrollo**
-   Inicia el entorno de desarrollo que soporta *Hot Module Replacement* (HMR):
-   ```bash
-   npm run dev
-   ```
+The browser API base URL is baked into the Vite build. For the VPS deployment,
+build the image with same-origin API calls:
 
-5. **Abrir la aplicación en tu navegador**
-   Una vez el servidor esté en funcionamiento, puedes ver la aplicación ingresando en tu navegador a la URL que la terminal indique (por defecto, suele ser `http://localhost:5173`).
+```bash
+docker build --build-arg VITE_API_URL=/api -t gestion-practicas-frontend:local .
+```
 
-## Scripts Disponibles
+The runtime Nginx proxy defaults to:
 
-Dentro del directorio `practicas-dci`, puedes hacer uso de los siguientes comandos de `npm`:
+```text
+API_UPSTREAM=http://backend:8000
+```
 
-- `npm run dev`: Inicia el servidor de desarrollo local.
-- `npm run build`: Compila la aplicación y la optimiza para su despliegue en producción.
-- `npm run lint`: Ejecuta el linter (ESLint) para analizar el código en busca de errores o problemas de formato.
-- `npm run preview`: Levanta un servidor local que sirve los archivos estáticos previamente compilados con `build` para poder previsualizar cómo se verá en producción.
+Override `API_UPSTREAM` only if the backend service name or port changes inside
+the Docker network.
+
+## CI/CD
+
+CI runs lint, build, and a Docker image build check.
+
+CD is configured to run from `main`. In the Sprint 10.22 verification, the
+workflow exists in development branches, but it must be accepted or merged into
+`main` before the production deployment can run from the release branch.
+
+The deployment does not use a registry. Instead, it:
+
+1. Builds `gestion-practicas-frontend:<commit_sha>`.
+2. Exports the image with `docker save`.
+3. Copies the compressed image to `/srv/team-b/releases` on the VPS.
+4. Loads and retags it on the VPS as `gestion-practicas-frontend:deploy`.
+5. Restarts the `frontend` service from `/srv/team-b/app/compose.prod.yml`.
+
+For the CD workflow to be effective, the workflow file must be present in
+`main`, the GitHub Actions secrets `VPS_HOST`, `VPS_PORT`, `VPS_USER`,
+`VPS_SSH_KEY` and, preferably, `VPS_KNOWN_HOSTS` must exist, and the deployment
+repository scripts must be available on the server under `/srv/team-b/app`.

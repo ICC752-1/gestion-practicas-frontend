@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-variable-collection-color-placeholder: rgba(150, 150, 150, 1);
+  --color-variable-collection-FICA-primary: rgba(210, 40, 100, 1);
+
+  /* Tokens de registro-practica */
+  --color-brand-dark: #8B1D46;
+  --color-brand-medium: #d22864;
+  --color-brand-light: #B03060;
+  --color-brand-footer: #6B1334;
+
+  /* Tokens de supervisor-flow */
+  --color-ufro-maroon: #a31e4e;
+  --color-ufro-pink: #d22864;
+  --color-ufro-light-gray: #f8f9fa;
+  --color-ufro-footer-start: #d22864;
+  --color-ufro-footer-end: #6e2e8e;
+  --color-ufro-primary: #b02a6b;
+  --color-ufro-secondary: #8c2155;
+  --color-ufro-bg: #f8f9fa;
+  --color-ufro-footer: #9d2561;
+
+  --animate-spin: spin 1s linear infinite;
+  --animate-fade-in: fade-in 1s var(--animation-delay, 0s) ease forwards;
+  --animate-fade-up: fade-up 1s var(--animation-delay, 0s) ease forwards;
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  --animate-shimmer: shimmer 8s infinite;
+
+  @keyframes spin {
+    to { transform: rotate(1turn); }
+  }
+  @keyframes fade-in {
+    0% { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade-up {
+    0% { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes shimmer {
+    0%, 90%, to { background-position: calc(-100% - var(--shimmer-width)) 0; }
+    30%, 60% { background-position: calc(100% + var(--shimmer-width)) 0; }
+  }
+  @keyframes marquee {
+    0% { transform: translate(0); }
+    to { transform: translateX(calc(-100% - var(--gap))); }
+  }
+  @keyframes marquee-vertical {
+    0% { transform: translateY(0); }
+    to { transform: translateY(calc(-100% - var(--gap))); }
+  }
+}
+
+
+@layer base {
+  button,
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    @apply appearance-none bg-transparent border-0 outline-none;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply appearance-none;
+  }
+}
+
+@layer components {
+  .all-\[unset\] {
+    all: unset;
+  }
+}
