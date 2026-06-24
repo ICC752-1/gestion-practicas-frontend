@@ -407,7 +407,7 @@ export const StudentDashboardPage = () => {
     ? `${user.first_name} ${user.last_name}`
     : "Estudiante";
 
-  const canUpload = internships.some(canUploadDocuments);
+  const canUpload = internships.some((internship) => canUploadDocuments(internship));
 
   const hasQualifyingInternship = internships.some(internship => {
     const lifecycle = lifecyclesById[internship.id];
