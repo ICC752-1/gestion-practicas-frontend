@@ -1,28 +1,42 @@
-import { useState } from 'react';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Loader2, AlertCircle, Clock, ArrowRight } from 'lucide-react';
+
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import Dashboard from '../../components/CoordinatorDashboard/Dashboard';
 import { useCoordinatorDashboard } from '../../hooks/useCoordinatorDashboard';
-
 import { useAuth } from '../../context/useAuth';
+import { getDisplayRoleForRoles } from '../../services/roleRouting';
+import { schedulingService } from '../../services/schedulingService';
 
 export const CoordinatorDashboardPage = () => {
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('submitted');
   const { user } = useAuth();
   const { stats, students, loading, error, refreshData } = useCoordinatorDashboard(statusFilter);
 
-  const userName = user ? `${user.first_name} ${user.last_name}` : "Coordinador";
-  
-  // Forzamos el rol a "Coordinador" para la visualización, independientemente de cómo venga del backend,
-  // ya que el usuario solicitó mantener este nombre de rol específicamente.
-  const userRole = "Coordinador";
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+  const userName = user ? `${user.first_name} ${user.last_name}` : "Encargado";
+  const userRole = getDisplayRoleForRoles(user?.roles);
+
+  const fetchSchedulingMeta = async () => {
+    try {
+      const requests = await schedulingService.getPendingRequests();
+      setPendingRequestsCount(requests.length);
+    } catch (e) {
+      console.error("Failed to load scheduling meta on dashboard", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchSchedulingMeta();
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-ufro-bg">
       <UserHeader userName={userName} userRole={userRole} />
       
-      <main className="flex-grow container mx-auto px-4 py-12 max-w-6xl">
+      <main className="flex-grow container mx-auto px-4 py-8 max-w-6xl space-y-6">
         {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
             <Loader2 className="w-12 h-12 text-ufro-primary animate-spin" />
@@ -48,6 +62,7 @@ export const CoordinatorDashboardPage = () => {
             students={students}
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
+            pendingRequestsCount={pendingRequestsCount}
           />
         )}
       </main>

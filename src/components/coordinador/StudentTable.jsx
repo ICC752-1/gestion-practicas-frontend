@@ -1,13 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Inbox, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/useAuth';
+import { getAdminBasePathForRoles } from '../../services/roleRouting';
+import { internshipService } from '../../services/internshipService';
 
 export const StudentTable = ({ students = [] }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const adminBasePath = getAdminBasePathForRoles(user?.roles);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
   const [degreeFilter, setDegreeFilter] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
+  const [openingId, setOpeningId] = useState(null);
 
   // FE4: Normalizar estado
   const getNormalizedStatus = (internship) => {
@@ -19,29 +24,25 @@ export const StudentTable = ({ students = [] }) => {
     const statusLabel = status?.title || status || '';
     const statusStr = String(statusLabel).toLowerCase();
     if (statusStr.includes('revisi') || status === 'in_review') return { label: 'En Revisión', color: 'bg-blue-500', value: 'En Revisión' };
-    if (statusStr.includes('aprob') || status === 'approved') return { label: 'Aprobado', color: 'bg-emerald-500', value: 'Aprobado' };
-    if (statusStr.includes('rechaz') || status === 'rejected') return { label: 'Rechazado', color: 'bg-red-500', value: 'Rechazado' };
+    if (statusStr.includes('aprob') || status === 'approved') return { label: 'Solicitud Aprobada', color: 'bg-emerald-500', value: 'Aprobada' };
+    if (statusStr.includes('rechaz') || status === 'rejected') return { label: 'Rechazada', color: 'bg-red-500', value: 'Rechazada' };
     if (!status || statusStr === 'pendiente' || status === 'submitted' || status === 'submited') return { label: 'Pendiente', color: 'bg-amber-500', value: 'Pendiente' };
     return { label: statusLabel || 'Pendiente', color: 'bg-gray-500', value: statusLabel || 'Pendiente' };
   };
 
   const uniqueDegrees = useMemo(() => {
-    return [...new Set(students.map(s => s.student?.degree).filter(Boolean))];
+    return [...new Set(students.map(s => s.student?.degree || s.student?.cod_degree).filter(Boolean))];
   }, [students]);
 
   const uniqueCompanies = useMemo(() => {
     return [...new Set(students.map(s => s.org_name).filter(Boolean))];
   }, [students]);
 
-  const uniqueStatuses = useMemo(() => {
-    return [...new Set(students.map(s => getNormalizedStatus(s).value).filter(Boolean))];
-  }, [students]);
-
   const filteredStudents = students.filter(s => {
     // FE4: Mapear datos reales (estudiante, organización, ciudad, región, fechas, tipo de práctica)
     const name = s.student ? `${s.student.first_name} ${s.student.last_name}`.toLowerCase() : '';
     const email = s.student?.email?.toLowerCase() || '';
-    const degree = s.student?.degree?.toLowerCase() || '';
+    const degree = (s.student?.degree || s.student?.cod_degree || '').toLowerCase();
     const org = s.org_name?.toLowerCase() || '';
     
     // Datos FE4 mapeados para búsqueda (sin mostrar columnas en tabla)
@@ -65,14 +66,25 @@ export const StudentTable = ({ students = [] }) => {
       endDate.includes(term)
     );
 
-    const normalizedStatus = getNormalizedStatus(s).value;
-
-    const matchesStatus = statusFilter === '' || normalizedStatus === statusFilter;
-    const matchesDegree = degreeFilter === '' || s.student?.degree === degreeFilter;
+    const matchesDegree = degreeFilter === '' || (s.student?.degree || s.student?.cod_degree) === degreeFilter;
     const matchesCompany = companyFilter === '' || s.org_name === companyFilter;
 
-    return matchesSearch && matchesStatus && matchesDegree && matchesCompany;
+    return matchesSearch && matchesDegree && matchesCompany;
   });
+
+  const handleOpenDetails = async (internship) => {
+    setOpeningId(internship.id);
+    try {
+      await internshipService.startReview(internship.id);
+    } catch (error) {
+      console.error('No se pudo iniciar revisión automáticamente:', error);
+    } finally {
+      setOpeningId(null);
+      navigate(`${adminBasePath}/practica/${internship.id}`, {
+        state: { student: internship.student },
+      });
+    }
+  };
 
   if (students.length === 0) {
     return (
@@ -81,7 +93,7 @@ export const StudentTable = ({ students = [] }) => {
           <Inbox className="w-10 h-10 text-gray-300" />
         </div>
         <div>
-          <h3 className="text-xl font-bold text-gray-800">No hay prácticas registradas aún</h3>
+          <h3 className="text-xl font-bold text-gray-800">No hay solicitudes registradas aún</h3>
           <p className="text-gray-500 max-w-xs mx-auto">Cuando los estudiantes envíen sus solicitudes de práctica, aparecerán en esta lista.</p>
         </div>
       </div>
@@ -92,7 +104,7 @@ export const StudentTable = ({ students = [] }) => {
     <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
       <div className="flex flex-col space-y-4 mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
-          <h2 className="text-2xl font-bold text-gray-800">Lista de Estudiantes</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Solicitudes de práctica</h2>
           <div className="relative w-full md:w-96">
             <input
               type="text"
@@ -111,17 +123,6 @@ export const StudentTable = ({ students = [] }) => {
             <Filter size={18} className="mr-2" />
             <span className="text-sm font-medium">Filtros:</span>
           </div>
-          
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-ufro-primary focus:border-ufro-primary block p-2.5"
-          >
-            <option value="">Todos los Estados</option>
-            {uniqueStatuses.map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
 
           <select 
             value={degreeFilter}
@@ -145,9 +146,9 @@ export const StudentTable = ({ students = [] }) => {
             ))}
           </select>
           
-          {(statusFilter || degreeFilter || companyFilter) && (
+          {(degreeFilter || companyFilter) && (
             <button 
-              onClick={() => { setStatusFilter(''); setDegreeFilter(''); setCompanyFilter(''); }}
+              onClick={() => { setDegreeFilter(''); setCompanyFilter(''); }}
               className="text-sm text-ufro-primary font-medium hover:underline ml-auto"
             >
               Limpiar filtros
@@ -163,7 +164,7 @@ export const StudentTable = ({ students = [] }) => {
               <th className="pb-4 text-left font-bold text-gray-800">Estudiante</th>
               <th className="pb-4 text-left font-bold text-gray-800">Carrera</th>
               <th className="pb-4 text-left font-bold text-gray-800">Empresa</th>
-              <th className="pb-4 text-center font-bold text-gray-800">Estado</th>
+              <th className="pb-4 text-center font-bold text-gray-800">Estado de solicitud</th>
               <th className="pb-4 text-right font-bold text-gray-800">Acciones</th>
             </tr>
           </thead>
@@ -184,7 +185,7 @@ export const StudentTable = ({ students = [] }) => {
                     </td>
 
                     <td className="py-5 px-4">
-                      <p className="text-sm text-gray-700 font-medium">{student.student?.degree || 'N/A'}</p>
+                      <p className="text-sm text-gray-700 font-medium">{student.student?.degree || student.student?.cod_degree || 'N/A'}</p>
                     </td>
 
                     <td className="py-5 px-4">
@@ -202,10 +203,11 @@ export const StudentTable = ({ students = [] }) => {
 
                     <td className="py-5 px-4 text-right">
                       <button
-                        onClick={() => navigate(`/coordinador/practica/${student.id}`, { state: { student: student.student } })}
+                        onClick={() => handleOpenDetails(student)}
+                        disabled={openingId === student.id}
                         className="text-ufro-primary font-bold hover:underline text-sm transition-all"
                       >
-                        Ver detalles
+                        {openingId === student.id ? 'Abriendo...' : 'Ver detalles'}
                       </button>
                     </td>
                   </tr>
@@ -214,7 +216,7 @@ export const StudentTable = ({ students = [] }) => {
             ) : (
               <tr>
                 <td colSpan="5" className="py-8 text-center text-gray-500">
-                  No se encontraron estudiantes que coincidan con los filtros.
+                  No se encontraron solicitudes que coincidan con los filtros.
                 </td>
               </tr>
             )}

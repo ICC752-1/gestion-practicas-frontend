@@ -10,7 +10,7 @@ export default function Dashboard({ students, onNavigateToManagement, onNavigate
         : "Usuario";
 
   const stats = [
-    { label: 'Total', value: students.length, icon: Users, color: 'text-[#B5305F]' },
+    { label: 'Solicitudes totales', value: students.length, icon: Users, color: 'text-[#B5305F]' },
     { label: 'En curso', value: students.filter(s => s.estado === 'En curso').length, icon: Clock, color: 'text-red-500' },
     { label: 'Pendientes', value: students.filter(s => s.estado === 'Pendiente Inicio' || s.estado === 'Pendiente Finalización').length, icon: AlertCircle, color: 'text-[#B5305F]' },
     { label: 'Finalizadas', value: students.filter(s => s.estado === 'Finalizada').length, icon: CheckCircle, color: 'text-red-500' },
@@ -31,7 +31,7 @@ export default function Dashboard({ students, onNavigateToManagement, onNavigate
   return (
     <div className="space-y-10 lg:px-12 py-8">
       <header>
-        <h2 className="text-3xl font-bold text-[#B5305F] mb-1">Panel Coordinador</h2>
+        <h2 className="text-3xl font-bold text-[#B5305F] mb-1">Panel Encargado</h2>
           <p className="text-xl text-gray-400 font-medium italic">
               Bienvenido/a, {userName}
           </p>
@@ -68,7 +68,7 @@ export default function Dashboard({ students, onNavigateToManagement, onNavigate
             <ClipboardCheck className="w-7 h-7 text-[#B5305F] group-hover:text-white transition-colors" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-800">Gestión de Prácticas</h3>
+            <h3 className="text-lg font-bold text-gray-800">Gestión de solicitudes de práctica</h3>
             <p className="text-sm text-gray-400">Aprobar o rechazar solicitudes</p>
           </div>
         </motion.button>
@@ -92,7 +92,7 @@ export default function Dashboard({ students, onNavigateToManagement, onNavigate
       {/* Students Table */}
       <section className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <h3 className="text-2xl font-bold text-[#B5305F]">Lista de Estudiantes</h3>
+          <h3 className="text-2xl font-bold text-[#B5305F]">Solicitudes de práctica</h3>
           <div className="relative w-full md:w-96">
             <input 
               type="text" 
@@ -110,7 +110,7 @@ export default function Dashboard({ students, onNavigateToManagement, onNavigate
                 <th className="px-8 py-4 text-left text-sm font-bold text-gray-800">Estudiante</th>
                 <th className="px-8 py-4 text-left text-sm font-bold text-gray-800">Carrera</th>
                 <th className="px-8 py-4 text-left text-sm font-bold text-gray-800">Empresa</th>
-                <th className="px-8 py-4 text-left text-sm font-bold text-gray-800">Estado</th>
+                <th className="px-8 py-4 text-left text-sm font-bold text-gray-800">Estado de solicitud</th>
                 <th className="px-8 py-4 text-left text-sm font-bold text-gray-800">Acciones</th>
               </tr>
             </thead>

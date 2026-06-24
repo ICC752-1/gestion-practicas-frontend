@@ -42,7 +42,7 @@ export const LandingPage = () => {
                 transition={{ delay: 0.2 }}
                 className="text-lg md:text-xl text-white/90 mb-12 max-w-3xl mx-auto leading-relaxed"
               >
-                Plataforma integral para estudiantes, coordinadores y supervisores que facilita 
+                Plataforma integral para estudiantes, encargados y supervisores que facilita 
                 todo el proceso de prácticas de manera digital y eficiente.
               </motion.p>
               <motion.div 
@@ -110,7 +110,7 @@ export const LandingPage = () => {
                 </ul>
               </motion.div>
               <motion.div initial={{ x: 20, opacity: 0 }} whileInView={{ x: 0, opacity: 1 }} viewport={{ once: true }}>
-                <h3 className="text-2xl font-bold mb-8">Para Coordinadores y Supervisores</h3>
+                <h3 className="text-2xl font-bold mb-8">Para Encargados y Supervisores</h3>
                 <ul className="space-y-6">
                   {["Gestiona todas las prácticas desde un panel centralizado", "Revisa y aprueba documentos de manera eficiente", "Completa evaluaciones directamente en la plataforma", "Genera reportes y estadísticas en tiempo real"].map((item, idx) => (
                     <li key={idx} className="flex items-start gap-4">

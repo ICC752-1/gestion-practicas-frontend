@@ -66,6 +66,8 @@ export const AuthProvider = ({ children }) => {
         } catch (err) {
             if (err.response?.status === 401) {
                 setError("Credenciales inválidas");
+            } else if (err.response?.data?.detail === "TEMPORARY_PASSWORD_CHANGE_REQUIRED") {
+                setError(null);
             } else if (!err.response) {
                 setError("Servidor no disponible");
             } else {
@@ -81,10 +83,7 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         await authService.logout();
 
-        setUser(null);
-        setToken(null);
-
-        window.location.href = "/landing";
+        window.location.replace("/landing");
     };
 
     const handleOAuthCallback = useCallback(async () => {
@@ -103,6 +102,7 @@ export const AuthProvider = ({ children }) => {
         }
 
         localStorage.setItem("token", accessToken);
+        localStorage.removeItem("refresh_token");
         setToken(accessToken);
 
         let userData;

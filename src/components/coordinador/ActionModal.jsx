@@ -22,9 +22,9 @@ export const ActionModal = ({
   };
 
   const actionLabels = {
-    approve: approveStartsReview ? 'Enviar a Revisión' : 'Aprobar Práctica',
-    reject: 'Rechazar Práctica',
-    derive: 'Derivar Práctica',
+    approve: approveStartsReview ? 'Enviar a revisión' : 'Aprobar solicitud',
+    reject: 'Rechazar solicitud',
+    derive: 'Derivar solicitud',
   };
 
   const actionColors = {
@@ -48,9 +48,9 @@ export const ActionModal = ({
   const actionDescriptions = {
     approve: approveStartsReview
       ? 'La solicitud pasará de Pendiente a En revisión. Esta acción no constituye la aprobación final de la práctica.'
-      : '¿Está seguro de que desea aprobar esta práctica? La solicitud cambiará al estado Aprobada.',
-    reject: 'Esta acción rechazará la práctica de forma definitiva. Es obligatorio que ingrese un motivo claro para el rechazo.',
-    derive: 'Esta acción derivará la práctica a revisión por la Dirección de Registro Académico Estudiantil (DIRAE). Es obligatorio ingresar un motivo.',
+      : '¿Está seguro de que desea aprobar esta solicitud? La práctica quedará habilitada administrativamente para continuar su ejecución.',
+    reject: 'Esta acción rechazará la solicitud de forma definitiva. Es obligatorio que ingrese un motivo claro para el rechazo.',
+    derive: 'Esta acción derivará la solicitud a revisión por la Dirección de Registro Académico Estudiantil (DIRAE). Es obligatorio ingresar un motivo.',
   };
 
   const isCommentRequired = actionType === 'reject' || actionType === 'derive';
@@ -89,21 +89,23 @@ export const ActionModal = ({
             {actionDescriptions[actionType]}
           </p>
 
-          {isCommentRequired && (
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold text-gray-700 flex justify-between">
-                <span>Motivo / Comentario</span>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-gray-700 flex justify-between">
+              <span>Motivo / Comentario</span>
+              {isCommentRequired ? (
                 <span className="text-red-500 text-xs font-semibold">Obligatorio</span>
-              </label>
-              <textarea
-                disabled={isLoading}
-                className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#d22864]/30 focus:border-[#d22864] outline-none transition-all resize-none h-32 text-gray-800 placeholder-gray-400 text-sm font-medium shadow-inner"
-                placeholder="Escriba el motivo detallado aquí..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-              />
-            </div>
-          )}
+              ) : (
+                <span className="text-gray-400 text-xs font-semibold">Opcional</span>
+              )}
+            </label>
+            <textarea
+              disabled={isLoading}
+              className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#d22864]/30 focus:border-[#d22864] outline-none transition-all resize-none h-32 text-gray-800 placeholder-gray-400 text-sm font-medium shadow-inner"
+              placeholder={isCommentRequired ? "Escriba el motivo detallado aquí..." : "Comentario u observaciones de la aprobación (opcional)..."}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Actions */}

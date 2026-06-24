@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { authService } from "../../services/authService";
 import { getOAuthErrorMessage } from "../../services/oauthErrors";
-import { getRedirectPathForRoles } from "../../services/roleRouting";
+import {
+    getRedirectPathForRoles,
+    normalizeRoleNames,
+} from "../../services/roleRouting";
 import ficaLogo from "../../assets/logo_fica.jpg";
 import { Header } from "../Header/Header";
 import { Footer } from "../Footer/Footer";
@@ -11,6 +14,10 @@ import { Footer } from "../Footer/Footer";
 export const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordChangeMessage, setPasswordChangeMessage] = useState("");
   const [oauthError, setOauthError] = useState(() => {
       const oauthErrorCode = new URLSearchParams(window.location.search)
           .get("oauth_error");
@@ -32,13 +39,42 @@ export const Login = () => {
 
             const user = await login(email, password);
 
-            const roles = user.roles || [];
+            const roles = normalizeRoleNames(user.roles || []);
             console.log("[DEBUG_LOG] Roles detectados en Login:", roles);
 
             navigate(getRedirectPathForRoles(roles));
 
         } catch (err) {
+            if (err.response?.data?.detail === "TEMPORARY_PASSWORD_CHANGE_REQUIRED") {
+                setRequiresPasswordChange(true);
+                setPasswordChangeMessage("");
+                return;
+            }
             console.error(err);
+        }
+    };
+
+    const handleTemporaryPasswordChange = async (event) => {
+        event.preventDefault();
+        setOauthError("");
+        setPasswordChangeMessage("");
+
+        if (newPassword !== confirmPassword) {
+            setPasswordChangeMessage("Las contraseñas no coinciden.");
+            return;
+        }
+
+        try {
+            await authService.completeTemporaryPassword(email, password, newPassword);
+            setRequiresPasswordChange(false);
+            setPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+            setPasswordChangeMessage("Contraseña definida. Inicia sesión con tu nueva contraseña.");
+        } catch (err) {
+            setPasswordChangeMessage(
+                err.response?.data?.detail || "No se pudo definir la contraseña definitiva."
+            );
         }
     };
 
@@ -62,9 +98,19 @@ export const Login = () => {
             src={ficaLogo}
           />
           <form
-            onSubmit={handleSubmit}
+            onSubmit={requiresPasswordChange ? handleTemporaryPasswordChange : handleSubmit}
             className="flex flex-col items-start gap-9 relative self-stretch w-full flex-[0_0_auto]"
           >
+            {requiresPasswordChange && (
+              <div className="rounded-2xl border border-amber-100 bg-amber-50 px-5 py-4 text-sm font-semibold text-amber-800">
+                La credencial temporal es de un solo uso. Define una contraseña definitiva para habilitar tu cuenta.
+              </div>
+            )}
+            {!requiresPasswordChange && passwordChangeMessage && (
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
+                {passwordChangeMessage}
+              </div>
+            )}
             <div className="flex flex-col items-start gap-[50px] relative self-stretch w-full flex-[0_0_auto]">
               <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
                 <label
@@ -114,7 +160,7 @@ export const Login = () => {
                   htmlFor="password"
                   className="relative self-stretch mt-[-1.00px] font-bold text-black text-[32px] tracking-[0] leading-[normal]"
                 >
-                  Contraseña
+                  {requiresPasswordChange ? "Credencial temporal" : "Contraseña"}
                 </label>
                 <div className="flex h-[65px] items-center gap-2 px-5 py-2.5 relative self-stretch w-full bg-white rounded-[20px] border border-solid border-[#a1a1a1]">
                   <div className="relative flex h-9 w-[38px] items-center justify-center">
@@ -151,13 +197,42 @@ export const Login = () => {
                   />
                 </div>
                   {
-                      (oauthError || error) && (
+                      (oauthError || error || (requiresPasswordChange && passwordChangeMessage)) && (
                           <div className="text-red-500 text-sm mt-2">
-                              {oauthError || error}
+                              {oauthError || (requiresPasswordChange && passwordChangeMessage) || error}
                           </div>
                       )
                   }
               </div>
+              {requiresPasswordChange && (
+                <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    htmlFor="new-password"
+                    className="relative self-stretch mt-[-1.00px] font-bold text-black text-[32px] tracking-[0] leading-[normal]"
+                  >
+                    Nueva contraseña
+                  </label>
+                  <input
+                    id="new-password"
+                    type="password"
+                    required
+                    minLength="8"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    placeholder="Nueva contraseña"
+                    className="flex h-[65px] w-full rounded-[20px] border border-solid border-[#a1a1a1] bg-white px-5 py-2.5 text-xl text-[#666666] outline-none"
+                  />
+                  <input
+                    type="password"
+                    required
+                    minLength="8"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    placeholder="Confirmar nueva contraseña"
+                    className="flex h-[65px] w-full rounded-[20px] border border-solid border-[#a1a1a1] bg-white px-5 py-2.5 text-xl text-[#666666] outline-none"
+                  />
+                </div>
+              )}
             </div>
               <button
                   type="submit"
@@ -165,9 +240,10 @@ export const Login = () => {
                   className="flex w-[444px] h-16 items-center justify-center gap-2.5 p-2.5 relative bg-[#d22864] rounded-[20px] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
               >
   <span className="relative w-fit font-bold text-white text-2xl tracking-[0] leading-[normal]">
-    {loading ? "Ingresando..." : "Iniciar Sesión"}
+    {loading ? "Procesando..." : requiresPasswordChange ? "Definir contraseña" : "Iniciar Sesión"}
   </span>
               </button>
+              {!requiresPasswordChange && (
               <button
                   type="button"
                   className="flex w-[444px] h-16 items-center justify-center gap-3 p-2.5 bg-white border border-gray-300 rounded-[20px] hover:bg-gray-50 transition-colors cursor-pointer"
@@ -182,6 +258,7 @@ export const Login = () => {
         Continuar con Google
     </span>
               </button>
+              )}
             <a
               href="#"
               className="relative w-[444px] h-[29px] font-normal text-black text-2xl text-center tracking-[0] leading-[normal] hover:underline"

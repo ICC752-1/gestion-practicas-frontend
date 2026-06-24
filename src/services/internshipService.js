@@ -46,6 +46,16 @@ export const internshipService = {
     return response.data;
   },
 
+  async getInternshipLifecycle(internshipId) {
+    const response = await api.get(`/internships/${internshipId}/lifecycle-tracking`);
+    return response.data;
+  },
+
+  async getDiraeTracking(internshipId) {
+    const response = await api.get(`/internships/${internshipId}/dirae-tracking`);
+    return response.data;
+  },
+
   async getStudentActions(internshipId) {
     const response = await api.get(`/internships/${internshipId}/student-actions`);
     return response.data;
@@ -66,6 +76,11 @@ export const internshipService = {
     return response.data;
   },
 
+  async startReview(internshipId) {
+    const response = await api.post(`/internships/${internshipId}/start-review`);
+    return response.data;
+  },
+
   async rejectInternship(internshipId, comment) {
     const response = await api.post(`/internships/${internshipId}/reject`, { comment });
     return response.data;
@@ -73,6 +88,19 @@ export const internshipService = {
 
   async deriveInternship(internshipId, comment) {
     const response = await api.post(`/internships/${internshipId}/derive`, { comment });
+    return response.data;
+  },
+
+  async reopenDiraeRectification(internshipId, comment) {
+    const response = await api.post(`/internships/${internshipId}/dirae-reopen`, { comment });
+    return response.data;
+  },
+
+  async grantInternshipException(internshipId, rule, reason) {
+    const response = await api.post(`/internships/${internshipId}/exceptions`, {
+      rule,
+      reason,
+    });
     return response.data;
   },
 }

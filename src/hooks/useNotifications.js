@@ -1,20 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { notificationService } from '../services/notificationService';
 
-const LAST_SEEN_KEY = 'lastSeenNotificationId';
 const DEFAULT_REFRESH_MS = 5000;
 
 export const useNotifications = (limit = 10, enabled = true) => {
   const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [lastSeenId, setLastSeenId] = useState(
-    () => Number(localStorage.getItem(LAST_SEEN_KEY)) || 0
-  );
 
   const fetchNotifications = useCallback(async () => {
     if (!enabled || !localStorage.getItem('token')) {
       setNotifications([]);
+      setUnreadCount(0);
       setError(null);
       setLoading(false);
       return;
@@ -23,11 +21,18 @@ export const useNotifications = (limit = 10, enabled = true) => {
     try {
       setLoading(true);
       const data = await notificationService.getMyNotifications(limit);
-      setNotifications(data);
+      const items = Array.isArray(data) ? data : data?.items || [];
+      const unread = Array.isArray(data)
+        ? items.filter((notification) => !notification.is_read).length
+        : data?.unread_count || 0;
+
+      setNotifications(items);
+      setUnreadCount(unread);
       setError(null);
     } catch (err) {
       if (err.response?.status === 401) {
         setNotifications([]);
+        setUnreadCount(0);
         setError(null);
         return;
       }
@@ -44,7 +49,13 @@ export const useNotifications = (limit = 10, enabled = true) => {
       return;
     }
 
-    fetchNotifications();
+    const timeoutId = window.setTimeout(() => {
+      fetchNotifications();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [enabled, fetchNotifications]);
 
   useEffect(() => {
@@ -72,23 +83,66 @@ export const useNotifications = (limit = 10, enabled = true) => {
     };
   }, [enabled, fetchNotifications]);
 
-  // Marca como vistas las notificaciones actuales (al abrir el panel)
-  const markAsSeen = useCallback(() => {
-    const latestId = notifications.reduce((max, n) => Math.max(max, n.id), 0);
-    if (latestId > lastSeenId) {
-      localStorage.setItem(LAST_SEEN_KEY, String(latestId));
-      setLastSeenId(latestId);
+  const markAllAsRead = useCallback(async () => {
+    if (unreadCount === 0) {
+      return;
     }
-  }, [notifications, lastSeenId]);
 
-  const unseenCount = notifications.filter((n) => n.id > lastSeenId).length;
+    const previousNotifications = notifications;
+    const previousUnreadCount = unreadCount;
+    const readAt = new Date().toISOString();
+
+    setNotifications((current) => current.map((notification) => ({
+      ...notification,
+      is_read: true,
+      read_at: notification.read_at || readAt,
+    })));
+    setUnreadCount(0);
+
+    try {
+      const response = await notificationService.markAllAsRead();
+      setUnreadCount(response.unread_count || 0);
+    } catch (err) {
+      setNotifications(previousNotifications);
+      setUnreadCount(previousUnreadCount);
+      setError(err.response?.data?.detail || err.message || 'Error al marcar notificaciones');
+    }
+  }, [notifications, unreadCount]);
+
+  const markAsRead = useCallback(async (notificationId) => {
+    const target = notifications.find((notification) => notification.id === notificationId);
+    if (!target || target.is_read) {
+      return;
+    }
+
+    const previousNotifications = notifications;
+    const previousUnreadCount = unreadCount;
+    const readAt = new Date().toISOString();
+
+    setNotifications((current) => current.map((notification) => (
+      notification.id === notificationId
+        ? { ...notification, is_read: true, read_at: readAt }
+        : notification
+    )));
+    setUnreadCount((current) => Math.max(0, current - 1));
+
+    try {
+      const response = await notificationService.markAsRead(notificationId);
+      setUnreadCount(response.unread_count || 0);
+    } catch (err) {
+      setNotifications(previousNotifications);
+      setUnreadCount(previousUnreadCount);
+      setError(err.response?.data?.detail || err.message || 'Error al marcar notificación');
+    }
+  }, [notifications, unreadCount]);
 
   return {
     notifications,
     loading,
     error,
-    unseenCount,
-    markAsSeen,
+    unreadCount,
+    markAllAsRead,
+    markAsRead,
     refresh: fetchNotifications,
   };
 };

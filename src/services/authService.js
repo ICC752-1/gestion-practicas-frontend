@@ -27,19 +27,45 @@ export const authService = {
 
     async logout() {
         const refreshToken = localStorage.getItem("refresh_token");
+        const payload = refreshToken ? { refresh_token: refreshToken } : {};
 
-        if (refreshToken) {
-            try {
-                await api.post("/auth/logout", {
-                    refresh_token: refreshToken,
-                });
-            } catch {
-                // El cierre local debe completarse aunque el token ya no sea valido.
-            }
+        try {
+            await api.post("/auth/logout", payload);
+        } catch {
+            // El cierre local debe completarse aunque el token ya no sea valido.
         }
 
         localStorage.removeItem("token");
         localStorage.removeItem("refresh_token");
+    },
+
+    async completeTemporaryPassword(email, temporaryPassword, newPassword) {
+        await api.post("/auth/complete-temporary-password", {
+            email,
+            temporary_password: temporaryPassword,
+            new_password: newPassword,
+        });
+    },
+
+    async getActivationInfo(token) {
+        const response = await api.get("/auth/activation-info", {
+            params: { token },
+        });
+
+        return response.data;
+    },
+
+    async activateAccount(token, newPassword, admissionYear) {
+        const payload = {
+            token,
+            new_password: newPassword,
+        };
+
+        if (admissionYear !== undefined) {
+            payload.admission_year = admissionYear;
+        }
+
+        await api.post("/auth/activate-account", payload);
     },
 
     getGoogleLoginUrl() {

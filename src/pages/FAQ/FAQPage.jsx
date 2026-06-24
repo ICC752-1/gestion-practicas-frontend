@@ -83,7 +83,7 @@ export const FAQPage = () => {
                     >
                       <div className="px-10 pb-10 text-gray-600 leading-relaxed border-t border-gray-50 pt-6">
                         Aquí va la respuesta detallada a la pregunta frecuente. Este sistema está diseñado para facilitar 
-                        el acceso a la información relevante para estudiantes, supervisores y coordinadores en cada etapa 
+                        el acceso a la información relevante para estudiantes, supervisores y encargados en cada etapa 
                         del proceso de práctica profesional.
                       </div>
                     </motion.div>
