@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowRight,
@@ -304,6 +304,13 @@ export const PreRegistrationPage = () => {
             Revisa los prerrequisitos institucionales y completa la inducción. La inducción
             aprobada habilita el acceso al formulario de solicitud.
           </p>
+          <Link
+            to="/requisitos"
+            className="mt-4 inline-flex items-center gap-2 text-sm font-black text-[#d22864] hover:underline"
+          >
+            Ver explicación de requisitos e inducción
+            <ExternalLink size={15} />
+          </Link>
         </div>
 
         {location.state?.reason === 'eligibility-blocked' && (
