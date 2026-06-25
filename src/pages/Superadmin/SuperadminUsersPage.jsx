@@ -116,6 +116,7 @@ export const SuperadminUsersPage = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [statusConfirmationUser, setStatusConfirmationUser] = useState(null);
+  const [roleRemovalConfirmation, setRoleRemovalConfirmation] = useState(null);
   const selectedRoleNames = roles
     .filter((role) => form.role_ids.includes(role.id))
     .map((role) => role.name);
@@ -306,23 +307,38 @@ export const SuperadminUsersPage = () => {
     }
   };
 
-  const handleRemoveRole = async (targetUser, role) => {
+  const handleRequestRemoveRole = (targetUser, role) => {
     const roleData = roles.find((item) => item.name === role);
     if (!roleData) {
       return;
     }
 
-    if (!window.confirm(`¿Confirmas retirar el rol ${role} de ${targetUser.email}?`)) {
+    setRoleRemovalConfirmation({ targetUser, role, roleId: roleData.id });
+    setError('');
+    setMessage('');
+  };
+
+  const handleCancelRemoveRole = () => {
+    if (!saving) {
+      setRoleRemovalConfirmation(null);
+    }
+  };
+
+  const handleConfirmRemoveRole = async () => {
+    if (!roleRemovalConfirmation) {
       return;
     }
+
+    const { targetUser, roleId } = roleRemovalConfirmation;
 
     setSaving(true);
     setError('');
     setMessage('');
 
     try {
-      await removeUserRole(targetUser.id, roleData.id);
+      await removeUserRole(targetUser.id, roleId);
       setMessage('Rol retirado correctamente.');
+      setRoleRemovalConfirmation(null);
       await loadUsers();
     } catch (err) {
       setError(getErrorMessage(err));
@@ -447,7 +463,7 @@ export const SuperadminUsersPage = () => {
                               key={role}
                               type="button"
                               disabled={saving}
-                              onClick={() => handleRemoveRole(item, role)}
+                              onClick={() => handleRequestRemoveRole(item, role)}
                               className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-700 hover:border-red-200 hover:text-red-600"
                               title="Retirar rol"
                             >
@@ -653,6 +669,49 @@ export const SuperadminUsersPage = () => {
                   : statusConfirmationUser.is_active
                     ? 'Desactivar usuario'
                     : 'Reactivar usuario'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {roleRemovalConfirmation && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4 py-6">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+            <p className="text-sm font-black uppercase tracking-wider text-[#d22864]">
+              Confirmar cambio de rol
+            </p>
+            <h2 className="mt-3 text-2xl font-black text-gray-900">
+              Retirar rol
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-gray-600">
+              El usuario perderá los permisos asociados a este rol inmediatamente después de confirmar la acción.
+            </p>
+            <div className="mt-5 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
+              <p className="font-black text-gray-900">
+                {roleRemovalConfirmation.targetUser.first_name} {roleRemovalConfirmation.targetUser.last_name}
+              </p>
+              <p className="text-sm font-semibold text-gray-500">{roleRemovalConfirmation.targetUser.email}</p>
+              <span className="mt-3 inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-600">
+                {roleRemovalConfirmation.role}
+              </span>
+            </div>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={handleCancelRemoveRole}
+                className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-black text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={handleConfirmRemoveRole}
+                className="rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {saving ? 'Guardando...' : 'Retirar rol'}
               </button>
             </div>
           </div>
