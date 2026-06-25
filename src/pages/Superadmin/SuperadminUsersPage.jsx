@@ -115,6 +115,7 @@ export const SuperadminUsersPage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [statusConfirmationUser, setStatusConfirmationUser] = useState(null);
   const selectedRoleNames = roles
     .filter((role) => form.role_ids.includes(role.id))
     .map((role) => role.name);
@@ -249,13 +250,25 @@ export const SuperadminUsersPage = () => {
     }
   };
 
-  const handleToggleUserStatus = async (targetUser) => {
-    const nextStatus = !targetUser.is_active;
-    const action = nextStatus ? 'reactivar' : 'desactivar';
+  const handleRequestToggleUserStatus = (targetUser) => {
+    setStatusConfirmationUser(targetUser);
+    setError('');
+    setMessage('');
+  };
 
-    if (!window.confirm(`¿Confirmas ${action} a ${targetUser.email}?`)) {
+  const handleCancelToggleUserStatus = () => {
+    if (!saving) {
+      setStatusConfirmationUser(null);
+    }
+  };
+
+  const handleConfirmToggleUserStatus = async () => {
+    if (!statusConfirmationUser) {
       return;
     }
+
+    const targetUser = statusConfirmationUser;
+    const nextStatus = !targetUser.is_active;
 
     setSaving(true);
     setError('');
@@ -264,6 +277,7 @@ export const SuperadminUsersPage = () => {
     try {
       await updateUser(targetUser.id, { is_active: nextStatus });
       setMessage(`Usuario ${nextStatus ? 'reactivado' : 'desactivado'}.`);
+      setStatusConfirmationUser(null);
       await loadUsers();
     } catch (err) {
       setError(getErrorMessage(err));
@@ -462,7 +476,7 @@ export const SuperadminUsersPage = () => {
                         <button
                           type="button"
                           disabled={saving}
-                          onClick={() => handleToggleUserStatus(item)}
+                          onClick={() => handleRequestToggleUserStatus(item)}
                           className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-black text-gray-700 hover:border-[#d22864] hover:text-[#d22864] disabled:opacity-50"
                         >
                           {item.is_active ? 'Desactivar' : 'Reactivar'}
@@ -594,6 +608,57 @@ export const SuperadminUsersPage = () => {
           </form>
         </section>
       </main>
+
+      {statusConfirmationUser && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4 py-6">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+            <p className="text-sm font-black uppercase tracking-wider text-[#d22864]">
+              Confirmar cambio de estado
+            </p>
+            <h2 className="mt-3 text-2xl font-black text-gray-900">
+              {statusConfirmationUser.is_active ? 'Desactivar usuario' : 'Reactivar usuario'}
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-gray-600">
+              {statusConfirmationUser.is_active
+                ? 'El usuario no podrá acceder al sistema mientras su cuenta permanezca inactiva.'
+                : 'El usuario recuperará el acceso al sistema si sus credenciales están vigentes.'}
+            </p>
+            <div className="mt-5 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
+              <p className="font-black text-gray-900">
+                {statusConfirmationUser.first_name} {statusConfirmationUser.last_name}
+              </p>
+              <p className="text-sm font-semibold text-gray-500">{statusConfirmationUser.email}</p>
+            </div>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={handleCancelToggleUserStatus}
+                className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-black text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={handleConfirmToggleUserStatus}
+                className={`rounded-xl px-5 py-3 text-sm font-black text-white disabled:opacity-60 ${
+                  statusConfirmationUser.is_active
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : 'bg-[#d22864] hover:bg-[#b01e52]'
+                }`}
+              >
+                {saving
+                  ? 'Guardando...'
+                  : statusConfirmationUser.is_active
+                    ? 'Desactivar usuario'
+                    : 'Reactivar usuario'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );
