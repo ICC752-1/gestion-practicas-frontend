@@ -425,7 +425,7 @@ export const SelfEvaluationPage = () => {
           className="mb-8 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-sm border border-gray-100 hover:text-[#d22864]"
         >
           <ArrowLeft size={18} />
-          Cambiar práctica
+           Volver a seleccionar práctica
         </button>
 
         <header className="mb-8 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">

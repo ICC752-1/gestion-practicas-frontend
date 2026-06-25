@@ -96,7 +96,7 @@ export const LandingPage = () => {
           </section>
 
           {/* Info columns */}
-          <section className="bg-brand-medium py-20 px-6 text-white">
+          <section className="bg-brand-medium py-18 px-6 text-white">
             <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-32">
               
               {/* Columna Estudiantes */}
@@ -146,14 +146,12 @@ export const LandingPage = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button 
                 onClick={() => navigate("/login")}
-                className="w-full sm:w-auto bg-brand-medium text-white px-12 py-3 rounded-md font-bold hover:bg-brand-dark transition-all transform hover:scale-105 cursor-pointer"
-              >
+                className="w-full sm:w-56 bg-brand-medium text-white py-3 rounded-md font-bold hover:bg-brand-dark transition-all transform hover:scale-105 cursor-pointer"              >
                 Iniciar Sesión
               </button>
               <button 
                 onClick={() => navigate("/faq")}
-                className="w-full sm:w-auto bg-brand-medium text-white px-12 py-3 rounded-md font-bold hover:bg-brand-dark transition-all transform hover:scale-105 cursor-pointer"
-              >
+                className="w-full sm:w-56 bg-brand-medium text-white py-3 rounded-md font-bold hover:bg-brand-dark transition-all transform hover:scale-105 cursor-pointer"              >
                 Preguntas frecuentes
               </button>
             </div>

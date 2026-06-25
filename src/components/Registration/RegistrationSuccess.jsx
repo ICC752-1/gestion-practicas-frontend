@@ -34,7 +34,7 @@ export const RegistrationSuccess = ({ internshipId, uploadDate, status = 'Pendie
           {internshipId && (
             <div className="bg-gray-50 border border-gray-200 rounded-[20px] px-6 py-4 text-center min-w-[140px]">
               <p className="text-sm text-gray-500 mb-1">N° de práctica</p>
-              <p className="text-2xl font-bold text-black">#{internshipId}</p>
+              <p className="text-2xl font-bold text-black">{internshipId}</p>
             </div>
           )}
           {formattedDate && (

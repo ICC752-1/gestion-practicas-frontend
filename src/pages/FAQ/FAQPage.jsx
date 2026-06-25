@@ -96,10 +96,10 @@ export const FAQPage = () => {
           <div className="max-w-5xl mx-auto mb-12">
             <div className="bg-brand-medium text-white py-16 px-10 rounded-[2.5rem] text-center shadow-xl">
               <h3 className="text-3xl font-bold mb-4">¿No encontraste lo que buscabas?</h3>
-              <p className="text-lg opacity-90 mb-10 italic">
+              <p className="text-lg opacity-90 mb-6 italic">
                 Contáctanos y con gusto te ayudaremos con tus dudas
               </p>
-              <button className="bg-white text-brand-medium px-12 py-3 rounded-xl font-bold hover:bg-gray-100 transition-colors shadow-lg cursor-pointer">
+              <button className="bg-white text-brand-medium px-10 py-3 rounded-xl font-bold hover:bg-gray-100 transition-colors shadow-lg cursor-pointer">
                 Ir al soporte
               </button>
             </div>

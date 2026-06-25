@@ -424,69 +424,51 @@ export const SeguimientoPage = () => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-full ${statusStyle.color} flex items-center justify-center text-white`}>
-                    {getStatusIcon(currentStatusLabel)}
+                  <div className={`w-12 h-12 rounded-full ${statusStyle.color} flex items-center justify-center text-white shadow-sm`}>
+                    {currentStatusLabel.toLowerCase().includes('finalizad') || currentStatusLabel.toLowerCase().includes('aprobad') ? (
+                      <CheckCircle2 className="w-6 h-6" />
+                    ) : (
+                      getStatusIcon(currentStatusLabel)
+                    )}
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Estado actual</p>
+                    <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-0.5">Estado actual</p>
                     <p className={`text-xl font-bold ${statusStyle.text}`}>
                       {currentStatusLabel}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Tipo</p>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-0.5">Tipo</p>
                   <p className="text-sm font-bold text-gray-800">{internship.internship_type}</p>
                 </div>
               </div>
+
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between gap-4 text-xs font-bold text-gray-600">
                   <span>{lifecycle ? 'Avance de práctica' : administrativeProgress.label}</span>
-                  <span>{administrativeProgress.percentage}%</span>
+                  <span className={administrativeProgress.percentage === 100 ? "text-green-600" : "text-gray-600"}>
+                    {administrativeProgress.percentage}%
+                  </span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/70">
+                <div className="h-1.5 overflow-hidden rounded-full bg-gray-200/70">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${administrativeProgress.color}`}
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      administrativeProgress.percentage === 100 ? 'bg-green-500' : administrativeProgress.color
+                    }`}
                     style={{ width: `${administrativeProgress.percentage}%` }}
                   />
                 </div>
                 {lifecycle && (
-                  <p className="mt-2 text-xs font-semibold text-gray-500">{administrativeProgress.label}</p>
+                  <p className="mt-2 text-xs font-semibold text-gray-400 italic">
+                    {administrativeProgress.percentage === 100 
+                      ? "Proceso completado con éxito" 
+                      : administrativeProgress.label}
+                  </p>
                 )}
               </div>
             </motion.div>
-
-            <StudentRequestActions
-              internship={internship}
-              actions={studentActions}
-              onUpdated={fetchData}
-            />
-
-            {lifecycle?.supervisor_evaluation_submitted && 
-             lifecycle?.self_evaluation_submitted &&
-             !internship?.is_cancelled && 
-             internship?.completion_status !== 'finalized' && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 mb-8 border border-gray-100 flex flex-col items-center text-center gap-4"
-              >
-                <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-600">
-                  <CheckCircle2 size={24} />
-                </div>
-                <div>
-                  <h4 className="text-lg font-bold text-gray-900">¡Evaluaciones Completadas!</h4>
-                  <p className="text-sm text-gray-500 mt-1">Cumples con los requisitos para agendar tu entrevista o presentación final.</p>
-                </div>
-                <button
-                  onClick={() => navigate(`/entrevistas?internshipId=${internshipId}&purpose=final_presentation`)}
-                  className="px-6 py-3 rounded-2xl bg-[#d22864] hover:bg-[#b01e50] font-bold text-white shadow-md shadow-[#d22864]/10 transition"
-                >
-                  Solicitar Entrevista / Presentación Final
-                </button>
-              </motion.div>
-            )}
-
+            
             {/* Practice Details */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -673,7 +655,7 @@ export const SeguimientoPage = () => {
         )}
 
         {/* Back Button */}
-        <div className="flex justify-center mb-20">
+        <div className="flex justify-center mt-6 mb-5">
           <button
             onClick={() => navigate("/dashboard")}
             className="bg-[#d22864] text-white px-10 py-3 rounded-full font-bold hover:opacity-90 transition-all transform hover:scale-105 active:scale-95 shadow-lg"
