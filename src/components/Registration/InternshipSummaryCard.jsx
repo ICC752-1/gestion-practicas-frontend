@@ -17,7 +17,7 @@ export const InternshipSummaryCard = ({ internshipData, onClose }) => {
 
   const handleEdit = () => {
     if (internshipData.id) {
-      navigate(`/seguimiento/${internshipData.id}`);
+      navigate('/dashboard');
       return;
     }
 

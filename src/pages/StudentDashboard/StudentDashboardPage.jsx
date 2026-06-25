@@ -17,7 +17,6 @@ import {
   MapPin,
   Briefcase,
   Shield,
-  ChevronRight,
   Download,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -240,14 +239,7 @@ const PracticeCard = ({ internship, lifecycle }) => {
 
       {/* Footer */}
       <div className="px-6 pb-6 pt-2">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <button
-            onClick={() => navigate(`/seguimiento/${internship.id}`)}
-            className="w-full bg-[#d22864] text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#d22864]/20 hover:bg-[#b01e52] transition-all group"
-          >
-            Ver Seguimiento
-            <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </button>
+        <div className="grid grid-cols-1 gap-3">
           {lifecycle?.current_step === "Presentación final por agendar" ? (
             <button
               onClick={() => navigate(`/entrevistas?internshipId=${internship.id}&purpose=final_presentation`)}
@@ -693,13 +685,6 @@ export const StudentDashboardPage = () => {
                   primary={true}
                 />
                 <QuickAction
-                  icon={Play}
-                  title="Ver Seguimiento"
-                  desc="Revisa el estado de tus procesos actuales"
-                  onClick={() => navigate('/seguimiento')}
-                  // disabled={internships.length === 0} // Deshabilitado para agilizar
-                />
-                <QuickAction
                   icon={Calendar}
                   title="Agendar horas y consultas"
                   desc={hasActiveCoordinators
@@ -720,13 +705,6 @@ export const StudentDashboardPage = () => {
                   desc="Informes, certificados y evaluaciones"
                   onClick={() => setIsUploadModalOpen(true)}
                   disabled={!canUpload || internships.length === 0}
-                />
-                <QuickAction
-                  icon={ClipboardCheck}
-                  title="Autoevaluación"
-                  desc="Completa o revisa tu evaluación final"
-                  onClick={() => navigate('/autoevaluacion')}
-                  disabled={internships.length === 0}
                 />
                 <QuickAction
                   icon={Download}

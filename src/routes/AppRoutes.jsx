@@ -8,13 +8,12 @@ import { FAQPage } from '../pages/FAQ/FAQPage'
 import { StudentDashboardPage } from '../pages/StudentDashboard/StudentDashboardPage'
 import { CoordinatorDashboardPage } from '../pages/CoordinatorDashboard/CoordinatorDashboardPage'
 import { PracticeDetailPage } from '../pages/CoordinatorDashboard/PracticeDetailPage'
-import { SeguimientoPage } from '../pages/Seguimiento/SeguimientoPage'
-import { SeguimientoListPage } from '../pages/Seguimiento/SeguimientoListPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
 import { SupervisorEvaluationPage } from '../pages/Supervisor/SupervisorEvaluationPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
 import { InterviewSchedulingPage } from '../pages/InterviewScheduling/InterviewSchedulingPage'
 import { InductionAdminPage } from '../pages/Induction/InductionAdminPage'
+import { StudentAccountsPage } from '../pages/StudentAccounts/StudentAccountsPage'
 import { PresentationLettersPage } from '../pages/PresentationLetters/PresentationLettersPage'
 import ActivateAccountPage from '../pages/Auth/ActivateAccountPage'
 import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
@@ -163,6 +162,15 @@ export const AppRoutes = () => {
           />
 
           <Route
+              path="/estudiantes/admin"
+              element={
+                  <PrivateRoute allowedRoles={DECISION_ADMIN_ROLES}>
+                      <StudentAccountsPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
               path="/secretaria"
               element={
                   <PrivateRoute allowedRoles={SECRETARY_ROLES}>
@@ -173,20 +181,12 @@ export const AppRoutes = () => {
 
           <Route
               path="/seguimiento"
-              element={
-                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
-                      <SeguimientoListPage />
-                  </PrivateRoute>
-              }
+              element={<Navigate to="/dashboard" replace />}
           />
 
           <Route
               path="/seguimiento/:internshipId"
-              element={
-                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
-                      <SeguimientoPage />
-                  </PrivateRoute>
-              }
+              element={<Navigate to="/dashboard" replace />}
           />
 
           <Route
@@ -200,11 +200,7 @@ export const AppRoutes = () => {
 
           <Route
               path="/autoevaluacion"
-              element={
-                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
-                      <SelfEvaluationPage />
-                  </PrivateRoute>
-              }
+              element={<Navigate to="/dashboard" replace />}
           />
 
           <Route
