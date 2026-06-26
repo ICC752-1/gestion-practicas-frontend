@@ -1,62 +1,100 @@
-# Frontend - Gestion de Practicas DCI
+<h1 align="center"><em>Gestión de Prácticas Frontend</em></h1>
 
-React/Vite frontend for the Gestion de Practicas DCI platform.
+<div align="center">
+  <p>
+    <a href="https://react.dev">
+      <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
+    </a>
+    <a href="https://vite.dev">
+      <img src="https://img.shields.io/badge/Vite-7-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
+    </a>
+    <a href="https://reactrouter.com">
+      <img src="https://img.shields.io/badge/React_Router-7-CA4245?style=for-the-badge&logo=reactrouter&logoColor=white" alt="React Router">
+    </a>
+    <a href="https://vitest.dev">
+      <img src="https://img.shields.io/badge/Vitest-4-6E9F18?style=for-the-badge&logo=vitest&logoColor=white" alt="Vitest">
+    </a>
+    <a href="https://www.docker.com">
+      <img src="https://img.shields.io/badge/Docker-Nginx-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
+    </a>
+  </p>
+</div>
 
-## Local Development
+## Descripción
+
+Frontend del sistema de gestión de prácticas. Implementa la interfaz web para estudiantes, roles administrativos, supervisores y usuarios institucionales, consumiendo la API REST del backend mediante servicios centralizados.
+
+## Funcionalidades Principales
+
+- Autenticación local y Google OAuth.
+- Rutas protegidas por sesión y rol.
+- Panel de estudiante y seguimiento de prácticas.
+- Registro, edición y anulación de solicitudes.
+- Dashboard administrativo y revisión de prácticas.
+- Gestión documental y notificaciones.
+- Agenda de entrevistas y presentaciones.
+- Autoevaluación y evaluación de supervisor.
+- Administración de usuarios y reportes según rol.
+
+## Requisitos
+
+- Node.js 20.19+
+- npm
+- Backend disponible para llamadas API locales
+
+## Ejecución Local
+
+Instalar dependencias:
 
 ```bash
 npm ci
-npm run dev
 ```
 
-Set the local backend URL in `.env.local`:
+Configurar la URL local del backend en `.env.local`:
 
 ```env
 VITE_API_URL=http://localhost:8000
 ```
 
-## Verification
+Iniciar el servidor de desarrollo:
+
+```bash
+npm run dev
+```
+
+Por defecto, Vite expone la aplicación en:
+
+- Frontend: `http://localhost:5173`
+- Backend esperado: `http://localhost:8000`
+
+## Verificación
 
 ```bash
 npm run lint
 npm run build
+npm test
 ```
 
-## Docker Image
+La suite actual usa Vitest y React Testing Library para cubrir rutas protegidas, contexto de autenticación, cliente API, redirección por rol y flujo básico de registro.
 
-The browser API base URL is baked into the Vite build. For the VPS deployment,
-build the image with same-origin API calls:
+## Docker
+
+La URL base de la API se incorpora durante el build de Vite. Para despliegue con proxy Nginx hacia el backend:
 
 ```bash
 docker build --build-arg VITE_API_URL=/api -t gestion-practicas-frontend:local .
 ```
 
-The runtime Nginx proxy defaults to:
+En runtime, Nginx redirige `/api/` hacia:
 
 ```text
 API_UPSTREAM=http://backend:8000
 ```
 
-Override `API_UPSTREAM` only if the backend service name or port changes inside
-the Docker network.
+Sobrescribir `API_UPSTREAM` solo si cambia el nombre o puerto del servicio backend dentro de la red Docker.
 
-## CI/CD
+## Documentación
 
-CI runs lint, build, and a Docker image build check.
+La documentación técnica y funcional del frontend se mantiene en el repositorio de documentación del proyecto: `gestion-practicas-docs`.
 
-CD is configured to run from `main`. In the Sprint 10.22 verification, the
-workflow exists in development branches, but it must be accepted or merged into
-`main` before the production deployment can run from the release branch.
-
-The deployment does not use a registry. Instead, it:
-
-1. Builds `gestion-practicas-frontend:<commit_sha>`.
-2. Exports the image with `docker save`.
-3. Copies the compressed image to `/srv/team-b/releases` on the VPS.
-4. Loads and retags it on the VPS as `gestion-practicas-frontend:deploy`.
-5. Restarts the `frontend` service from `/srv/team-b/app/compose.prod.yml`.
-
-For the CD workflow to be effective, the workflow file must be present in
-`main`, the GitHub Actions secrets `VPS_HOST`, `VPS_PORT`, `VPS_USER`,
-`VPS_SSH_KEY` and, preferably, `VPS_KNOWN_HOSTS` must exist, and the deployment
-repository scripts must be available on the server under `/srv/team-b/app`.
+Ahí se documentan la arquitectura frontend, autenticación, cliente API, rutas, roles y estrategia de pruebas.
