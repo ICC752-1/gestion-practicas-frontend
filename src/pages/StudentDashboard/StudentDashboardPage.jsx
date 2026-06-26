@@ -28,7 +28,10 @@ import { schedulingService } from "../../services/schedulingService";
 import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
 import { canUploadDocuments, documentService } from "../../services/documentService";
 import { dataPortabilityService } from "../../services/dataPortabilityService";
-import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
+import {
+  getInternshipAdministrativeProgress,
+  getOverallInternshipProgress,
+} from "../../constants/internshipProgress";
 import { useToast } from "../../context/useToast";
 import { useNotifications } from "../../hooks/useNotifications";
 
@@ -398,6 +401,7 @@ export const StudentDashboardPage = () => {
   const userName = user
     ? `${user.first_name} ${user.last_name}`
     : "Estudiante";
+  const overallProgress = getOverallInternshipProgress(internships);
 
   const canUpload = internships.some(canUploadDocuments);
 
@@ -441,13 +445,33 @@ export const StudentDashboardPage = () => {
                     : 'No tienes prácticas inscritas aún.'}
                 </p>
               </div>
-              <div className="flex gap-4">
-                <div className="text-right">
-                  <p className="text-[10px] uppercase tracking-widest font-black text-gray-400 mb-1">Prácticas</p>
-                  <div className="flex items-center gap-3">
-                    <span className="font-black text-3xl text-gray-900">{internships.length}</span>
+              <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-gray-50 p-5">
+                <div className="mb-3 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest font-black text-gray-400">Progreso total</p>
+                    <p className="mt-1 text-sm font-bold text-gray-700">
+                      {overallProgress.completedCount} de {overallProgress.requiredCount} prácticas aprobadas
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-widest font-black text-gray-400">Prácticas</p>
+                    <span className="font-black text-3xl leading-none text-gray-900">{internships.length}</span>
                   </div>
                 </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-full rounded-full bg-[#d22864] transition-all duration-500"
+                      style={{ width: `${overallProgress.percentage}%` }}
+                    />
+                  </div>
+                  <span className="w-12 text-right text-sm font-black text-[#d22864]">
+                    {overallProgress.percentage}%
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  Solo las prácticas aprobadas o finalizadas aprobadas aportan al progreso total.
+                </p>
               </div>
             </motion.div>
           </div>

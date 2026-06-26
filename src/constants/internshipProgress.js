@@ -1,3 +1,5 @@
+export const REQUIRED_APPROVED_INTERNSHIPS = 4;
+
 const PROGRESS_BY_STATUS = {
   Anulada: {
     percentage: 100,
@@ -72,7 +74,16 @@ const STATUS_TITLE_BY_ID = {
   5: 'Rechazada',
 };
 
+const resolveStatusProgress = (statusId) => {
+  const statusTitle = STATUS_TITLE_BY_ID[statusId] || 'Pendiente';
+  return PROGRESS_BY_STATUS[statusTitle] || PROGRESS_BY_STATUS.Pendiente;
+};
+
 export const getInternshipAdministrativeProgress = (internship) => {
+  if (typeof internship === 'number' || typeof internship === 'string') {
+    return resolveStatusProgress(Number(internship));
+  }
+
   if (internship?.is_cancelled) {
     return PROGRESS_BY_STATUS.Anulada;
   }
@@ -101,4 +112,22 @@ export const getInternshipAdministrativeProgress = (internship) => {
     || 'Pendiente';
 
   return PROGRESS_BY_STATUS[statusTitle] || PROGRESS_BY_STATUS.Pendiente;
+};
+
+export const getOverallInternshipProgress = (internships = []) => {
+  const approvedCount = internships.filter((internship) => {
+    if (internship?.is_cancelled) return false;
+    if (internship?.completion_status === 'finalized') {
+      return internship?.final_result === 'passed';
+    }
+    return internship?.status_id === 4;
+  }).length;
+  const completedCount = Math.min(approvedCount, REQUIRED_APPROVED_INTERNSHIPS);
+
+  return {
+    approvedCount,
+    completedCount,
+    requiredCount: REQUIRED_APPROVED_INTERNSHIPS,
+    percentage: Math.round((completedCount / REQUIRED_APPROVED_INTERNSHIPS) * 100),
+  };
 };
