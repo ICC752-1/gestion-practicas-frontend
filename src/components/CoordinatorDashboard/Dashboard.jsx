@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { StatCard } from '../coordinador/StatCard';
 import Management from './Management';
-import { Users, FileText, CheckCircle, Clock, Calendar, AlertCircle, Mail } from 'lucide-react';
+import { Users, CheckCircle, Clock, Calendar, AlertCircle, Mail } from 'lucide-react';
 
 const getStatusTotal = (stats, titles) => {
   return (stats?.internships_by_status || [])
@@ -55,22 +55,7 @@ const Dashboard = ({
         />
        </div>
        
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <motion.button 
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => document.getElementById('management-section')?.scrollIntoView({ behavior: 'smooth' })}
-          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
-        >
-          <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
-            <FileText className="w-7 h-7 text-[#B5305F] group-hover:text-white transition-colors" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800">Gestión de solicitudes de práctica</h3>
-            <p className="text-sm text-gray-400">Administra solicitudes y sus estados administrativos</p>
-          </div>
-        </motion.button>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
