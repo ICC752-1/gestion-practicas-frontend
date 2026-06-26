@@ -86,6 +86,15 @@ export const Login = () => {
   return (
     <div className="bg-[#f3f3f3] w-full min-h-screen flex flex-col relative overflow-x-hidden">
       <Header />
+      <div className="w-full px-12 pt-6">
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="inline-flex items-center gap-2 text-[#d22864] font-semibold hover:underline text-1xl"
+        >
+          ← Volver al inicio
+        </button>
+      </div>
       <main className="flex-grow flex items-center justify-center py-10 w-full">
         <section
           id="inicio-sesion"

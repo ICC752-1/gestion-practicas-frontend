@@ -2,16 +2,15 @@ import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 export const PracticeDetailsForm = ({ onNext, onBack, initialData = {} }) => {
-  const defaultWeekdays = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
   const [formData, setFormData] = useState({
-    practiceType: initialData.practiceType || 'Presencial',
+    practiceType: initialData.practiceType || '',
     startDate: initialData.startDate || '',
     endDate: initialData.endDate || '',
     days: Array.isArray(initialData.days) && initialData.days.length > 0
       ? initialData.days
-      : defaultWeekdays,
-    startTime: initialData.startTime || '08:00',
-    endTime: initialData.endTime || '18:00',
+      : [],
+    startTime: initialData.startTime || '',
+    endTime: initialData.endTime || '',
     internship_address: initialData.internship_address || '',
     region: initialData.region || '',
     commune: initialData.commune || '',

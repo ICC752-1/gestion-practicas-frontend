@@ -436,22 +436,25 @@ export const InterviewSchedulingPage = () => {
 
     // Cancel Appointment (Student/Coordinator)
     const handleCancelAppointment = async (appointmentId, reason) => {
-        setSubmitting(true);
-        setMessage(null);
+    setSubmitting(true);
+    setMessage(null);
 
-        try {
-            await schedulingService.cancelAppointment(appointmentId, reason);
-            showToast({
-                type: 'success',
-                title: 'Cita cancelada',
-                message: 'La cita agendada ha sido cancelada.',
-            });
-            await loadData({ clearMessage: false });
-        } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
-        } finally {
-            setSubmitting(false);
-        }
+    try {
+        await schedulingService.cancelAppointment(appointmentId, reason);
+        showToast({
+            type: 'success',
+            title: 'Cita cancelada',
+            message: 'La cita agendada ha sido cancelada.',
+        });
+        // Forzar recarga completa desde cero
+        await loadData({ clearMessage: false });
+        // Redirigir al tab de solicitudes para que vea el estado actualizado
+        setActiveTab('requests');
+    } catch (error) {
+        setMessage({ type: 'error', text: getErrorMessage(error) });
+    } finally {
+        setSubmitting(false);
+    }
     };
 
     const handleConfirmAppointment = async (appointmentId) => {
