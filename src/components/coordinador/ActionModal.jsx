@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Loader2, CheckCircle2, AlertTriangle, ArrowRightLeft } from 'lucide-react';
 
+const COMMENT_MAX_LENGTH = 1000;
+
 export const ActionModal = ({
   isOpen,
   onClose,
@@ -55,7 +57,8 @@ export const ActionModal = ({
   };
 
   const isCommentRequired = actionType === 'reject' || actionType === 'derive';
-  const isConfirmDisabled = isLoading || (isCommentRequired && !comment.trim());
+  const isCommentTooLong = comment.length > COMMENT_MAX_LENGTH;
+  const isConfirmDisabled = isLoading || isCommentTooLong || (isCommentRequired && !comment.trim());
 
   return createPortal(
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4">
@@ -101,11 +104,20 @@ export const ActionModal = ({
             </label>
             <textarea
               disabled={isLoading}
+              maxLength={COMMENT_MAX_LENGTH}
               className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#d22864]/30 focus:border-[#d22864] outline-none transition-all resize-none h-32 text-gray-800 placeholder-gray-400 text-sm font-medium shadow-inner"
               placeholder={isCommentRequired ? "Escriba el motivo detallado aquí..." : "Comentario u observaciones de la aprobación (opcional)..."}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
             />
+            <div className="flex items-center justify-between gap-3 text-xs font-semibold">
+              <span className={isCommentTooLong ? 'text-red-600' : 'text-gray-400'}>
+                Máximo {COMMENT_MAX_LENGTH} caracteres.
+              </span>
+              <span className={comment.length >= COMMENT_MAX_LENGTH ? 'text-red-600' : 'text-gray-400'}>
+                {comment.length}/{COMMENT_MAX_LENGTH}
+              </span>
+            </div>
           </div>
         </div>
 
