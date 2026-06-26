@@ -5,6 +5,7 @@ import { RegistrationPage } from '../pages/Registration/RegistrationPage'
 import { PreRegistrationPage } from '../pages/Registration/PreRegistrationPage'
 import { LandingPage } from '../pages/Landing/LandingPage'
 import { FAQPage } from '../pages/FAQ/FAQPage'
+import { RequirementsPage } from '../pages/Requirements/RequirementsPage'
 import { StudentDashboardPage } from '../pages/StudentDashboard/StudentDashboardPage'
 import { CoordinatorDashboardPage } from '../pages/CoordinatorDashboard/CoordinatorDashboardPage'
 import { PracticeDetailPage } from '../pages/CoordinatorDashboard/PracticeDetailPage'
@@ -62,6 +63,7 @@ export const AppRoutes = () => {
               element={<AuthCallbackPage />}
           />
           <Route path="/faq" element={<FAQPage />} />
+          <Route path="/requisitos" element={<RequirementsPage />} />
           <Route path="/supervisor/evaluacion/:token" element={<SupervisorEvaluationPage />} />
 
           {/* Rutas protegidas */}

@@ -192,7 +192,7 @@ export const Login = () => {
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="••••••••••"
-                    className="relative flex-1 h-full font-normal text-[#666666] text-[28px] tracking-[6px] leading-[normal] placeholder:text-[#666666] bg-transparent outline-none border-none focus:ring-0"
+                    className="relative min-w-0 flex-1 h-full font-normal text-[#666666] text-[28px] tracking-[6px] leading-[normal] placeholder:text-[#666666] bg-transparent outline-none border-none focus:ring-0"
                     aria-label="Contraseña"
                   />
                 </div>

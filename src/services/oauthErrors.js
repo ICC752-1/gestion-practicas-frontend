@@ -9,6 +9,10 @@ const oauthErrorMessages = {
         "Servidor no disponible. Intente nuevamente en unos minutos.",
     user_not_found:
         "La cuenta de Google no esta asociada a un usuario activo del sistema.",
+    account_inactive:
+        "La cuenta asociada a Google se encuentra desactivada. Contacte a un administrador.",
+    account_activation_required:
+        "Debe activar su cuenta y definir una contrasena antes de usar Google.",
 };
 
 export const getOAuthErrorMessage = (errorCode) => {
