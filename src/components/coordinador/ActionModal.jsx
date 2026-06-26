@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Loader2, CheckCircle2, AlertTriangle, ArrowRightLeft } from 'lucide-react';
 
 export const ActionModal = ({
@@ -56,7 +57,7 @@ export const ActionModal = ({
   const isCommentRequired = actionType === 'reject' || actionType === 'derive';
   const isConfirmDisabled = isLoading || (isCommentRequired && !comment.trim());
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4">
       <div className="bg-white rounded-[28px] p-8 w-full max-w-[520px] shadow-2xl border border-gray-100 flex flex-col relative animate-fade-up">
 
@@ -133,6 +134,7 @@ export const ActionModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -57,7 +57,10 @@ export const LandingPage = () => {
                 >
                   Iniciar Sesión
                 </button>
-                <button className="w-full sm:w-auto bg-white text-brand-dark px-10 py-3 rounded-full font-bold hover:bg-gray-100 transition-colors shadow-lg cursor-pointer">
+                <button
+                  onClick={() => navigate("/requisitos")}
+                  className="w-full sm:w-auto bg-white text-brand-dark px-10 py-3 rounded-full font-bold hover:bg-gray-100 transition-colors shadow-lg cursor-pointer"
+                >
                   Ver Requisitos
                 </button>
               </motion.div>

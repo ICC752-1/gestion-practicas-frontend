@@ -63,8 +63,8 @@ export const UserHeader = () => {
       },
       {
         label: "Requisitos",
-        to: "#",
-        active: false,
+        to: "/requisitos",
+        active: location.pathname === "/requisitos",
       },
     ];
 

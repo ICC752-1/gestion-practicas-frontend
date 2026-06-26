@@ -91,7 +91,7 @@ export const RegistrationSuccess = ({ internshipId, uploadDate, status = 'Pendie
             <div className="flex items-start gap-5">
               <div className="mt-1"><FileText className="text-[#d22864]" size={32} /></div>
               <div>
-                <h4 className="text-xl font-bold text-black">4. Autoevaluación y evaluación del supervisor</h4>
+                <h4 className="text-xl font-bold text-black">4. Autoevaluación y evaluación del supervisor a estudiante</h4>
                 <p className="text-gray-700 text-lg">Cinco días hábiles antes del término se habilitará tu autoevaluación; al enviarla, el supervisor recibirá su enlace de evaluación</p>
               </div>
             </div>
