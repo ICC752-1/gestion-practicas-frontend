@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertCircle, User, Building, MapPin, FileText, History, MessageSquare, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, User, Building, MapPin, FileText, History, MessageSquare, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, Calendar, Clock, Briefcase, Mail, Phone, DollarSign, Globe2 } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import { ActionButtons } from '../../components/coordinador/ActionButtons';
@@ -24,6 +24,55 @@ const DetailItem = ({ icon: Icon, label, value, subValue }) => (
     {subValue && <p className="text-gray-500">{subValue}</p>}
   </div>
 );
+
+const DetailSection = ({ icon: Icon, title, summary, isOpen, onToggle, children }) => (
+  <div className="overflow-hidden rounded-2xl border border-gray-100 bg-gray-50/40">
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center justify-between gap-4 p-5 text-left transition-colors hover:bg-gray-50"
+    >
+      <div className="flex items-center gap-3">
+        <div className="rounded-2xl bg-white p-3 text-[#d22864] shadow-sm">
+          <Icon size={22} />
+        </div>
+        <div>
+          <h3 className="font-bold text-gray-900">{title}</h3>
+          {summary && <p className="mt-0.5 text-sm font-medium text-gray-500">{summary}</p>}
+        </div>
+      </div>
+      {isOpen ? <ChevronUp className="text-gray-400" size={20} /> : <ChevronDown className="text-gray-400" size={20} />}
+    </button>
+    {isOpen && (
+      <div className="border-t border-gray-100 bg-white px-5 py-6">
+        {children}
+      </div>
+    )}
+  </div>
+);
+
+const formatDate = (date) => {
+  if (!date) return null;
+
+  return new Date(`${date}T00:00:00`).toLocaleDateString('es-CL', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const formatDateTime = (date) => {
+  if (!date) return null;
+
+  const value = String(date);
+  return new Date(value.endsWith('Z') ? value : `${value}Z`).toLocaleString('es-CL');
+};
+
+const formatMoney = (amount) => {
+  if (amount === null || amount === undefined) return null;
+
+  return `$${Number(amount).toLocaleString('es-CL')}`;
+};
 
 const HISTORY_ACTION_TITLES = {
   admin_update: 'Corrección administrativa',
@@ -122,6 +171,12 @@ export const PracticeDetailPage = () => {
   const [insuranceActionError, setInsuranceActionError] = useState('');
   const [insuranceActionSuccess, setInsuranceActionSuccess] = useState('');
   const [insuranceNotes, setInsuranceNotes] = useState('');
+  const [expandedSections, setExpandedSections] = useState({
+    student: true,
+    practice: true,
+    organization: false,
+    supervisor: false,
+  });
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -181,6 +236,13 @@ export const PracticeDetailPage = () => {
     await fetchTracking();
   };
 
+  const toggleSection = (section) => {
+    setExpandedSections((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
+  };
+
   const handleGenerateSupervisorInvitation = async () => {
     setSupervisorInviteLoading(true);
     setSupervisorInvite(null);
@@ -189,9 +251,10 @@ export const PracticeDetailPage = () => {
     try {
       const data = await supervisorEvaluationService.generateInvitation(id);
       setSupervisorInvite(data);
+      await fetchTracking();
     } catch (err) {
       setSupervisorInviteError(
-        err.response?.data?.detail || 'No se pudo generar la invitación del supervisor.'
+        err.response?.data?.detail || 'No se pudo enviar la evaluación al supervisor.'
       );
     } finally {
       setSupervisorInviteLoading(false);
@@ -277,10 +340,16 @@ export const PracticeDetailPage = () => {
   const canGenerateSupervisorInvitation = Boolean(
     canInviteSupervisor && lifecycle?.can_generate_supervisor_invitation
   );
+  const supervisorEvaluationRequestSent = Boolean(
+    supervisorInvite || lifecycle?.supervisor_invitation_sent
+  );
+  const canSendSupervisorEvaluation = Boolean(
+    canGenerateSupervisorInvitation && !supervisorEvaluationRequestSent
+  );
   const getSupervisorInvitationUnavailableMessage = () => {
     if (practice?.is_cancelled) return 'No disponible para solicitudes anuladas.';
     if (practiceStatusTitle !== 'Aprobada') return 'Disponible cuando la solicitud esté aprobada.';
-    if (lifecycle?.supervisor_evaluation_submitted) return 'La evaluación del supervisor ya fue completada.';
+    if (lifecycle?.supervisor_evaluation_submitted) return 'La evaluación del supervisor a estudiante ya fue completada.';
     if (lifecycle && !lifecycle.self_evaluation_submitted) {
       return 'Disponible cuando el estudiante complete su autoevaluación.';
     }
@@ -353,48 +422,137 @@ export const PracticeDetailPage = () => {
             </div>
           ) : practice ? (
             <div className="space-y-8">
-              {/* Sección de Estudiante */}
-              <div className="p-6 rounded-2xl bg-gray-50/50 border border-gray-100">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <DetailItem icon={User} label="Estudiante" value={studentName} subValue={studentEmail} />
-                  <DetailItem icon={Building} label="Carrera" value={studentDegree} />
-                </div>
-              </div>
+              <div className="space-y-4">
+                <DetailSection
+                  icon={User}
+                  title="Estudiante"
+                  summary={studentEmail || 'Datos del solicitante'}
+                  isOpen={expandedSections.student}
+                  onToggle={() => toggleSection('student')}
+                >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <DetailItem icon={User} label="Nombre" value={studentName} />
+                    <DetailItem icon={Mail} label="Correo" value={studentEmail} />
+                    <DetailItem icon={FileText} label="RUT" value={studentData?.rut} />
+                    <DetailItem icon={Building} label="Carrera" value={studentDegree} />
+                  </div>
+                </DetailSection>
 
-              {/* Sección de Empresa */}
-              <div className="p-6 rounded-2xl bg-gray-50/50 border border-gray-100">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <DetailItem icon={Building} label="Empresa / Organización" value={practice.org_name} />
-                  <DetailItem icon={MapPin} label="Ubicación" value={companyAddress} />
-                </div>
-              </div>
-
-              {/* Sección de Práctica */}
-              <div className="border-t border-gray-100 pt-8 mt-8 px-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <DetailSection
+                  icon={Briefcase}
+                  title="Solicitud y práctica"
+                  summary={`${currentStatusLabel} · ${practice.internship_type || 'Tipo no especificado'}`}
+                  isOpen={expandedSections.practice}
+                  onToggle={() => toggleSection('practice')}
+                >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Estado de solicitud</h3>
+                      <div className="flex items-center text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                        <ShieldCheck className="w-4 h-4 mr-2" />
+                        <span>Estado de solicitud</span>
+                      </div>
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${getBadgeColor(currentStatusLabel)}`}>
                         {currentStatusLabel}
                       </span>
                     </div>
-
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Tipo / Modalidad</h3>
-                      <p className="text-lg font-medium text-gray-800">
-                        {practice.modality || practice.practice_type || 'No especificado'}
-                      </p>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Fechas</h3>
-                      <p className="text-gray-800 text-sm mt-1">
-                        <span className="font-medium">Inicio:</span> {practice.start_date || 'No definida'} <br />
-                        <span className="font-medium">Término:</span> {practice.end_date || 'No definida'}
-                      </p>
-                    </div>
-
+                    <DetailItem icon={Briefcase} label="Tipo de práctica" value={practice.internship_type} />
+                    <DetailItem icon={Briefcase} label="Modalidad" value={practice.modality || practice.practice_type} />
+                    <DetailItem icon={Calendar} label="Período académico" value={practice.internship_period} />
+                    <DetailItem icon={Calendar} label="Fecha de inicio" value={formatDate(practice.start_date)} />
+                    <DetailItem icon={Calendar} label="Fecha de término" value={formatDate(practice.end_date)} />
+                    <DetailItem icon={Clock} label="Horario" value={practice.schedule} />
+                    <DetailItem icon={Calendar} label="Días" value={practice.days} />
+                    <DetailItem icon={MapPin} label="Dirección de práctica" value={practice.internship_address} />
+                    <DetailItem icon={FileText} label="Fecha de registro" value={formatDateTime(practice.upload_date)} />
+                    <DetailItem icon={ShieldAlert} label="Seguro escolar declarado" value={practice.has_school_insurance ? 'Sí' : 'No'} />
+                    <DetailItem icon={FileText} label="Estado DIRAE" value={practice.dirae_status} />
                   </div>
+              {/* Sección de Práctica */}
+             {practice.act_description && (
+                    <div className="mt-6 border-t border-gray-100 pt-5">
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Actividades a realizar</p>
+                      <p className="mt-2 text-sm leading-relaxed text-gray-700">{practice.act_description}</p>
+                    </div>
+                  )}
+
+                  {(practice.ben_description || (practice.amount !== null && practice.amount !== undefined)) && (
+                    <div className="mt-5 grid gap-5 border-t border-gray-100 pt-5 md:grid-cols-[1fr_220px]">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Beneficios</p>
+                        <p className="mt-2 text-sm leading-relaxed text-gray-700">{practice.ben_description || 'No informado'}</p>
+                      </div>
+                      <DetailItem icon={DollarSign} label="Apoyo económico" value={formatMoney(practice.amount)} />
+                    </div>
+                  )}
+                </DetailSection>
+
+                <DetailSection
+                  icon={Building}
+                  title="Organización"
+                  summary={companyAddress || practice.org_name || 'Datos de la organización'}
+                  isOpen={expandedSections.organization}
+                  onToggle={() => toggleSection('organization')}
+                >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <DetailItem icon={Building} label="Nombre" value={practice.org_name} />
+                    <DetailItem icon={Briefcase} label="Rubro" value={practice.sector} />
+                    <DetailItem icon={MapPin} label="Dirección casa matriz" value={practice.address} />
+                    <DetailItem icon={MapPin} label="Ciudad" value={practice.city} />
+                    <DetailItem icon={Phone} label="Teléfono" value={practice.org_phone} />
+                    <DetailItem icon={Globe2} label="Página web" value={practice.web} />
+                  </div>
+                </DetailSection>
+
+                <DetailSection
+                  icon={User}
+                  title="Supervisor/a"
+                  summary={practice.supervisor_email || 'Datos del supervisor externo'}
+                  isOpen={expandedSections.supervisor}
+                  onToggle={() => toggleSection('supervisor')}
+                >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <DetailItem icon={User} label="Nombre" value={practice.supervisor_name} />
+                    <DetailItem icon={Briefcase} label="Profesión" value={practice.supervisor_profession} />
+                    <DetailItem icon={Briefcase} label="Cargo" value={practice.supervisor_position} />
+                    <DetailItem icon={Building} label="Departamento" value={practice.supervisor_department} />
+                    <DetailItem icon={Mail} label="Correo" value={practice.supervisor_email} />
+                    <DetailItem icon={Phone} label="Teléfono" value={practice.supervisor_phone} />
+                  </div>
+                </DetailSection>
+
+                <DetailSection
+                  icon={Building}
+                  title="Organización"
+                  summary={companyAddress || practice.org_name || 'Datos de la organización'}
+                  isOpen={expandedSections.organization}
+                  onToggle={() => toggleSection('organization')}
+                >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <DetailItem icon={Building} label="Nombre" value={practice.org_name} />
+                    <DetailItem icon={Briefcase} label="Rubro" value={practice.sector} />
+                    <DetailItem icon={MapPin} label="Dirección casa matriz" value={practice.address} />
+                    <DetailItem icon={MapPin} label="Ciudad" value={practice.city} />
+                    <DetailItem icon={Phone} label="Teléfono" value={practice.org_phone} />
+                    <DetailItem icon={Globe2} label="Página web" value={practice.web} />
+                  </div>
+                </DetailSection>
+
+                <DetailSection
+                  icon={User}
+                  title="Supervisor/a"
+                  summary={practice.supervisor_email || 'Datos del supervisor externo'}
+                  isOpen={expandedSections.supervisor}
+                  onToggle={() => toggleSection('supervisor')}
+                >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <DetailItem icon={User} label="Nombre" value={practice.supervisor_name} />
+                    <DetailItem icon={Briefcase} label="Profesión" value={practice.supervisor_profession} />
+                    <DetailItem icon={Briefcase} label="Cargo" value={practice.supervisor_position} />
+                    <DetailItem icon={Building} label="Departamento" value={practice.supervisor_department} />
+                    <DetailItem icon={Mail} label="Correo" value={practice.supervisor_email} />
+                    <DetailItem icon={Phone} label="Teléfono" value={practice.supervisor_phone} />
+                  </div>
+                </DetailSection>
               </div>
 
               {/* Seguro escolar */}
@@ -507,9 +665,9 @@ export const PracticeDetailPage = () => {
                 <div className="rounded-2xl border border-[#ffd6e5] bg-[#fff8fb] p-5">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <h3 className="font-bold text-gray-900">Evaluación del supervisor</h3>
+                      <h3 className="font-bold text-gray-900">Evaluación del supervisor a estudiante</h3>
                       <p className="mt-1 text-sm text-gray-500">
-                        Genera o reenvía un enlace de un solo uso al correo registrado del supervisor.
+                        Envía al supervisor un enlace de un solo uso para evaluar al estudiante en práctica.
                       </p>
                       {!canGenerateSupervisorInvitation && supervisorInvitationUnavailableMessage && (
                         <p className="mt-2 text-sm font-semibold text-[#b01e52]">
@@ -520,10 +678,14 @@ export const PracticeDetailPage = () => {
                     <button
                       type="button"
                       onClick={handleGenerateSupervisorInvitation}
-                      disabled={supervisorInviteLoading || !canGenerateSupervisorInvitation}
-                      className="rounded-xl bg-[#d22864] px-4 py-3 text-sm font-bold text-white hover:bg-[#b01e52] disabled:opacity-50"
+                      disabled={supervisorInviteLoading || !canSendSupervisorEvaluation}
+                      className="rounded-xl bg-[#d22864] px-4 py-3 text-sm font-bold text-white hover:bg-[#b01e52] disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {supervisorInviteLoading ? 'Generando...' : 'Generar invitación'}
+                      {supervisorInviteLoading
+                        ? 'Enviando...'
+                        : supervisorEvaluationRequestSent
+                          ? 'Evaluación enviada'
+                          : 'Enviar evaluación'}
                     </button>
                   </div>
                   {supervisorInviteError && (
@@ -531,9 +693,15 @@ export const PracticeDetailPage = () => {
                       {supervisorInviteError}
                     </p>
                   )}
+                  {supervisorEvaluationRequestSent && !supervisorInviteError && (
+                    <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                      <p className="font-bold">Evaluación enviada al supervisor correctamente.</p>
+                      <p className="mt-1">El supervisor recibirá el enlace en el correo registrado para completar la evaluación del estudiante.</p>
+                    </div>
+                  )}
                   {supervisorInvite?.demo_url && (
                     <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                      <p className="font-bold">Invitación generada en modo demo.</p>
+                      <p className="font-bold">Evaluación enviada en modo demo.</p>
                       <a className="mt-1 block break-all font-semibold underline" href={supervisorInvite.demo_url} target="_blank" rel="noreferrer">
                         {supervisorInvite.demo_url}
                       </a>

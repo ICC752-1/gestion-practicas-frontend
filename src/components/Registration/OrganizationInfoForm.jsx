@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+const websitePattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:\d{2,5})?(\/\S*)?$/i;
+
 export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
   const [formData, setFormData] = useState({
     org_name: initialData.org_name || '',
@@ -45,7 +47,7 @@ export const OrganizationInfoForm = ({ onNext, onBack, initialData = {} }) => {
 
     if (!formData.web.trim()) {
       newErrors.web = 'La página web es obligatoria.';
-    } else if (!/^[a-zA-Z0-9]+([.-]?[a-zA-Z0-9]+)*\.[a-zA-Z]{2,}(.*)?$/i.test(formData.web.trim())) {
+    } else if (!websitePattern.test(formData.web.trim())) {
       newErrors.web = 'Ingrese una URL válida (ej: empresa.cl o https://empresa.cl)';
     }
 

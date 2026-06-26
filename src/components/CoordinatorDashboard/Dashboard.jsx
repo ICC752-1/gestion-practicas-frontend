@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { StatCard } from '../coordinador/StatCard';
 import Management from './Management';
-import { useAuth } from '../../context/useAuth'; // Importamos el hook de autenticación
+import { useAuth } from '../../context/useAuth';
 import { Users, FileText, CheckCircle, Clock, Calendar, AlertCircle, Mail } from 'lucide-react';
 
 const getStatusTotal = (stats, titles) => {
@@ -73,8 +73,8 @@ const Dashboard = ({
           variant="success"
         />
       </div>
-       
-      {/* Botones de Gestión de Accesos Rápidos */}
+
+       {/* Botones de Gestión de Accesos Rápidos */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <motion.button 
           whileHover={{ scale: 1.02 }}
@@ -126,7 +126,7 @@ const Dashboard = ({
           </div>
         </motion.button>
       </div>
-       
+      
       {/* Sección de la Tabla envuelta con el id correspondiente para el scroll automático */}
       <div id="management-section">
         <Management

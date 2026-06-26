@@ -150,7 +150,7 @@ export const Login = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••"
-                    className="flex-1 h-full text-[#666666] text-2xl tracking-[6px] bg-transparent outline-none"
+                    className="relative min-w-0 flex-1 h-full font-normal text-[#666666] text-[28px] tracking-[6px] leading-[normal] placeholder:text-[#666666] bg-transparent outline-none border-none focus:ring-0"
                     aria-label="Contraseña"
                   />
                 </div>

@@ -969,7 +969,7 @@ export const InterviewSchedulingPage = () => {
                                                                 <p className="font-bold text-sm">Estado de Requisitos:</p>
                                                                 <ul className="mt-2 space-y-1 list-disc list-inside">
                                                                     <li>Autoevaluación del Estudiante: {selectedInternship?.lifecycle?.self_evaluation_submitted ? '✅ Enviada' : '❌ Falta completar'}</li>
-                                                                    <li>Evaluación del Supervisor: {selectedInternship?.lifecycle?.supervisor_evaluation_submitted ? '✅ Enviada' : '❌ Falta completar'}</li>
+                                                                    <li>Evaluación del supervisor a estudiante: {selectedInternship?.lifecycle?.supervisor_evaluation_submitted ? '✅ Enviada' : '❌ Falta completar'}</li>
                                                                     <li>Práctica no cancelada ni finalizada: {selectedInternship && !selectedInternship.is_cancelled && selectedInternship.completion_status !== 'finalized' ? '✅ Sí' : '❌ No'}</li>
                                                                 </ul>
                                                                 {!qualifiesForPresentation && (
