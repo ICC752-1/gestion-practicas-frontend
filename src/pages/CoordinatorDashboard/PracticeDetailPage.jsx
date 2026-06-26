@@ -252,9 +252,10 @@ export const PracticeDetailPage = () => {
     try {
       const data = await supervisorEvaluationService.generateInvitation(id);
       setSupervisorInvite(data);
+      await fetchTracking();
     } catch (err) {
       setSupervisorInviteError(
-        err.response?.data?.detail || 'No se pudo generar la invitación del supervisor.'
+        err.response?.data?.detail || 'No se pudo enviar la evaluación al supervisor.'
       );
     } finally {
       setSupervisorInviteLoading(false);
@@ -340,10 +341,16 @@ export const PracticeDetailPage = () => {
   const canGenerateSupervisorInvitation = Boolean(
     canInviteSupervisor && lifecycle?.can_generate_supervisor_invitation
   );
+  const supervisorEvaluationRequestSent = Boolean(
+    supervisorInvite || lifecycle?.supervisor_invitation_sent
+  );
+  const canSendSupervisorEvaluation = Boolean(
+    canGenerateSupervisorInvitation && !supervisorEvaluationRequestSent
+  );
   const getSupervisorInvitationUnavailableMessage = () => {
     if (practice?.is_cancelled) return 'No disponible para solicitudes anuladas.';
     if (practiceStatusTitle !== 'Aprobada') return 'Disponible cuando la solicitud esté aprobada.';
-    if (lifecycle?.supervisor_evaluation_submitted) return 'La evaluación del supervisor ya fue completada.';
+    if (lifecycle?.supervisor_evaluation_submitted) return 'La evaluación del supervisor a estudiante ya fue completada.';
     if (lifecycle && !lifecycle.self_evaluation_submitted) {
       return 'Disponible cuando el estudiante complete su autoevaluación.';
     }
@@ -627,9 +634,9 @@ export const PracticeDetailPage = () => {
                 <div className="rounded-2xl border border-[#ffd6e5] bg-[#fff8fb] p-5">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <h3 className="font-bold text-gray-900">Evaluación del supervisor</h3>
+                      <h3 className="font-bold text-gray-900">Evaluación del supervisor a estudiante</h3>
                       <p className="mt-1 text-sm text-gray-500">
-                        Genera o reenvía un enlace de un solo uso al correo registrado del supervisor.
+                        Envía al supervisor un enlace de un solo uso para evaluar al estudiante en práctica.
                       </p>
                       {!canGenerateSupervisorInvitation && supervisorInvitationUnavailableMessage && (
                         <p className="mt-2 text-sm font-semibold text-[#b01e52]">
@@ -640,10 +647,14 @@ export const PracticeDetailPage = () => {
                     <button
                       type="button"
                       onClick={handleGenerateSupervisorInvitation}
-                      disabled={supervisorInviteLoading || !canGenerateSupervisorInvitation}
-                      className="rounded-xl bg-[#d22864] px-4 py-3 text-sm font-bold text-white hover:bg-[#b01e52] disabled:opacity-50"
+                      disabled={supervisorInviteLoading || !canSendSupervisorEvaluation}
+                      className="rounded-xl bg-[#d22864] px-4 py-3 text-sm font-bold text-white hover:bg-[#b01e52] disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {supervisorInviteLoading ? 'Generando...' : 'Generar invitación'}
+                      {supervisorInviteLoading
+                        ? 'Enviando...'
+                        : supervisorEvaluationRequestSent
+                          ? 'Evaluación enviada'
+                          : 'Enviar evaluación'}
                     </button>
                   </div>
                   {supervisorInviteError && (
@@ -651,9 +662,15 @@ export const PracticeDetailPage = () => {
                       {supervisorInviteError}
                     </p>
                   )}
+                  {supervisorEvaluationRequestSent && !supervisorInviteError && (
+                    <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                      <p className="font-bold">Evaluación enviada al supervisor correctamente.</p>
+                      <p className="mt-1">El supervisor recibirá el enlace en el correo registrado para completar la evaluación del estudiante.</p>
+                    </div>
+                  )}
                   {supervisorInvite?.demo_url && (
                     <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                      <p className="font-bold">Invitación generada en modo demo.</p>
+                      <p className="font-bold">Evaluación enviada en modo demo.</p>
                       <a className="mt-1 block break-all font-semibold underline" href={supervisorInvite.demo_url} target="_blank" rel="noreferrer">
                         {supervisorInvite.demo_url}
                       </a>
