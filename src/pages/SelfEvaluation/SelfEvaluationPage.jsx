@@ -229,6 +229,7 @@ export const SelfEvaluationPage = () => {
   const [ratings, setRatings] = useState({});
   const [strengths, setStrengths] = useState('');
   const [weaknesses, setWeaknesses] = useState('');
+  const [feedbackMessage, setFeedbackMessage] = useState(null);
 
   const sections = useMemo(
     () => buildSections(formState?.criteria || []),
@@ -291,6 +292,7 @@ export const SelfEvaluationPage = () => {
 
   const updateRating = (qid, val) => {
     if (!isEnabled) return;
+    setFeedbackMessage(null);
     setRatings((prev) => ({
       ...prev,
       [qid]: val,
@@ -300,6 +302,11 @@ export const SelfEvaluationPage = () => {
   const persist = async (submit = false) => {
     if (!internshipId || !formState) return;
     if (submit && completedCount < requiredKeys.length) {
+      setFeedbackMessage({
+        type: 'warning',
+        title: 'Faltan respuestas',
+        message: 'Completa todos los criterios requeridos antes de enviar.',
+      });
       showToast({
         type: 'warning',
         title: 'Faltan respuestas',
@@ -318,24 +325,31 @@ export const SelfEvaluationPage = () => {
       const saved = submit
         ? await selfEvaluationService.submit(internshipId, payload)
         : await selfEvaluationService.saveDraft(internshipId, payload);
+      const successFeedback = {
+        type: submit ? 'success' : 'info',
+        title: submit ? 'Autoevaluación enviada' : 'Borrador guardado',
+        message: submit
+          ? 'Tus respuestas quedaron registradas correctamente.'
+          : 'Puedes continuar más tarde sin perder cambios.',
+      };
 
       setFormState((prev) => ({
         ...prev,
         status: saved.status,
         evaluation: saved,
       }));
-      showToast({
-        type: submit ? 'success' : 'info',
-        title: submit ? 'Autoevaluación enviada' : 'Borrador guardado',
-        message: submit
-          ? 'Tus respuestas quedaron registradas correctamente.'
-          : 'Puedes continuar más tarde sin perder cambios.',
-      });
+      setFeedbackMessage(successFeedback);
+      showToast(successFeedback);
     } catch (error) {
       const detail = error?.response?.data?.detail;
       const message = typeof detail === 'string'
         ? detail
         : detail?.message || 'No se pudo completar la operación.';
+      setFeedbackMessage({
+        type: error?.response?.status === 409 ? 'warning' : 'error',
+        title: error?.response?.status === 409 ? 'Conflicto de actualización' : 'Error',
+        message,
+      });
       showToast({
         type: error?.response?.status === 409 ? 'warning' : 'error',
         title: error?.response?.status === 409 ? 'Conflicto de actualización' : 'Error',
@@ -455,6 +469,26 @@ export const SelfEvaluationPage = () => {
             {formState.reason || copy.message}
           </p>
         </header>
+
+        {feedbackMessage && (
+          <div className={`mb-8 rounded-2xl border p-5 text-sm font-semibold ${
+            feedbackMessage.type === 'success'
+              ? 'border-emerald-100 bg-emerald-50 text-emerald-800'
+              : feedbackMessage.type === 'warning'
+                ? 'border-amber-100 bg-amber-50 text-amber-800'
+                : feedbackMessage.type === 'error'
+                  ? 'border-red-100 bg-red-50 text-red-800'
+                  : 'border-blue-100 bg-blue-50 text-blue-800'
+          }`}>
+            <div className="flex gap-3">
+              {feedbackMessage.type === 'success' ? <CheckCircle className="shrink-0" /> : <AlertCircle className="shrink-0" />}
+              <div>
+                <h3 className="font-black">{feedbackMessage.title}</h3>
+                <p className="mt-1">{feedbackMessage.message}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="mb-8 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="mb-2 flex items-center justify-between text-sm font-bold">
