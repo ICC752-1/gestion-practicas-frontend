@@ -14,7 +14,7 @@ const recommendationOptions = [
 
 const buildSections = (criteria) => {
   const grouped = criteria.reduce((acc, criterion) => {
-    const section = criterion.section || 'Evaluación del supervisor';
+    const section = criterion.section || 'Evaluación del supervisor a estudiante';
     if (!acc[section]) {
       acc[section] = [];
     }
@@ -136,7 +136,7 @@ export const SupervisorEvaluationPage = () => {
       <main className="mx-auto w-full max-w-5xl flex-grow px-6 py-10">
         <header className="mb-8 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
           <p className="text-sm font-black uppercase tracking-widest text-[#d22864]">
-            Evaluación supervisor
+            Evaluación del supervisor a estudiante
           </p>
           <h1 className="mt-2 text-3xl font-black text-gray-900">
             Evaluación de práctica
