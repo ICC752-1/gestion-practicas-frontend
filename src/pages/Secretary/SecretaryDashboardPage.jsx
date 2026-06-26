@@ -836,7 +836,7 @@ export const SecretaryDashboardPage = () => {
                 <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm space-y-6">
                   <div>
                     <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Evaluaciones del Proceso</p>
-                    <h3 className="mt-1 text-xl font-black text-gray-900">Autoevaluación Estudiante y Evaluación Supervisor</h3>
+                    <h3 className="mt-1 text-xl font-black text-gray-900">Autoevaluación estudiante y evaluación del supervisor a estudiante</h3>
                   </div>
 
                   <div className="grid gap-6 lg:grid-cols-2">
@@ -893,12 +893,12 @@ export const SecretaryDashboardPage = () => {
                       )}
                     </div>
 
-                    {/* Evaluación Supervisor */}
+                    {/* Evaluación del supervisor a estudiante */}
                     <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
                       <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <Building2 size={16} className="text-[#d22864]" />
-                          Evaluación Supervisor
+                          Evaluación del supervisor a estudiante
                         </span>
                         {supervisorEvaluation ? (
                           <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
