@@ -88,6 +88,42 @@ const formatDate = (dateStr) => {
   });
 };
 
+const normalizeText = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const findSlidesDocumentType = (documentTypes) => {
+  const normalizedTarget = 'diapositivas de presentacion';
+  return documentTypes.find((type) => normalizeText(type.name) === normalizedTarget)
+    || documentTypes.find((type) => {
+      const name = normalizeText(type.name);
+      return name.includes('diapositiva') || name.includes('presentacion');
+    });
+};
+
+const getUploadErrorMessage = (error) => {
+  const detail = error?.response?.data?.detail;
+  const translations = {
+    'Document type not found': 'No se encontró el tipo de documento.',
+    'Insufficient permissions': 'No tienes permisos para subir este documento.',
+    'Cannot upload documents for an internship in terminal state: Aprobada':
+      'No se pudo subir el archivo porque la práctica está aprobada y el tipo documental no permite nuevas cargas.',
+    'Cannot upload documents for an internship in terminal state: Rechazada':
+      'No se pueden subir documentos para una práctica rechazada.',
+    'Cannot upload documents for an internship in terminal state: Reprobada':
+      'No se pueden subir documentos para una práctica reprobada.',
+  };
+
+  if (typeof detail === 'string') {
+    return translations[detail] || detail;
+  }
+
+  return detail?.message || error.message || 'No se pudo subir.';
+};
+
 const PRE_REGISTRATION_PATH = '/practicas/nueva/preinscripcion';
 const SELF_EVALUATION_ENABLED_STATUSES = new Set([
   'pending_evaluations',
@@ -567,15 +603,15 @@ export const StudentDashboardPage = () => {
                                     if (!file) return;
                                     try {
                                       const docTypes = await documentService.getDocumentTypes();
-                                      const slidesType = docTypes.find(t => t.name === 'Diapositivas de Presentación');
-                                      if (!slidesType) throw new Error('Tipo de documento no configurado.');
+                                      const slidesType = findSlidesDocumentType(docTypes);
+                                      if (!slidesType) throw new Error('No existe un tipo documental para diapositivas de presentación.');
                                       
                                       const uploadedDoc = await documentService.uploadDocument(appt.internship_id, slidesType.id, file);
                                       await schedulingService.updateAppointmentDocument(appt.id, uploadedDoc.id);
                                       showToast({ type: 'success', title: 'Éxito', message: 'Diapositivas vinculadas exitosamente.' });
                                       fetchAppointments();
                                     } catch (err) {
-                                      showToast({ type: 'error', title: 'Error', message: err.message || 'No se pudo subir.' });
+                                      showToast({ type: 'error', title: 'Error', message: getUploadErrorMessage(err) });
                                     }
                                   }}
                                 />
