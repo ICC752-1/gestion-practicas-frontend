@@ -12,6 +12,7 @@ import { internshipService } from '../../services/internshipService';
 import { coordinatorService } from '../../services/coordinatorService';
 import { getAdminBasePathForRoles, getDisplayRoleForRoles } from '../../services/roleRouting';
 import { supervisorEvaluationService } from '../../services/supervisorEvaluationService';
+import { formatBenefitLabels } from '../../constants/benefits';
 
 // Componente para mostrar un detalle con ícono
 const DetailItem = ({ icon: Icon, label, value, subValue }) => (
@@ -474,7 +475,7 @@ export const PracticeDetailPage = () => {
                     <div className="mt-5 grid gap-5 border-t border-gray-100 pt-5 md:grid-cols-[1fr_220px]">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Beneficios</p>
-                        <p className="mt-2 text-sm leading-relaxed text-gray-700">{practice.ben_description || 'No informado'}</p>
+                        <p className="mt-2 text-sm leading-relaxed text-gray-700">{formatBenefitLabels(practice.ben_description) || 'No informado'}</p>
                       </div>
                       <DetailItem icon={DollarSign} label="Apoyo económico" value={formatMoney(practice.amount)} />
                     </div>
