@@ -6,7 +6,7 @@ export const Header = () => {
 
   const navItems = [
     { label: "Preguntas Frecuentes", to: "/faq", active: location.pathname === "/faq" },
-    { label: "Requisitos", to: "#", active: false },
+    { label: "Requisitos", to: "/requisitos", active: location.pathname === "/requisitos" },
     { label: "Iniciar Sesión", to: "/login", active: location.pathname === "/login" },
   ];
 
