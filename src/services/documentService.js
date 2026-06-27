@@ -1,18 +1,64 @@
 import api from './api';
 
-const TERMINAL_INTERNSHIP_STATES = new Set(['Aprobada', 'Rechazada', 'Reprobada']);
+const APPROVED_INTERNSHIP_STATE = 'Aprobada';
+const PRESENTATION_SLIDES_TYPE_NAME = 'Diapositivas de Presentación';
+const TERMINAL_INTERNSHIP_STATES = new Set([
+  APPROVED_INTERNSHIP_STATE,
+  'Rechazada',
+  'Reprobada',
+]);
+
+const getStatusTitle = (internship) => internship?.status?.title || internship?.status;
+
+const isApprovedInternship = (internship) => (
+  getStatusTitle(internship) === APPROVED_INTERNSHIP_STATE
+  || internship?.status_id === 4
+);
+
+const getDocumentTypeId = (document) => document?.type_id || document?.document_type?.id;
+
+export const getUploadableDocumentTypes = (
+  internship,
+  documentTypes = [],
+  documents = []
+) => {
+  if (!isApprovedInternship(internship)) {
+    return documentTypes;
+  }
+
+  const observedTypeIds = new Set(
+    documents
+      .filter((document) => document?.status === 'observed')
+      .map(getDocumentTypeId)
+      .filter(Boolean)
+      .map(String)
+  );
+
+  return documentTypes.filter((documentType) => (
+    observedTypeIds.has(String(documentType.id))
+    || documentType.name === PRESENTATION_SLIDES_TYPE_NAME
+  ));
+};
 
 export const canUploadDocuments = (internship) => {
   if (internship?.is_cancelled) {
     return false;
   }
 
-  const statusTitle = internship?.status?.title || internship?.status;
+  const statusTitle = getStatusTitle(internship);
   if (typeof statusTitle === 'string') {
+    if (isApprovedInternship(internship)) {
+      return true;
+    }
+
     return !TERMINAL_INTERNSHIP_STATES.has(statusTitle);
   }
 
-  return ![4, 5, 6].includes(internship?.status_id);
+  if (isApprovedInternship(internship)) {
+    return true;
+  }
+
+  return ![5, 6].includes(internship?.status_id);
 };
 
 export const documentService = {
