@@ -17,7 +17,6 @@ import {
   MapPin,
   Briefcase,
   Shield,
-  ChevronRight,
   Download,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -29,7 +28,10 @@ import { schedulingService } from "../../services/schedulingService";
 import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
 import { canUploadDocuments, documentService } from "../../services/documentService";
 import { dataPortabilityService } from "../../services/dataPortabilityService";
-import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
+import {
+  getInternshipAdministrativeProgress,
+  getOverallInternshipProgress,
+} from "../../constants/internshipProgress";
 import { useToast } from "../../context/useToast";
 import { useNotifications } from "../../hooks/useNotifications";
 
@@ -84,6 +86,42 @@ const formatDate = (dateStr) => {
     month: 'short',
     year: 'numeric'
   });
+};
+
+const normalizeText = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const findSlidesDocumentType = (documentTypes) => {
+  const normalizedTarget = 'diapositivas de presentacion';
+  return documentTypes.find((type) => normalizeText(type.name) === normalizedTarget)
+    || documentTypes.find((type) => {
+      const name = normalizeText(type.name);
+      return name.includes('diapositiva') || name.includes('presentacion');
+    });
+};
+
+const getUploadErrorMessage = (error) => {
+  const detail = error?.response?.data?.detail;
+  const translations = {
+    'Document type not found': 'No se encontró el tipo de documento.',
+    'Insufficient permissions': 'No tienes permisos para subir este documento.',
+    'Cannot upload documents for an internship in terminal state: Aprobada':
+      'No se pudo subir el archivo porque la práctica está aprobada y el tipo documental no permite nuevas cargas.',
+    'Cannot upload documents for an internship in terminal state: Rechazada':
+      'No se pueden subir documentos para una práctica rechazada.',
+    'Cannot upload documents for an internship in terminal state: Reprobada':
+      'No se pueden subir documentos para una práctica reprobada.',
+  };
+
+  if (typeof detail === 'string') {
+    return translations[detail] || detail;
+  }
+
+  return detail?.message || error.message || 'No se pudo subir.';
 };
 
 const PRE_REGISTRATION_PATH = '/practicas/nueva/preinscripcion';
@@ -240,14 +278,7 @@ const PracticeCard = ({ internship, lifecycle }) => {
 
       {/* Footer */}
       <div className="px-6 pb-6 pt-2">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <button
-            onClick={() => navigate(`/seguimiento/${internship.id}`)}
-            className="w-full bg-[#d22864] text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#d22864]/20 hover:bg-[#b01e52] transition-all group"
-          >
-            Ver Seguimiento
-            <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </button>
+        <div className="grid grid-cols-1 gap-3">
           {lifecycle?.current_step === "Presentación final por agendar" ? (
             <button
               onClick={() => navigate(`/entrevistas?internshipId=${internship.id}&purpose=final_presentation`)}
@@ -406,6 +437,7 @@ export const StudentDashboardPage = () => {
   const userName = user
     ? `${user.first_name} ${user.last_name}`
     : "Estudiante";
+  const overallProgress = getOverallInternshipProgress(internships);
 
   const canUpload = internships.some(canUploadDocuments);
 
@@ -449,13 +481,33 @@ export const StudentDashboardPage = () => {
                     : 'No tienes prácticas inscritas aún.'}
                 </p>
               </div>
-              <div className="flex gap-4">
-                <div className="text-right">
-                  <p className="text-[10px] uppercase tracking-widest font-black text-gray-400 mb-1">Prácticas</p>
-                  <div className="flex items-center gap-3">
-                    <span className="font-black text-3xl text-gray-900">{internships.length}</span>
+              <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-gray-50 p-5">
+                <div className="mb-3 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest font-black text-gray-400">Progreso total</p>
+                    <p className="mt-1 text-sm font-bold text-gray-700">
+                      {overallProgress.completedCount} de {overallProgress.requiredCount} prácticas aprobadas
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-widest font-black text-gray-400">Prácticas</p>
+                    <span className="font-black text-3xl leading-none text-gray-900">{internships.length}</span>
                   </div>
                 </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-full rounded-full bg-[#d22864] transition-all duration-500"
+                      style={{ width: `${overallProgress.percentage}%` }}
+                    />
+                  </div>
+                  <span className="w-12 text-right text-sm font-black text-[#d22864]">
+                    {overallProgress.percentage}%
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  Solo las prácticas aprobadas o finalizadas aprobadas aportan al progreso total.
+                </p>
               </div>
             </motion.div>
           </div>
@@ -551,15 +603,15 @@ export const StudentDashboardPage = () => {
                                     if (!file) return;
                                     try {
                                       const docTypes = await documentService.getDocumentTypes();
-                                      const slidesType = docTypes.find(t => t.name === 'Diapositivas de Presentación');
-                                      if (!slidesType) throw new Error('Tipo de documento no configurado.');
+                                      const slidesType = findSlidesDocumentType(docTypes);
+                                      if (!slidesType) throw new Error('No existe un tipo documental para diapositivas de presentación.');
                                       
                                       const uploadedDoc = await documentService.uploadDocument(appt.internship_id, slidesType.id, file);
                                       await schedulingService.updateAppointmentDocument(appt.id, uploadedDoc.id);
                                       showToast({ type: 'success', title: 'Éxito', message: 'Diapositivas vinculadas exitosamente.' });
                                       fetchAppointments();
                                     } catch (err) {
-                                      showToast({ type: 'error', title: 'Error', message: err.message || 'No se pudo subir.' });
+                                      showToast({ type: 'error', title: 'Error', message: getUploadErrorMessage(err) });
                                     }
                                   }}
                                 />
@@ -693,13 +745,6 @@ export const StudentDashboardPage = () => {
                   primary={true}
                 />
                 <QuickAction
-                  icon={Play}
-                  title="Ver Seguimiento"
-                  desc="Revisa el estado de tus procesos actuales"
-                  onClick={() => navigate('/seguimiento')}
-                  // disabled={internships.length === 0} // Deshabilitado para agilizar
-                />
-                <QuickAction
                   icon={Calendar}
                   title="Agendar horas y consultas"
                   desc={hasActiveCoordinators
@@ -720,13 +765,6 @@ export const StudentDashboardPage = () => {
                   desc="Informes, certificados y evaluaciones"
                   onClick={() => setIsUploadModalOpen(true)}
                   disabled={!canUpload || internships.length === 0}
-                />
-                <QuickAction
-                  icon={ClipboardCheck}
-                  title="Autoevaluación"
-                  desc="Completa o revisa tu evaluación final"
-                  onClick={() => navigate('/autoevaluacion')}
-                  disabled={internships.length === 0}
                 />
                 <QuickAction
                   icon={Download}

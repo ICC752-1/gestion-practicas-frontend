@@ -6,6 +6,7 @@ import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
 import { canUploadDocuments, documentService } from "../../services/documentService";
 import { getInternshipAdministrativeProgress } from "../../constants/internshipProgress";
+import { formatBenefitLabels } from "../../constants/benefits";
 import { useCallback, useState, useEffect } from "react";
 import { DocumentList } from "../../components/StudentDashboard/DocumentList";
 import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
@@ -522,7 +523,7 @@ export const SeguimientoPage = () => {
                   {internship.ben_description && (
                     <div className="flex-1">
                       <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Beneficios</p>
-                      <p className="text-sm text-gray-700">{internship.ben_description}</p>
+                      <p className="text-sm text-gray-700">{formatBenefitLabels(internship.ben_description)}</p>
                     </div>
                   )}
                   {internship.amount > 0 && (

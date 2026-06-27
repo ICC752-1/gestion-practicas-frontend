@@ -433,8 +433,18 @@ export const PreRegistrationPage = () => {
                                   value={option.key}
                                   checked={answers[question.id] === option.key}
                                   onChange={() => handleAnswerChange(question.id, option.key)}
-                                  className="mt-1 h-4 w-4 rounded-full border border-gray-400"
+                                  className="sr-only"
                                 />
+                                <span
+                                  aria-hidden="true"
+                                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                                    answers[question.id] === option.key
+                                      ? 'border-[#d22864] bg-[#d22864]'
+                                      : 'border-gray-300 bg-white'
+                                  }`}
+                                >
+                                  <span className={`h-2 w-2 rounded-full bg-white ${answers[question.id] === option.key ? 'block' : 'hidden'}`} />
+                                </span>
                                 <span className="text-sm font-semibold text-gray-700">{option.label}</span>
                               </label>
                             ))}

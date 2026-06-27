@@ -30,8 +30,19 @@ const initialForm = {
   role_ids: [],
 };
 
+const ERROR_TRANSLATIONS = {
+  'Email already exists': 'El correo ya existe.',
+  'RUT already exists': 'El RUT ya existe.',
+  'User not found': 'No se encontró el usuario.',
+  'Role not found': 'No se encontró el rol.',
+};
+
 const getErrorMessage = (error) => {
-  return error?.response?.data?.detail || 'No se pudo completar la acción.';
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === 'string') {
+    return ERROR_TRANSLATIONS[detail] || detail;
+  }
+  return detail?.message || 'No se pudo completar la acción.';
 };
 
 const cleanRut = (value) => {
