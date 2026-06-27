@@ -96,15 +96,15 @@ export const FAQPage = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="max-w-7xl mx-auto py-8 px-6 grow w-full"
+          className="max-w-7xl mx-auto py-3 px-6 grow w-full"
         >
           <div className="mb-12">
           <button
             type="button"
             onClick={() => navigate("/")}
-            className="inline-flex items-center gap-2 text-brand-medium font-semibold hover:underline mb-8"
+            className="inline-flex items-center gap-2 text-brand-medium font-semibold hover:underline mb-8 text-2xl"
           >
-            ← Volver al inicio
+            ← 
           </button>
 
           <div className="text-center">

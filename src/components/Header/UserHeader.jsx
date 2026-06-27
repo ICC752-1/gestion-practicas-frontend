@@ -174,28 +174,26 @@ export const UserHeader = () => {
 
   return (
     <header
-        className="sticky top-0 z-50 flex min-h-[72px] w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm"
-        style={{ padding: '0.5rem clamp(0.5rem, 2vw, 2.5rem)', gap: '0.5rem' }}
+        className="sticky top-0 z-50 flex min-h-[60px] w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm"
+        style={{ padding: '0.4rem clamp(0.5rem, 2vw, 2.5rem)', gap: '0.5rem' }}
       >
       <div className="flex lg:grid lg:grid-cols-[auto_1fr_auto] xl:grid-cols-[1fr_auto_1fr] items-center justify-between w-full gap-2 xl:gap-4">
 
         {/* Left: Logo + Title */}
-        <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0">
-          <div className="bg-[#d22864] rounded-xl shadow-sm flex-shrink-0" style={{ padding: 'clamp(4px, 0.6vw, 8px)' }}>
+        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+          <div className="bg-[#d22864] rounded-lg shadow-sm flex-shrink-0 p-1" style={{ padding: 'clamp(4px, 0.4vw, 6px)' }}>
             <img
-              style={{ width: 'clamp(44px, 4.5vw, 60px)', height: 'clamp(44px, 4.5vw, 60px)' }}
+              style={{ width: 'clamp(36px, 3.5vw, 46px)', height: 'clamp(36px, 3.5vw, 46px)' }}
               className="object-contain"
               alt="Universidad de La Frontera"
               src={universityLogo}
-            />
-          </div>
-          <div className="flex flex-col leading-tight pr-2">
-            <h1
-              className="font-bold tracking-tight text-[#d22864]"
-              style={{ fontSize: 'clamp(0.8rem, 2.2vw, 1.25rem)' }}
-            >
-              Sistema de Gestión de Prácticas
-            </h1>
+            />            
+          </div>    
+            <div className="flex flex-col leading-tight min-w-0">
+              <h1 className="font-bold tracking-tight text-[#d22864] truncate"
+                style={{ fontSize: 'clamp(0.65rem, 2.0vw, 1.25rem)' }}>
+                Sistema de Gestión de Prácticas
+              </h1>
             <p
               className="font-semibold text-[#d22864] hidden sm:block mt-0.5"
               style={{ fontSize: 'clamp(0.65rem, 0.9vw, 0.75rem)' }}

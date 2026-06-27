@@ -57,17 +57,17 @@ export const RequirementsPage = () => {
 
       <main className="bg-white">
         {/* Botón volver */}
-        <div className="max-w-7xl mx-auto w-full px-6 pt-7">
+          <div className="max-w-7xl mx-auto py-3 px-6 w-full">
           <button
             type="button"
             onClick={() => navigate("/")}
-            className="inline-flex items-center gap-2 text-[#d22864] font-semibold hover:underline"
+            className="inline-flex items-center gap-2 text-[#d22864] font-semibold hover:underline text-2xl"
           >
-            ← Volver al inicio
+            ←
           </button>
         </div>
 
-        <section className="mx-auto max-w-7xl px-6 py-16">
+        <section className="mx-auto max-w-7xl px-6 py-6">
           <div className="mx-auto max-w-4xl text-center">
             <p className="text-sm font-black uppercase tracking-wider text-[#d22864]">
               Antes de registrar tu práctica

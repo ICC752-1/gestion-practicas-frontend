@@ -9,6 +9,7 @@ import { RequirementsPage } from '../pages/Requirements/RequirementsPage'
 import { StudentDashboardPage } from '../pages/StudentDashboard/StudentDashboardPage'
 import { CoordinatorDashboardPage } from '../pages/CoordinatorDashboard/CoordinatorDashboardPage'
 import { PracticeDetailPage } from '../pages/CoordinatorDashboard/PracticeDetailPage'
+import { SeguimientoPage } from '../pages/Seguimiento/SeguimientoPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
 import { SupervisorEvaluationPage } from '../pages/Supervisor/SupervisorEvaluationPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
@@ -188,7 +189,11 @@ export const AppRoutes = () => {
 
           <Route
               path="/seguimiento/:internshipId"
-              element={<Navigate to="/dashboard" replace />}
+              element={
+                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
+                      <SeguimientoPage />
+                  </PrivateRoute>
+              }
           />
 
           <Route
