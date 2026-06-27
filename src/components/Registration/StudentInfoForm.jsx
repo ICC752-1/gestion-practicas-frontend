@@ -231,8 +231,9 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
                 {duplicateBlock.blocking_internship_id && (
                   <button
                     type="button"
-                    onClick={() => navigate(`/seguimiento/${duplicateBlock.blocking_internship_id}`)}
-                    className="mt-2.5 rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-amber-700 transition-colors"
+
+                    onClick={() => navigate('/dashboard')}
+                    className="mt-3 rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-700"
                   >
                     Ver solicitud existente
                   </button>

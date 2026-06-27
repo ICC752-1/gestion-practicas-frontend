@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { StatCard } from '../coordinador/StatCard';
 import Management from './Management';
 import { useAuth } from '../../context/useAuth';
-import { Users, FileText, CheckCircle, Clock, Calendar, AlertCircle, Mail } from 'lucide-react';
+import { Users, UserPlus, FileText, CheckCircle, Clock, Calendar, AlertCircle, Mail, PlayCircle } from 'lucide-react';
 
 const getStatusTotal = (stats, titles) => {
   return (stats?.internships_by_status || [])
@@ -72,10 +72,9 @@ const Dashboard = ({
           Icon={StatCard.Icon || CheckCircle} 
           variant="success"
         />
-      </div>
-
-       {/* Botones de Gestión de Accesos Rápidos */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+       </div>
+    
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -123,6 +122,36 @@ const Dashboard = ({
           <div>
             <h3 className="text-lg font-bold text-gray-800 leading-tight">Cartas de Presentación</h3>
             <p className="text-sm text-gray-400 mt-0.5">Administra plantillas por tipo de práctica</p>
+          </div>
+        </motion.button>
+
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate('/induccion/admin')}
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
+        >
+          <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
+            <PlayCircle className="w-7 h-7 text-[#B5305F] group-hover:text-white transition-colors" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">Administrar inducción</h3>
+            <p className="text-sm text-gray-400">Gestiona videos, preguntas y versiones publicadas</p>
+          </div>
+        </motion.button>
+
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate('/estudiantes/admin')}
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
+        >
+          <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
+            <UserPlus className="w-7 h-7 text-[#B5305F] group-hover:text-white transition-colors" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">Vinculación de estudiantes</h3>
+            <p className="text-sm text-gray-400">Crea cuentas estudiante y envía enlaces de activación</p>
           </div>
         </motion.button>
       </div>

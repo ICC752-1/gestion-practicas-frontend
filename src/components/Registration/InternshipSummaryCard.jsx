@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { formatBenefitLabels } from '../../constants/benefits';
 
 export const InternshipSummaryCard = ({ internshipData, onClose }) => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ export const InternshipSummaryCard = ({ internshipData, onClose }) => {
 
   const handleEdit = () => {
     if (internshipData.id) {
-      navigate(`/seguimiento/${internshipData.id}`);
+      navigate('/dashboard');
       return;
     }
 
@@ -115,7 +116,7 @@ export const InternshipSummaryCard = ({ internshipData, onClose }) => {
             <span className="text-gray-500">Actividades</span>
             <span className="font-semibold">{internshipData.act_description}</span>
             <span className="text-gray-500">Beneficios</span>
-            <span className="font-semibold">{internshipData.ben_description || '—'}</span>
+            <span className="font-semibold">{formatBenefitLabels(internshipData.ben_description) || '—'}</span>
             <span className="text-gray-500">Apoyo económico</span>
             <span className="font-semibold">
               ${internshipData.amount?.toLocaleString('es-CL') || 0}

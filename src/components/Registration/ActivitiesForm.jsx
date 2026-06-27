@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { BENEFIT_OPTIONS } from '../../constants/benefits';
 
 export const ActivitiesForm = ({ onNext, onBack, initialData = {}, isSubmitting = false }) => {
   const [formData, setFormData] = useState({
@@ -41,16 +42,6 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {}, isSubmitting 
       onNext?.(formData);
     }
   };
-
-  const benefitOptions = [
-    { id: 'sin_beneficio', label: 'Sin beneficios' },
-    { id: 'locomocion', label: 'Bono locomoción' },
-    { id: 'movilizacion', label: 'Movilización organización' },
-    { id: 'colacion_bono', label: 'Bono colación' },
-    { id: 'colacion_org', label: 'Colación organización' },
-    { id: 'alojamiento', label: 'Bono alojamiento' },
-    { id: 'ayuda', label: 'Ayuda económica' },
-  ];
 
   const handleBenefitClick = (id) => {
     const current = Array.isArray(formData.ben_description) ? formData.ben_description : [];
@@ -95,7 +86,7 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {}, isSubmitting 
             Beneficios que entregará la organización (opcional)
           </label>
           <div className="space-y-2">
-            {benefitOptions.map(benefit => {
+            {BENEFIT_OPTIONS.map(benefit => {
               const isChecked = formData.ben_description.includes(benefit.id);
               const isNone = benefit.id === 'sin_beneficio';
               return (

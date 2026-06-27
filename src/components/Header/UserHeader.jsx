@@ -68,6 +68,14 @@ export const UserHeader = () => {
       },
     ];
 
+    if (isAdminToggle) {
+      navItems.splice(1, 0, {
+        label: "Administrar inducción",
+        to: "/induccion/admin",
+        active: location.pathname === "/induccion/admin",
+      });
+    }
+
     const handleLogout = () => {
         logout();
     };

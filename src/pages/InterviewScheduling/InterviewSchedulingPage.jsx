@@ -103,13 +103,41 @@ const formatSlotTime = (slot) => {
 const getErrorMessage = (error) => {
     const detail = error?.response?.data?.detail;
 
-    if (typeof detail === 'string') return detail;
+    const translations = {
+        'Document type not found': 'No se encontró el tipo de documento.',
+        'Document file not found': 'No se encontró el archivo del documento.',
+        'Insufficient permissions': 'No tienes permisos para realizar esta acción.',
+        'Cannot upload documents for an internship in terminal state: Aprobada':
+            'No se pudo subir el archivo porque la práctica está aprobada y el tipo documental no permite nuevas cargas.',
+        'Cannot upload documents for an internship in terminal state: Rechazada':
+            'No se pueden subir documentos para una práctica rechazada.',
+        'Cannot upload documents for an internship in terminal state: Reprobada':
+            'No se pueden subir documentos para una práctica reprobada.',
+    };
+
+    if (typeof detail === 'string') return translations[detail] || detail;
     if (Array.isArray(detail?.pending_requirements) && detail.pending_requirements.length > 0) {
         return `${detail.message} ${detail.pending_requirements.join('. ')}.`;
     }
     if (detail?.message) return detail.message;
 
     return 'No se pudo completar la operación. Intenta nuevamente.';
+};
+
+const normalizeText = (value) =>
+    String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+
+const findSlidesDocumentType = (documentTypes) => {
+    const normalizedTarget = 'diapositivas de presentacion';
+    return documentTypes.find((type) => normalizeText(type.name) === normalizedTarget)
+        || documentTypes.find((type) => {
+            const name = normalizeText(type.name);
+            return name.includes('diapositiva') || name.includes('presentacion');
+        });
 };
 
 const getRoleNames = (user) => {
@@ -214,6 +242,7 @@ export const InterviewSchedulingPage = () => {
         location: '',
         comments: '',
     });
+    const [directFormErrors, setDirectFormErrors] = useState({});
 
     // Cancel / Reschedule modal state
     const [cancellingAppointment, setCancellingAppointment] = useState(null);
@@ -370,9 +399,9 @@ export const InterviewSchedulingPage = () => {
             if (formPurpose === 'final_presentation' && slidesFile) {
                 // 1. Obtener tipos de documentos
                 const docTypes = await documentService.getDocumentTypes();
-                const slidesType = docTypes.find(t => t.name === 'Diapositivas de Presentación');
+                const slidesType = findSlidesDocumentType(docTypes);
                 if (!slidesType) {
-                    throw new Error('Tipo documental "Diapositivas de Presentación" no configurado.');
+                    throw new Error('No existe un tipo documental para diapositivas de presentación.');
                 }
                 
                 // 2. Subir el documento
@@ -481,9 +510,9 @@ export const InterviewSchedulingPage = () => {
         setMessage(null);
         try {
             const docTypes = await documentService.getDocumentTypes();
-            const slidesType = docTypes.find(t => t.name === 'Diapositivas de Presentación');
+            const slidesType = findSlidesDocumentType(docTypes);
             if (!slidesType) {
-                throw new Error('Tipo de documento "Diapositivas de Presentación" no configurado.');
+                throw new Error('No existe un tipo documental para diapositivas de presentación.');
             }
 
             const uploadedDoc = await documentService.uploadDocument(
@@ -718,8 +747,46 @@ export const InterviewSchedulingPage = () => {
         }
     };
 
+    const setDirectFormField = (field, value) => {
+        setDirectForm((prev) => ({ ...prev, [field]: value }));
+        setDirectFormErrors((prev) => {
+            if (!prev[field]) return prev;
+            const next = { ...prev };
+            delete next[field];
+            return next;
+        });
+    };
+
+    const validateDirectScheduleForm = () => {
+        const errors = {};
+
+        if (!directForm.internshipId) {
+            errors.internshipId = 'Selecciona la práctica del estudiante.';
+        }
+        if (!directForm.date) {
+            errors.date = 'Selecciona la fecha de la cita.';
+        }
+        if (!directForm.start_time) {
+            errors.start_time = 'Ingresa la hora de inicio.';
+        }
+        if (!directForm.end_time) {
+            errors.end_time = 'Ingresa la hora de término.';
+        }
+        if (!directForm.location.trim()) {
+            errors.location = 'Ingresa la ubicación o enlace de reunión.';
+        }
+
+        return errors;
+    };
+
     const handleDirectSchedule = async (event) => {
         event.preventDefault();
+        const validationErrors = validateDirectScheduleForm();
+
+        if (Object.keys(validationErrors).length > 0) {
+            setDirectFormErrors(validationErrors);
+            return;
+        }
 
         const trimmedLocation = (directForm.location || '').trim();
         if (!trimmedLocation) {
@@ -748,6 +815,7 @@ export const InterviewSchedulingPage = () => {
             });
 
             setShowDirectScheduleModal(false);
+            setDirectFormErrors({});
             setDirectForm({
                 internshipId: '',
                 date: '',
@@ -791,7 +859,10 @@ export const InterviewSchedulingPage = () => {
                     </div>
                     {isAdmin && (
                         <button
-                            onClick={() => setShowDirectScheduleModal(true)}
+                            onClick={() => {
+                                setDirectFormErrors({});
+                                setShowDirectScheduleModal(true);
+                            }}
                             className="flex items-center gap-2 rounded-2xl bg-[#d22864] hover:bg-[#b01e50] px-5 py-3 font-bold text-white shadow-md shadow-[#d22864]/10 transition"
                         >
                             <CalendarPlus size={18} />
@@ -1745,12 +1816,18 @@ export const InterviewSchedulingPage = () => {
                             <h3 className="text-xl font-black text-slate-900">
                                 Agendar Presentación Directa
                             </h3>
-                            <button onClick={() => setShowDirectScheduleModal(false)} className="text-slate-400 hover:text-slate-600">
+                            <button
+                                onClick={() => {
+                                    setDirectFormErrors({});
+                                    setShowDirectScheduleModal(false);
+                                }}
+                                className="text-slate-400 hover:text-slate-600"
+                            >
                                 <X size={20} />
                             </button>
                         </div>
 
-                        <form onSubmit={handleDirectSchedule} className="space-y-4">
+                        <form onSubmit={handleDirectSchedule} noValidate className="space-y-4">
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <div className="sm:col-span-2">
                                     <label className="block text-sm font-bold text-slate-700 mb-1">
@@ -1758,9 +1835,9 @@ export const InterviewSchedulingPage = () => {
                                     </label>
                                     <select
                                         value={directForm.internshipId}
-                                        onChange={(e) => setDirectForm(prev => ({ ...prev, internshipId: e.target.value }))}
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
-                                        required
+                                        onChange={(e) => setDirectFormField('internshipId', e.target.value)}
+                                        aria-invalid={Boolean(directFormErrors.internshipId)}
+                                        className={`w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition ${directFormErrors.internshipId ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                                     >
                                         <option value="" disabled>Selecciona una práctica</option>
                                         {internships.map((internship) => (
@@ -1769,43 +1846,55 @@ export const InterviewSchedulingPage = () => {
                                             </option>
                                         ))}
                                     </select>
+                                    {directFormErrors.internshipId && (
+                                        <p className="mt-1 text-xs font-semibold text-red-600">{directFormErrors.internshipId}</p>
+                                    )}
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="block text-sm font-bold text-slate-700 mb-1">Fecha de la Cita</label>
                                     <input
                                         type="date"
                                         value={directForm.date}
-                                        onChange={(e) => setDirectForm(prev => ({ ...prev, date: e.target.value }))}
+                                        onChange={(e) => setDirectFormField('date', e.target.value)}
                                         min={today.toISOString().split('T')[0]}
-                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
-                                        required
+                                        aria-invalid={Boolean(directFormErrors.date)}
+                                        className={`w-full rounded-xl border px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition ${directFormErrors.date ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                                     />
+                                    {directFormErrors.date && (
+                                        <p className="mt-1 text-xs font-semibold text-red-600">{directFormErrors.date}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 mb-1">Hora Inicio</label>
                                     <input
                                         type="time"
                                         value={directForm.start_time}
-                                        onChange={(e) => setDirectForm(prev => ({ ...prev, start_time: e.target.value }))}
-                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
-                                        required
+                                        onChange={(e) => setDirectFormField('start_time', e.target.value)}
+                                        aria-invalid={Boolean(directFormErrors.start_time)}
+                                        className={`w-full rounded-xl border px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition ${directFormErrors.start_time ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                                     />
+                                    {directFormErrors.start_time && (
+                                        <p className="mt-1 text-xs font-semibold text-red-600">{directFormErrors.start_time}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 mb-1">Hora Término</label>
                                     <input
                                         type="time"
                                         value={directForm.end_time}
-                                        onChange={(e) => setDirectForm(prev => ({ ...prev, end_time: e.target.value }))}
-                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
-                                        required
+                                        onChange={(e) => setDirectFormField('end_time', e.target.value)}
+                                        aria-invalid={Boolean(directFormErrors.end_time)}
+                                        className={`w-full rounded-xl border px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition ${directFormErrors.end_time ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                                     />
+                                    {directFormErrors.end_time && (
+                                        <p className="mt-1 text-xs font-semibold text-red-600">{directFormErrors.end_time}</p>
+                                    )}
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="block text-sm font-bold text-slate-700 mb-1">Modalidad</label>
                                     <select
                                         value={directForm.modality}
-                                        onChange={(e) => setDirectForm(prev => ({ ...prev, modality: e.target.value }))}
+                                        onChange={(e) => setDirectFormField('modality', e.target.value)}
                                         className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-[#d22864] outline-none transition"
                                     >
                                         {MODALITY_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
@@ -1816,18 +1905,21 @@ export const InterviewSchedulingPage = () => {
                                     <input
                                         type="text"
                                         value={directForm.location}
-                                        onChange={(e) => setDirectForm(prev => ({ ...prev, location: e.target.value }))}
+                                        onChange={(e) => setDirectFormField('location', e.target.value)}
                                         placeholder="Ej. Oficina 302, o link de Teams / Meet"
-                                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#d22864] outline-none transition"
-                                        required
+                                        aria-invalid={Boolean(directFormErrors.location)}
+                                        className={`w-full rounded-xl border px-3 py-2.5 text-sm text-slate-800 focus:border-[#d22864] outline-none transition ${directFormErrors.location ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                                     />
+                                    {directFormErrors.location && (
+                                        <p className="mt-1 text-xs font-semibold text-red-600">{directFormErrors.location}</p>
+                                    )}
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="block text-sm font-bold text-slate-700 mb-1">Comentarios o Notas</label>
                                     <textarea
                                         rows={2}
                                         value={directForm.comments}
-                                        onChange={(e) => setDirectForm(prev => ({ ...prev, comments: e.target.value }))}
+                                        onChange={(e) => setDirectFormField('comments', e.target.value)}
                                         placeholder="Comentarios adicionales sobre la presentación..."
                                         className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#d22864] outline-none transition"
                                     />
@@ -1837,7 +1929,10 @@ export const InterviewSchedulingPage = () => {
                             <div className="flex gap-2 justify-end pt-3">
                                 <button
                                     type="button"
-                                    onClick={() => setShowDirectScheduleModal(false)}
+                                    onClick={() => {
+                                        setDirectFormErrors({});
+                                        setShowDirectScheduleModal(false);
+                                    }}
                                     className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition"
                                 >
                                     Cancelar
