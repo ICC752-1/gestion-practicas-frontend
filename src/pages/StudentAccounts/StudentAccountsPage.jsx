@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Search, UserPlus, Users } from 'lucide-react';
+import { ArrowDown, ArrowDownUp, ArrowUp, Search, UserPlus, Users } from 'lucide-react';
 
 import { Footer } from '../../components/Footer/Footer';
 import { UserHeader } from '../../components/Header/UserHeader';
@@ -10,6 +10,11 @@ const PAGE_SIZE = 10;
 const initialFilters = {
   search: '',
   is_active: '',
+};
+
+const initialSort = {
+  sort_by: 'created_at',
+  sort_dir: 'desc',
 };
 
 const initialForm = {
@@ -75,10 +80,54 @@ const isValidRut = (value) => {
   return Boolean(number) && /^\d+$/.test(number) && calculateRutVerifier(number) === verifier;
 };
 
+const formatDateTime = (value) => {
+  if (!value) return '-';
+
+  const rawValue = String(value);
+  const normalizedValue = /([zZ]|[+-]\d{2}:\d{2})$/.test(rawValue)
+    ? rawValue
+    : `${rawValue}Z`;
+  const date = new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) return '-';
+
+  return new Intl.DateTimeFormat('es-CL', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
+
+const SortHeader = ({ label, field, sort, onSort, align = 'left' }) => {
+  const isActive = sort.sort_by === field;
+  const Icon = isActive
+    ? (sort.sort_dir === 'asc' ? ArrowUp : ArrowDown)
+    : ArrowDownUp;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(field)}
+      className={[
+        'inline-flex w-full items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-black uppercase tracking-wide transition-colors',
+        align === 'center' ? 'justify-center text-center' : 'justify-start text-left',
+        isActive ? 'text-[#d22864]' : 'text-gray-500 hover:bg-gray-50 hover:text-[#d22864]',
+      ].join(' ')}
+      aria-sort={isActive ? (sort.sort_dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <span>{label}</span>
+      <Icon size={14} strokeWidth={2.6} />
+    </button>
+  );
+};
+
 export const StudentAccountsPanel = () => {
   const [students, setStudents] = useState([]);
   const [filters, setFilters] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
+  const [sort, setSort] = useState(initialSort);
   const [form, setForm] = useState(initialForm);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
@@ -92,7 +141,12 @@ export const StudentAccountsPanel = () => {
     setError('');
 
     try {
-      const params = { limit: PAGE_SIZE, offset };
+      const params = {
+        limit: PAGE_SIZE,
+        offset,
+        sort_by: sort.sort_by,
+        sort_dir: sort.sort_dir,
+      };
       if (appliedFilters.search) params.search = appliedFilters.search;
       if (appliedFilters.is_active !== '') {
         params.is_active = appliedFilters.is_active === 'true';
@@ -106,7 +160,7 @@ export const StudentAccountsPanel = () => {
     } finally {
       setLoading(false);
     }
-  }, [appliedFilters, offset]);
+  }, [appliedFilters, offset, sort]);
 
   useEffect(() => {
     loadStudents();
@@ -121,6 +175,19 @@ export const StudentAccountsPanel = () => {
     event.preventDefault();
     setOffset(0);
     setAppliedFilters(filters);
+  };
+
+  const handleSort = (field) => {
+    setOffset(0);
+    setSort((current) => ({
+      sort_by: field,
+      sort_dir: current.sort_by === field && current.sort_dir === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  const applyRecentSort = (direction) => {
+    setOffset(0);
+    setSort({ sort_by: 'created_at', sort_dir: direction });
   };
 
   const handleFormChange = (event) => {
@@ -187,6 +254,8 @@ export const StudentAccountsPanel = () => {
 
   const start = total === 0 ? 0 : offset + 1;
   const end = Math.min(offset + PAGE_SIZE, total);
+  const currentPage = total === 0 ? 0 : Math.floor(offset / PAGE_SIZE) + 1;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <>
@@ -244,28 +313,76 @@ export const StudentAccountsPanel = () => {
               </button>
             </form>
 
+            <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 text-sm font-semibold text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-black text-gray-900">
+                  {total} {total === 1 ? 'resultado' : 'resultados'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Mostrando {start}-{end} · Página {currentPage} de {totalPages}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyRecentSort('desc')}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+                    sort.sort_by === 'created_at' && sort.sort_dir === 'desc'
+                      ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
+                  }`}
+                >
+                  <ArrowDown size={14} />
+                  Más recientes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyRecentSort('asc')}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+                    sort.sort_by === 'created_at' && sort.sort_dir === 'asc'
+                      ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
+                  }`}
+                >
+                  <ArrowUp size={14} />
+                  Más antiguos
+                </button>
+              </div>
+            </div>
+
             <div className="mt-6 overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-100 text-sm">
                 <thead>
                   <tr className="text-left text-xs font-black uppercase tracking-wide text-gray-500">
-                    <th className="px-3 py-3">Estudiante</th>
-                    <th className="px-3 py-3">RUT</th>
-                    <th className="px-3 py-3">Ingreso</th>
-                    <th className="px-3 py-3">Estado</th>
+                    <th className="px-3 py-3">
+                      <SortHeader label="Estudiante" field="last_name" sort={sort} onSort={handleSort} />
+                    </th>
+                    <th className="px-3 py-3">
+                      <SortHeader label="Registro" field="created_at" sort={sort} onSort={handleSort} align="center" />
+                    </th>
+                    <th className="px-3 py-3">
+                      <SortHeader label="RUT" field="rut" sort={sort} onSort={handleSort} align="center" />
+                    </th>
+                    <th className="px-3 py-3">
+                      <SortHeader label="Ingreso" field="admission_year" sort={sort} onSort={handleSort} align="center" />
+                    </th>
+                    <th className="px-3 py-3">
+                      <SortHeader label="Estado" field="is_active" sort={sort} onSort={handleSort} align="center" />
+                    </th>
                     <th className="px-3 py-3">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {loading && (
                     <tr>
-                      <td colSpan="5" className="px-3 py-8 text-center font-semibold text-gray-500">
+                      <td colSpan="6" className="px-3 py-8 text-center font-semibold text-gray-500">
                         Cargando estudiantes...
                       </td>
                     </tr>
                   )}
                   {!loading && students.length === 0 && (
                     <tr>
-                      <td colSpan="5" className="px-3 py-8 text-center font-semibold text-gray-500">
+                      <td colSpan="6" className="px-3 py-8 text-center font-semibold text-gray-500">
                         No hay estudiantes para los filtros seleccionados.
                       </td>
                     </tr>
@@ -276,8 +393,9 @@ export const StudentAccountsPanel = () => {
                         <p className="font-black text-gray-900">{student.first_name} {student.last_name}</p>
                         <p className="text-gray-500">{student.email}</p>
                       </td>
+                      <td className="px-3 py-4 text-center text-xs font-semibold text-gray-500">{formatDateTime(student.created_at)}</td>
                       <td className="px-3 py-4 text-gray-600">{student.rut}</td>
-                      <td className="px-3 py-4 text-gray-600">{student.admission_year || '-'}</td>
+                      <td className="px-3 py-4 text-center text-gray-600">{student.admission_year || '-'}</td>
                       <td className="px-3 py-4">
                         <span className={`rounded-full px-3 py-1 text-xs font-black ${student.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
                           {student.is_active ? 'Activo' : 'Inactivo'}
@@ -305,8 +423,18 @@ export const StudentAccountsPanel = () => {
             </div>
 
             <div className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between">
-              <span>Mostrando {start}-{end} de {total}</span>
-              <div className="flex gap-2">
+              <span>
+                Mostrando {start}-{end} de {total} · Página {currentPage} de {totalPages}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={offset === 0 || loading}
+                  onClick={() => setOffset(0)}
+                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40"
+                >
+                  Inicio
+                </button>
                 <button
                   type="button"
                   disabled={offset === 0 || loading}
@@ -322,6 +450,14 @@ export const StudentAccountsPanel = () => {
                   className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40"
                 >
                   Siguiente
+                </button>
+                <button
+                  type="button"
+                  disabled={offset + PAGE_SIZE >= total || loading}
+                  onClick={() => setOffset((totalPages - 1) * PAGE_SIZE)}
+                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40"
+                >
+                  Última
                 </button>
               </div>
             </div>

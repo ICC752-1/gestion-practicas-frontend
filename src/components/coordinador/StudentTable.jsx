@@ -1,9 +1,75 @@
-import React, { useState, useMemo } from 'react';
-import { Inbox, Filter, Search } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { ArrowDown, ArrowDownUp, ArrowUp, Inbox, Filter, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import { getAdminBasePathForRoles } from '../../services/roleRouting';
 import { internshipService } from '../../services/internshipService';
+
+const PAGE_SIZE = 10;
+
+const initialSort = {
+  sort_by: 'upload_date',
+  sort_dir: 'desc',
+};
+
+const normalizeText = (value) => String(value || '').toLowerCase();
+
+const formatDateTime = (value) => {
+  if (!value) return '-';
+
+  const rawValue = String(value);
+  const normalizedValue = /([zZ]|[+-]\d{2}:\d{2})$/.test(rawValue)
+    ? rawValue
+    : `${rawValue}Z`;
+  const date = new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) return '-';
+
+  return new Intl.DateTimeFormat('es-CL', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
+
+const getStudentName = (internship) => (
+  internship.student
+    ? `${internship.student.first_name} ${internship.student.last_name}`
+    : 'Estudiante no registrado'
+);
+
+const getStudentDegree = (internship) => (
+  internship.student?.degree || internship.student?.cod_degree || ''
+);
+
+const getRequestDate = (internship) => (
+  internship.upload_date || internship.created_at || ''
+);
+
+const SortHeader = ({ label, field, sort, onSort, align = 'left' }) => {
+  const isActive = sort.sort_by === field;
+  const Icon = isActive
+    ? (sort.sort_dir === 'asc' ? ArrowUp : ArrowDown)
+    : ArrowDownUp;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(field)}
+      className={[
+        'inline-flex w-full items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold uppercase tracking-wider transition-colors',
+        align === 'center' ? 'justify-center text-center' : 'justify-start text-left',
+        isActive ? 'text-[#d22864]' : 'text-gray-500 hover:bg-white hover:text-[#d22864]',
+      ].join(' ')}
+      aria-sort={isActive ? (sort.sort_dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <span>{label}</span>
+      <Icon size={14} strokeWidth={2.6} />
+    </button>
+  );
+};
 
 export const StudentTable = ({ students = [] }) => {
   const navigate = useNavigate();
@@ -12,6 +78,8 @@ export const StudentTable = ({ students = [] }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [degreeFilter, setDegreeFilter] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
+  const [sort, setSort] = useState(initialSort);
+  const [offset, setOffset] = useState(0);
   const [openingId, setOpeningId] = useState(null);
 
   // FE4: Normalizar estado
@@ -38,39 +106,88 @@ export const StudentTable = ({ students = [] }) => {
     return [...new Set(students.map(s => s.org_name).filter(Boolean))];
   }, [students]);
 
-  const filteredStudents = students.filter(s => {
-    const name = s.student ? `${s.student.first_name} ${s.student.last_name}`.toLowerCase() : '';
-    const email = s.student?.email?.toLowerCase() || '';
-    const degree = (s.student?.degree || s.student?.cod_degree || '').toLowerCase();
-    const org = s.org_name?.toLowerCase() || '';
-    
-    const city = s.city?.toLowerCase() || '';
-    const region = s.region?.toLowerCase() || '';
-    const practiceType = (s.modality || s.practice_type || '').toLowerCase();
-    const startDate = s.start_date?.toString().toLowerCase() || '';
-    const endDate = s.end_date?.toString().toLowerCase() || '';
-    
-    const term = searchTerm.toLowerCase();
+  const filteredStudents = useMemo(() => students.filter(s => {
+    const name = normalizeText(getStudentName(s));
+    const email = normalizeText(s.student?.email);
+    const degree = normalizeText(getStudentDegree(s));
+    const org = normalizeText(s.org_name);
+    const status = normalizeText(getNormalizedStatus(s).label);
+    const city = normalizeText(s.city);
+    const region = normalizeText(s.region);
+    const practiceType = normalizeText(s.modality || s.practice_type);
+    const startDate = normalizeText(s.start_date);
+    const endDate = normalizeText(s.end_date);
+    const uploadDate = normalizeText(s.upload_date);
+    const term = normalizeText(searchTerm);
 
     const matchesSearch = (
       name.includes(term) ||
       email.includes(term) ||
       degree.includes(term) ||
       org.includes(term) ||
+      status.includes(term) ||
       city.includes(term) ||
       region.includes(term) ||
       practiceType.includes(term) ||
       startDate.includes(term) ||
-      endDate.includes(term)
+      endDate.includes(term) ||
+      uploadDate.includes(term)
     );
 
-    const matchesDegree = degreeFilter === '' || (s.student?.degree || s.student?.cod_degree) === degreeFilter;
+    const matchesDegree = degreeFilter === '' || getStudentDegree(s) === degreeFilter;
     const matchesCompany = companyFilter === '' || s.org_name === companyFilter;
 
     return matchesSearch && matchesDegree && matchesCompany;
-  });
+  }), [students, searchTerm, degreeFilter, companyFilter]);
 
-  const gridLayoutClass = "grid grid-cols-[1.4fr_1fr_1.3fr_1.1fr_0.9fr] items-center gap-3 px-4 py-4 w-full";
+  const sortedStudents = useMemo(() => {
+    const getSortValue = (student) => {
+      if (sort.sort_by === 'student') return normalizeText(getStudentName(student));
+      if (sort.sort_by === 'degree') return normalizeText(getStudentDegree(student));
+      if (sort.sort_by === 'company') return normalizeText(student.org_name);
+      if (sort.sort_by === 'status') return normalizeText(getNormalizedStatus(student).label);
+      if (sort.sort_by === 'upload_date') {
+        const timestamp = Date.parse(getRequestDate(student));
+        return Number.isNaN(timestamp) ? 0 : timestamp;
+      }
+      return normalizeText(student[sort.sort_by]);
+    };
+
+    return [...filteredStudents].sort((left, right) => {
+      const leftValue = getSortValue(left);
+      const rightValue = getSortValue(right);
+
+      if (leftValue < rightValue) return sort.sort_dir === 'asc' ? -1 : 1;
+      if (leftValue > rightValue) return sort.sort_dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredStudents, sort]);
+
+  const total = sortedStudents.length;
+  const start = total === 0 ? 0 : offset + 1;
+  const end = Math.min(offset + PAGE_SIZE, total);
+  const currentPage = total === 0 ? 0 : Math.floor(offset / PAGE_SIZE) + 1;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const paginatedStudents = sortedStudents.slice(offset, offset + PAGE_SIZE);
+
+  useEffect(() => {
+    setOffset(0);
+  }, [students, searchTerm, degreeFilter, companyFilter, sort]);
+
+  const handleSort = (field) => {
+    setOffset(0);
+    setSort((current) => ({
+      sort_by: field,
+      sort_dir: current.sort_by === field && current.sort_dir === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  const applyRecentSort = (direction) => {
+    setOffset(0);
+    setSort({ sort_by: 'upload_date', sort_dir: direction });
+  };
+
+  const gridLayoutClass = "grid grid-cols-[1.35fr_0.95fr_0.95fr_1.15fr_0.9fr_0.8fr] items-center gap-3 px-4 py-4 w-full";
 
   const handleOpenDetails = async (internship) => {
     setOpeningId(internship.id);
@@ -111,7 +228,7 @@ export const StudentTable = ({ students = [] }) => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Buscar estudiante o empresa..."
+              placeholder="Buscar estudiante, empresa o estado..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full h-10 pl-9 pr-4 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] transition-all"
@@ -159,23 +276,61 @@ export const StudentTable = ({ students = [] }) => {
         </div>
       </div>
 
+      <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 text-sm font-semibold text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-black text-gray-900">
+            {total} {total === 1 ? 'resultado' : 'resultados'}
+          </p>
+          <p className="text-xs text-gray-500">
+            Mostrando {start}-{end} · Página {currentPage} de {totalPages}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => applyRecentSort('desc')}
+            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+              sort.sort_by === 'upload_date' && sort.sort_dir === 'desc'
+                ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
+            }`}
+          >
+            <ArrowDown size={14} />
+            Más recientes
+          </button>
+          <button
+            type="button"
+            onClick={() => applyRecentSort('asc')}
+            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+              sort.sort_by === 'upload_date' && sort.sort_dir === 'asc'
+                ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
+            }`}
+          >
+            <ArrowUp size={14} />
+            Más antiguos
+          </button>
+        </div>
+      </div>
+
       {/* Contenedor de la Tabla Estructurada - SIN OVERFLOW NI MIN-W */}
       <div className="w-full rounded-xl border border-gray-100 bg-white shadow-sm">
         <div className="w-full table-layout-fixed">
           
           {/* Cabecera de la Tabla */}
           <div className={`${gridLayoutClass} bg-gray-50/70 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider`}>
-            <div>Estudiante</div>
-            <div>Carrera</div>
-            <div>Empresa</div>
-            <div className="text-center">Estado</div>
+            <SortHeader label="Estudiante" field="student" sort={sort} onSort={handleSort} />
+            <SortHeader label="Solicitud" field="upload_date" sort={sort} onSort={handleSort} align="center" />
+            <SortHeader label="Carrera" field="degree" sort={sort} onSort={handleSort} />
+            <SortHeader label="Empresa" field="company" sort={sort} onSort={handleSort} />
+            <SortHeader label="Estado" field="status" sort={sort} onSort={handleSort} align="center" />
             <div className="text-center">Acciones</div>
           </div>
 
           {/* Cuerpo de la Tabla */}
           <div className="divide-y divide-gray-100 bg-white">
-            {filteredStudents.length > 0 ? (
-              filteredStudents.map((student) => {
+            {paginatedStudents.length > 0 ? (
+              paginatedStudents.map((student) => {
                 const normalizedStatus = getNormalizedStatus(student);
 
                 return (
@@ -187,6 +342,11 @@ export const StudentTable = ({ students = [] }) => {
                         {student.student ? `${student.student.first_name} ${student.student.last_name}` : 'Estudiante no registrado'}
                       </span>
                       <span className="text-xs text-gray-400 font-medium truncate mt-0.5">{student.student?.email}</span>
+                    </div>
+
+                    {/* Fecha de solicitud */}
+                    <div className="text-center text-xs font-semibold text-gray-500 min-w-0">
+                      {formatDateTime(getRequestDate(student))}
                     </div>
 
                     {/* Carrera (Se corrigió la etiqueta td invasiva de develop para mantener la rejilla CSS Grid limpia) */}
@@ -231,6 +391,46 @@ export const StudentTable = ({ students = [] }) => {
             )}
           </div>
 
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+        <span>
+          Mostrando {start}-{end} de {total} · Página {currentPage} de {totalPages}
+        </span>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={offset === 0}
+            onClick={() => setOffset(0)}
+            className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40"
+          >
+            Inicio
+          </button>
+          <button
+            type="button"
+            disabled={offset === 0}
+            onClick={() => setOffset((current) => Math.max(0, current - PAGE_SIZE))}
+            className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40"
+          >
+            Anterior
+          </button>
+          <button
+            type="button"
+            disabled={offset + PAGE_SIZE >= total}
+            onClick={() => setOffset((current) => current + PAGE_SIZE)}
+            className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40"
+          >
+            Siguiente
+          </button>
+          <button
+            type="button"
+            disabled={offset + PAGE_SIZE >= total}
+            onClick={() => setOffset((totalPages - 1) * PAGE_SIZE)}
+            className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40"
+          >
+            Última
+          </button>
         </div>
       </div>
     </div>
