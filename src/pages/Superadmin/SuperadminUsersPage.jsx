@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
+import { FormModal } from '../../components/common/FormModal';
 import { useAuth } from '../../context/useAuth';
 import { getDisplayRoleForRoles } from '../../services/roleRouting';
-import { ArrowDown, ArrowDownUp, ArrowUp, Inbox } from 'lucide-react';
+import { ArrowDown, ArrowDownUp, ArrowUp, Inbox, UserPlus } from 'lucide-react';
 import {
   assignUserRole,
   createUser,
@@ -172,6 +173,7 @@ export const SuperadminUsersPanel = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [statusConfirmationUser, setStatusConfirmationUser] = useState(null);
   const [roleRemovalConfirmation, setRoleRemovalConfirmation] = useState(null);
   const selectedRoleNames = roles
@@ -268,6 +270,19 @@ export const SuperadminUsersPanel = () => {
     setSort({ sort_by: 'created_at', sort_dir: direction });
   };
 
+  const openCreateModal = () => {
+    setError('');
+    setMessage('');
+    setIsCreateModalOpen(true);
+  };
+
+  const closeCreateModal = () => {
+    if (saving) return;
+    setIsCreateModalOpen(false);
+    setForm(initialForm);
+    setError('');
+  };
+
   const handleFormChange = (event) => {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
@@ -325,6 +340,7 @@ export const SuperadminUsersPanel = () => {
 
       await createUser(payload);
       setForm(initialForm);
+      setIsCreateModalOpen(false);
       setMessage('Usuario creado correctamente. Se envió el enlace de activación al correo registrado.');
       setOffset(0);
       await loadUsers();
@@ -444,12 +460,24 @@ export const SuperadminUsersPanel = () => {
     <>
         {/* Cabecera / Banner */}
         <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
-          <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Superadmin</p>
-          <h1 className="mt-2 text-3xl font-black text-gray-900">Administración de usuarios</h1>
-          <p className="mt-3 text-gray-600 text-sm leading-relaxed">
-            Gestiona cuentas y roles técnicos sin conceder permisos académicos implícitos.
-            Las cuentas nuevas reciben un enlace de activación de un solo uso para definir su contraseña.
-          </p>
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Superadmin</p>
+              <h1 className="mt-2 text-3xl font-black text-gray-900">Administración de usuarios</h1>
+              <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                Gestiona cuentas y roles técnicos sin conceder permisos académicos implícitos.
+                Las cuentas nuevas reciben un enlace de activación de un solo uso para definir su contraseña.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52]"
+            >
+              <UserPlus size={18} />
+              Crear usuario
+            </button>
+          </div>
         </section>
 
         {error && (
@@ -463,9 +491,9 @@ export const SuperadminUsersPanel = () => {
           </div>
         )}
 
-        {/* Sección de Tabla de datos + Formulario */}
-        <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm flex flex-col justify-between">
+        {/* Sección de tabla */}
+        <section className="mt-6">
+          <div className="flex flex-col justify-between rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
             
             {/* Barra de Filtros */}
             <form onSubmit={handleApplyFilters} className="grid gap-3 md:grid-cols-4">
@@ -705,13 +733,23 @@ export const SuperadminUsersPanel = () => {
             </div>
           </div>
 
-          {/* Formulario Lateral: Crear Usuario */}
-          <form onSubmit={handleCreateUser} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm h-fit">
-            <h2 className="text-xl font-black text-gray-900">Crear usuario</h2>
-            <p className="mt-2 text-sm text-gray-500 leading-relaxed">
-              El sistema enviará un enlace de activación al correo indicado. El usuario definirá su contraseña desde ese enlace.
-            </p>
-            <div className="mt-5 grid gap-3">
+        </section>
+
+        <FormModal
+          isOpen={isCreateModalOpen}
+          title="Crear usuario"
+          description="El sistema enviará un enlace de activación para que el usuario defina su contraseña."
+          icon={UserPlus}
+          isBusy={saving}
+          onClose={closeCreateModal}
+        >
+          <form onSubmit={handleCreateUser}>
+            {error && (
+              <div className="mb-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                {error}
+              </div>
+            )}
+            <div className="grid gap-3">
               <input 
                 name="email" 
                 type="email" 
@@ -841,7 +879,7 @@ export const SuperadminUsersPanel = () => {
               </button>
             </div>
           </form>
-        </section>
+        </FormModal>
 
       {statusConfirmationUser && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4 py-6">

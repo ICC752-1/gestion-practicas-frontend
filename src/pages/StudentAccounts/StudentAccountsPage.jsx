@@ -3,6 +3,7 @@ import { ArrowDown, ArrowDownUp, ArrowUp, Search, UserPlus, Users } from 'lucide
 
 import { Footer } from '../../components/Footer/Footer';
 import { UserHeader } from '../../components/Header/UserHeader';
+import { FormModal } from '../../components/common/FormModal';
 import { studentAccountService } from '../../services/studentAccountService';
 import {
   analyzeEnrollment,
@@ -102,6 +103,7 @@ export const StudentAccountsPanel = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const loadStudents = useCallback(async () => {
     setLoading(true);
@@ -157,6 +159,19 @@ export const StudentAccountsPanel = () => {
     setSort({ sort_by: 'created_at', sort_dir: direction });
   };
 
+  const openCreateModal = () => {
+    setError('');
+    setMessage('');
+    setIsCreateModalOpen(true);
+  };
+
+  const closeCreateModal = () => {
+    if (saving) return;
+    setIsCreateModalOpen(false);
+    setForm(initialForm);
+    setError('');
+  };
+
   const handleFormChange = (event) => {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
@@ -189,6 +204,7 @@ export const StudentAccountsPanel = () => {
 
       await studentAccountService.createStudent(payload);
       setForm(initialForm);
+      setIsCreateModalOpen(false);
       setOffset(0);
       setMessage('Estudiante creado. Se envio un enlace de activacion al correo registrado.');
       await loadStudents();
@@ -231,17 +247,27 @@ export const StudentAccountsPanel = () => {
   return (
     <>
         <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d22864]">
-              <Users size={28} />
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d22864]">
+                <Users size={28} />
+              </div>
+              <div>
+                <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Cuentas estudiante</p>
+                <h1 className="mt-2 text-3xl font-black text-gray-900">Vinculacion de estudiantes</h1>
+                <p className="mt-3 max-w-3xl text-gray-600">
+                  Crea cuentas de rol estudiante y envia enlaces de activacion. La administracion global de roles queda reservada para superadmin.
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Cuentas estudiante</p>
-              <h1 className="mt-2 text-3xl font-black text-gray-900">Vinculacion de estudiantes</h1>
-              <p className="mt-3 max-w-3xl text-gray-600">
-                Crea cuentas de rol estudiante y envia enlaces de activacion. La administracion global de roles queda reservada para superadmin.
-              </p>
-            </div>
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52]"
+            >
+              <UserPlus size={18} />
+              Nuevo estudiante
+            </button>
           </div>
         </section>
 
@@ -256,7 +282,7 @@ export const StudentAccountsPanel = () => {
           </div>
         )}
 
-        <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <section className="mt-6">
           <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
             <form onSubmit={handleApplyFilters} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_140px]">
               <label className="relative block">
@@ -321,20 +347,28 @@ export const StudentAccountsPanel = () => {
               </div>
             </div>
 
-            <div className="mt-6 overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-100 text-sm">
+            <div className="mt-6 overflow-hidden rounded-xl border border-gray-100">
+              <table className="w-full table-fixed divide-y divide-gray-100 text-sm">
+                <colgroup>
+                  <col className="w-[30%]" />
+                  <col className="hidden w-[17%] lg:table-column" />
+                  <col className="w-[22%] sm:w-[18%]" />
+                  <col className="hidden w-[11%] md:table-column" />
+                  <col className="w-[24%] sm:w-[14%]" />
+                  <col className="w-[24%] sm:w-[10%]" />
+                </colgroup>
                 <thead>
                   <tr className="text-left text-xs font-black uppercase tracking-wide text-gray-500">
                     <th className="px-3 py-3">
                       <SortHeader label="Estudiante" field="last_name" sort={sort} onSort={handleSort} />
                     </th>
-                    <th className="px-3 py-3">
+                    <th className="hidden px-3 py-3 lg:table-cell">
                       <SortHeader label="Registro" field="created_at" sort={sort} onSort={handleSort} align="center" />
                     </th>
                     <th className="px-3 py-3">
                       <SortHeader label="Matrícula" field="enrollment" sort={sort} onSort={handleSort} align="center" />
                     </th>
-                    <th className="px-3 py-3">
+                    <th className="hidden px-3 py-3 md:table-cell">
                       <SortHeader label="Ingreso" field="admission_year" sort={sort} onSort={handleSort} align="center" />
                     </th>
                     <th className="px-3 py-3">
@@ -360,29 +394,29 @@ export const StudentAccountsPanel = () => {
                   )}
                   {!loading && students.map((student) => (
                     <tr key={student.id} className="align-top">
-                      <td className="px-3 py-4">
-                        <p className="font-black text-gray-900">{student.first_name} {student.last_name}</p>
-                        <p className="text-gray-500">{student.email}</p>
+                      <td className="min-w-0 px-3 py-4">
+                        <p className="truncate font-black text-gray-900">{student.first_name} {student.last_name}</p>
+                        <p className="truncate text-gray-500">{student.email}</p>
                       </td>
-                      <td className="px-3 py-4 text-center text-xs font-semibold text-gray-500">{formatDateTime(student.created_at)}</td>
-                      <td className="px-3 py-4 text-gray-600">{student.enrollment || '-'}</td>
-                      <td className="px-3 py-4 text-center text-gray-600">{student.admission_year || '-'}</td>
-                      <td className="px-3 py-4">
-                        <span className={`rounded-full px-3 py-1 text-xs font-black ${student.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                      <td className="hidden px-3 py-4 text-center text-xs font-semibold text-gray-500 lg:table-cell">{formatDateTime(student.created_at)}</td>
+                      <td className="break-all px-3 py-4 text-gray-600">{student.enrollment || '-'}</td>
+                      <td className="hidden px-3 py-4 text-center text-gray-600 md:table-cell">{student.admission_year || '-'}</td>
+                      <td className="px-2 py-4 text-center">
+                        <span className={`inline-flex max-w-full justify-center rounded-full px-2 py-1 text-xs font-black ${student.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
                           {student.is_active ? 'Activo' : 'Inactivo'}
                         </span>
                         {student.must_change_password && (
-                          <span className="mt-2 block rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
+                          <span className="mt-2 block truncate rounded-full bg-amber-50 px-2 py-1 text-xs font-black text-amber-700">
                             Activacion pendiente
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-2 py-4 text-center">
                         <button
                           type="button"
                           disabled={saving}
                           onClick={() => handleToggleStatus(student)}
-                          className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-black text-gray-700 hover:border-[#d22864] hover:text-[#d22864] disabled:opacity-50"
+                          className="max-w-full rounded-xl border border-gray-200 px-2 py-2 text-xs font-black text-gray-700 hover:border-[#d22864] hover:text-[#d22864] disabled:opacity-50"
                         >
                           {student.is_active ? 'Desactivar' : 'Reactivar'}
                         </button>
@@ -433,19 +467,24 @@ export const StudentAccountsPanel = () => {
               </div>
             </div>
           </div>
+        </section>
 
-          <form onSubmit={handleCreateStudent} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff0f6] text-[#d22864]">
-                <UserPlus size={22} />
+        <FormModal
+          isOpen={isCreateModalOpen}
+          title="Nuevo estudiante"
+          description="La cuenta recibirá un enlace de activación en el correo registrado."
+          icon={UserPlus}
+          isBusy={saving}
+          onClose={closeCreateModal}
+        >
+          <form onSubmit={handleCreateStudent}>
+            {error && (
+              <div className="mb-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                {error}
               </div>
-              <div>
-                <h2 className="text-xl font-black text-gray-900">Nuevo estudiante</h2>
-                <p className="text-sm text-gray-500">Recibira enlace de activacion por correo.</p>
-              </div>
-            </div>
+            )}
 
-            <div className="mt-5 grid gap-3">
+            <div className="grid gap-3">
               <input name="email" type="email" required value={form.email} onChange={handleFormChange} placeholder="Correo institucional o personal" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
               <div className="grid gap-3 sm:grid-cols-2">
                 <input name="first_name" required value={form.first_name} onChange={handleFormChange} placeholder="Nombres" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
@@ -494,7 +533,7 @@ export const StudentAccountsPanel = () => {
               </button>
             </div>
           </form>
-        </section>
+        </FormModal>
     </>
   );
 };
