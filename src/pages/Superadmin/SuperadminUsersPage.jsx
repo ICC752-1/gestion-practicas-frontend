@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import { useAuth } from '../../context/useAuth';
 import { getDisplayRoleForRoles } from '../../services/roleRouting';
-import { Search, Filter, Inbox } from 'lucide-react'; // Íconos para dar consistencia
+import { Inbox } from 'lucide-react';
 import {
   assignUserRole,
   createUser,
@@ -112,10 +112,7 @@ const isValidRut = (value) => {
   return calculateRutVerifier(number) === verifier;
 };
 
-export const SuperadminUsersPage = () => {
-  const { user } = useAuth();
-  const userName = user ? `${user.first_name} ${user.last_name}` : 'Superadmin';
-  const userRole = getDisplayRoleForRoles(user?.roles);
+export const SuperadminUsersPanel = () => {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [filters, setFilters] = useState(initialFilters);
@@ -365,10 +362,7 @@ export const SuperadminUsersPage = () => {
   const gridLayoutClass = "grid grid-cols-[1.5fr_1fr_1.1fr_1.3fr_0.9fr] items-center gap-4 px-6 py-4 w-full";
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <UserHeader userName={userName} userRole={userRole} />
-      <main className="flex-grow container mx-auto max-w-7xl px-4 py-8">
-        
+    <>
         {/* Cabecera / Banner */}
         <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
           <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Superadmin</p>
@@ -678,7 +672,6 @@ export const SuperadminUsersPage = () => {
             </div>
           </form>
         </section>
-      </main>
 
       {statusConfirmationUser && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4 py-6">
@@ -773,6 +766,21 @@ export const SuperadminUsersPage = () => {
         </div>
       )}
 
+    </>
+  );
+};
+
+export const SuperadminUsersPage = () => {
+  const { user } = useAuth();
+  const userName = user ? `${user.first_name} ${user.last_name}` : 'Superadmin';
+  const userRole = getDisplayRoleForRoles(user?.roles);
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <UserHeader userName={userName} userRole={userRole} />
+      <main className="flex-grow container mx-auto max-w-7xl px-4 py-8">
+        <SuperadminUsersPanel />
+      </main>
       <Footer />
     </div>
   );

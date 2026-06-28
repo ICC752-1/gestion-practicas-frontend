@@ -34,6 +34,12 @@ export const UserHeader = () => {
 
     const isAdminToggle = roleNames.some((role) => ADMIN_TOGGLE_ROLES.has(role));
     const isDirector = roleNames.includes(DIRECTOR_ROLE);
+    const isDashboardActive = location.pathname === dashboardPath
+        || location.pathname.startsWith(`${dashboardPath}/`)
+        || (
+            dashboardPath.startsWith("/superadmin")
+            && location.pathname.startsWith("/superadmin")
+        );
 
     const [configOpen, setConfigOpen] = useState(false);
     const [config, setConfig] = useState({
@@ -48,8 +54,7 @@ export const UserHeader = () => {
       {
         label: "Dashboard",
         to: dashboardPath,
-        active: location.pathname === dashboardPath
-          || location.pathname.startsWith(`${dashboardPath}/`),
+        active: isDashboardActive,
       },
       {
         label: "Preguntas Frecuentes",

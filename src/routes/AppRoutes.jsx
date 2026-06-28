@@ -20,7 +20,7 @@ import { PresentationLettersPage } from '../pages/PresentationLetters/Presentati
 import ActivateAccountPage from '../pages/Auth/ActivateAccountPage'
 import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
 import { FicaDashboardPage } from '../pages/Fica/FicaDashboardPage'
-import { SuperadminUsersPage } from '../pages/Superadmin/SuperadminUsersPage'
+import { SuperadminDashboardPage } from '../pages/Superadmin/SuperadminDashboardPage'
 import { SecretaryDashboardPage } from '../pages/Secretary/SecretaryDashboardPage'
 import {
     CAREER_DIRECTOR_ROLE,
@@ -247,10 +247,24 @@ export const AppRoutes = () => {
           />
 
           <Route
+              path="/superadmin"
+              element={<Navigate to="/superadmin/usuarios" replace />}
+          />
+
+          <Route
               path="/superadmin/usuarios"
               element={
                   <PrivateRoute allowedRoles={SUPERADMIN_ROLES}>
-                      <SuperadminUsersPage />
+                      <SuperadminDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/superadmin/auditoria"
+              element={
+                  <PrivateRoute allowedRoles={SUPERADMIN_ROLES}>
+                      <SuperadminDashboardPage />
                   </PrivateRoute>
               }
           />
