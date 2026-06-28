@@ -21,6 +21,11 @@ export const schedulingService = {
     return response.data;
   },
 
+  async getMyAppointments() {
+    const response = await api.get('/scheduling/appointments');
+    return response.data;
+  },
+
   async reserveSlot(slotId, internshipId) {
     const response = await api.post(`/scheduling/slots/${slotId}/reserve`, {
       internship_id: Number(internshipId),
@@ -120,4 +125,3 @@ export const schedulingService = {
     return response.data;
   },
 };
-

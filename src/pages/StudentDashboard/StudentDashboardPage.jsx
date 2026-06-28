@@ -441,7 +441,7 @@ export const StudentDashboardPage = () => {
     : "Estudiante";
   const overallProgress = getOverallInternshipProgress(internships);
 
-  const canUpload = internships.some(canUploadDocuments);
+  const canUpload = internships.some((internship) => canUploadDocuments(internship));
 
   const hasQualifyingInternship = internships.some(internship => {
     const lifecycle = lifecyclesById[internship.id];

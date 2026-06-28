@@ -264,6 +264,7 @@ export const SeguimientoPage = () => {
   const administrativeProgress = lifecycle
     ? { percentage: lifecycle.progress_percentage, label: lifecycle.current_step, color: lifecycle.progress_percentage >= 100 ? 'bg-green-500' : 'bg-[#d22864]' }
     : getInternshipAdministrativeProgress(internship);
+  const canUploadCurrentDocuments = canUploadDocuments(internship, documents);
 
   const fetchDocuments = async () => {
     try {
@@ -507,9 +508,9 @@ export const SeguimientoPage = () => {
                 </h3>
                 <button
                   onClick={() => setIsUploadModalOpen(true)}
-                  disabled={!canUploadDocuments(internship)}
+                  disabled={!canUploadCurrentDocuments}
                   className={`px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors ${
-                    !canUploadDocuments(internship)
+                    !canUploadCurrentDocuments
                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       : 'bg-[#d22864] text-white hover:bg-[#b01e52]'
                   }`}
@@ -582,6 +583,7 @@ export const SeguimientoPage = () => {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         internships={internship ? [internship] : []}
+        documentsByInternship={internship ? { [internship.id]: documents } : {}}
         onDocumentUploaded={fetchData}
       />
     </div>

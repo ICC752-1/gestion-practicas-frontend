@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -11,9 +11,19 @@ import {
   ChevronDown,
   Info
 } from 'lucide-react';
-import { canUploadDocuments, documentService } from '../../services/documentService';
+import {
+  canUploadDocuments,
+  documentService,
+  getUploadableDocumentTypes,
+} from '../../services/documentService';
 
-export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUploaded }) => {
+export const DocumentUploadModal = ({
+  isOpen,
+  onClose,
+  internships,
+  documentsByInternship = {},
+  onDocumentUploaded,
+}) => {
   const [documentTypes, setDocumentTypes] = useState([]);
   const [selectedInternshipId, setSelectedInternshipId] = useState('');
   const [selectedDocumentTypeId, setSelectedDocumentTypeId] = useState('');
@@ -22,10 +32,14 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
   const [fetchingTypes, setFetchingTypes] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const defaultInternshipId = useMemo(
+    () => (internships.length === 1 ? internships[0].id : ''),
+    [internships]
+  );
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedInternshipId(internships.length === 1 ? internships[0].id : '');
+      setSelectedInternshipId(defaultInternshipId);
       setSelectedDocumentTypeId('');
       setFile(null);
       setLoading(false);
@@ -46,7 +60,41 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
     };
       fetchDocumentTypes();
     }
-  }, [isOpen, internships]);
+  }, [defaultInternshipId, isOpen]);
+
+  const getDocumentsForInternship = useMemo(
+    () => (id) => (
+      documentsByInternship[String(id)]
+      || documentsByInternship[id]
+      || []
+    ),
+    [documentsByInternship]
+  );
+
+  const selectedInternship = useMemo(
+    () => internships.find((internship) => (
+      String(internship.id) === String(selectedInternshipId)
+    )),
+    [internships, selectedInternshipId]
+  );
+  const selectedInternshipDocuments = useMemo(
+    () => (
+      selectedInternship
+        ? getDocumentsForInternship(selectedInternship.id)
+        : []
+    ),
+    [getDocumentsForInternship, selectedInternship]
+  );
+  const uploadableDocumentTypes = useMemo(
+    () => (selectedInternship
+      ? getUploadableDocumentTypes(
+          selectedInternship,
+          documentTypes,
+          selectedInternshipDocuments
+        )
+      : documentTypes),
+    [documentTypes, selectedInternship, selectedInternshipDocuments]
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,11 +131,20 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
 
     const isInternshipClosed = (id) => {
       const internship = internships.find(i => i.id === parseInt(id) || i.id === id);
-      return internship && !canUploadDocuments(internship);
+      const internshipDocuments = getDocumentsForInternship(id);
+      return internship && !canUploadDocuments(internship, internshipDocuments);
     };
 
     if (isInternshipClosed(selectedInternshipId)) {
-      setError('La práctica seleccionada ya está aprobada o rechazada y no permite más documentos.');
+      setError('La práctica seleccionada no permite nuevos documentos.');
+      return;
+    }
+
+    const selectedTypeIsUploadable = uploadableDocumentTypes.some((type) => (
+      String(type.id) === String(selectedDocumentTypeId)
+    ));
+    if (!selectedTypeIsUploadable) {
+      setError('El tipo de documento seleccionado no está disponible para esta práctica.');
       return;
     }
 
@@ -190,13 +247,19 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
                   <div className="relative">
                     <select
                       value={selectedInternshipId}
-                      onChange={(e) => setSelectedInternshipId(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedInternshipId(e.target.value);
+                        setSelectedDocumentTypeId('');
+                      }}
                       disabled={loading || internships.length === 0}
                       className="w-full bg-gray-50 border-2 border-transparent focus:border-[#d22864]/20 focus:bg-white rounded-xl px-4 py-3 text-sm text-gray-900 font-medium appearance-none transition-all outline-none disabled:opacity-50 cursor-pointer"
                     >
                       <option value="">Selecciona tu práctica</option>
                       {internships.map((int) => {
-                        const isDisabled = !canUploadDocuments(int);
+                        const isDisabled = !canUploadDocuments(
+                          int,
+                          getDocumentsForInternship(int.id)
+                        );
                         return (
                           <option
                             key={int.id}
@@ -229,7 +292,7 @@ export const DocumentUploadModal = ({ isOpen, onClose, internships, onDocumentUp
                       className="w-full bg-gray-50 border-2 border-transparent focus:border-[#d22864]/20 focus:bg-white rounded-xl px-4 py-3 text-sm text-gray-900 font-medium appearance-none transition-all outline-none disabled:opacity-50 cursor-pointer"
                     >
                       <option value="">{fetchingTypes ? 'Cargando tipos...' : '¿Qué documento vas a subir?'}</option>
-                      {documentTypes.map((type) => (
+                      {uploadableDocumentTypes.map((type) => (
                         <option key={type.id} value={type.id}>
                           {type.name}
                         </option>
