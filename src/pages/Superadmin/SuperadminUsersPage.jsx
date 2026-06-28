@@ -3,7 +3,7 @@ import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import { useAuth } from '../../context/useAuth';
 import { getDisplayRoleForRoles } from '../../services/roleRouting';
-import { Inbox } from 'lucide-react';
+import { ArrowDown, ArrowDownUp, ArrowUp, Inbox } from 'lucide-react';
 import {
   assignUserRole,
   createUser,
@@ -20,6 +20,11 @@ const initialFilters = {
   search: '',
   role: '',
   is_active: '',
+};
+
+const initialSort = {
+  sort_by: 'created_at',
+  sort_dir: 'desc',
 };
 
 const initialForm = {
@@ -112,11 +117,47 @@ const isValidRut = (value) => {
   return calculateRutVerifier(number) === verifier;
 };
 
+const formatDateTime = (value) => {
+  if (!value) return '-';
+
+  return new Intl.DateTimeFormat('es-CL', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value.endsWith?.('Z') ? value : `${value}Z`));
+};
+
+const SortHeader = ({ label, field, sort, onSort, align = 'left' }) => {
+  const isActive = sort.sort_by === field;
+  const Icon = isActive
+    ? (sort.sort_dir === 'asc' ? ArrowUp : ArrowDown)
+    : ArrowDownUp;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(field)}
+      className={[
+        'inline-flex w-full items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-black uppercase tracking-wider transition-colors',
+        align === 'center' ? 'justify-center text-center' : 'justify-start text-left',
+        isActive ? 'text-[#d22864]' : 'text-gray-500 hover:bg-white hover:text-[#d22864]',
+      ].join(' ')}
+      aria-sort={isActive ? (sort.sort_dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <span>{label}</span>
+      <Icon size={14} strokeWidth={2.6} />
+    </button>
+  );
+};
+
 export const SuperadminUsersPanel = () => {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [filters, setFilters] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
+  const [sort, setSort] = useState(initialSort);
   const [form, setForm] = useState(initialForm);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
@@ -139,6 +180,8 @@ export const SuperadminUsersPanel = () => {
       const params = {
         limit: PAGE_SIZE,
         offset,
+        sort_by: sort.sort_by,
+        sort_dir: sort.sort_dir,
       };
 
       if (appliedFilters.search) {
@@ -159,7 +202,7 @@ export const SuperadminUsersPanel = () => {
     } finally {
       setLoading(false);
     }
-  }, [appliedFilters, offset]);
+  }, [appliedFilters, offset, sort]);
 
   useEffect(() => {
     let ignore = false;
@@ -203,6 +246,19 @@ export const SuperadminUsersPanel = () => {
     event.preventDefault();
     setOffset(0);
     setAppliedFilters(filters);
+  };
+
+  const handleSort = (field) => {
+    setOffset(0);
+    setSort((current) => ({
+      sort_by: field,
+      sort_dir: current.sort_by === field && current.sort_dir === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  const applyRecentSort = (direction) => {
+    setOffset(0);
+    setSort({ sort_by: 'created_at', sort_dir: direction });
   };
 
   const handleFormChange = (event) => {
@@ -357,9 +413,11 @@ export const SuperadminUsersPanel = () => {
 
   const start = total === 0 ? 0 : offset + 1;
   const end = Math.min(offset + PAGE_SIZE, total);
+  const currentPage = total === 0 ? 0 : Math.floor(offset / PAGE_SIZE) + 1;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   // CLASE DE REJILLA UNIFICADA: Controla anchos y espaciados de la tabla de forma fluida
-  const gridLayoutClass = "grid grid-cols-[1.5fr_1fr_1.1fr_1.3fr_0.9fr] items-center gap-4 px-6 py-4 w-full";
+  const gridLayoutClass = "grid grid-cols-[1.6fr_1fr_0.9fr_0.9fr_1.3fr_0.85fr] items-center gap-4 px-6 py-4 w-full";
 
   return (
     <>
@@ -428,15 +486,53 @@ export const SuperadminUsersPanel = () => {
               </button>
             </form>
 
+            <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 text-sm font-semibold text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-black text-gray-900">
+                  {total} {total === 1 ? 'resultado' : 'resultados'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Mostrando {start}-{end} · Página {currentPage} de {totalPages}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyRecentSort('desc')}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+                    sort.sort_by === 'created_at' && sort.sort_dir === 'desc'
+                      ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
+                  }`}
+                >
+                  <ArrowDown size={14} />
+                  Más recientes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyRecentSort('asc')}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+                    sort.sort_by === 'created_at' && sort.sort_dir === 'asc'
+                      ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
+                  }`}
+                >
+                  <ArrowUp size={14} />
+                  Más antiguos
+                </button>
+              </div>
+            </div>
+
             {/* Contenedor de Tabla Fluid / Responsive sin Scroll Horizontal */}
             <div className="w-full mt-6 rounded-xl border border-gray-100 overflow-hidden bg-white">
               <div className="w-full table-layout-fixed">
                 
                 {/* Cabecera Grid de la Tabla */}
                 <div className={`${gridLayoutClass} bg-gray-50/70 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider`}>
-                  <div>Usuario</div>
-                  <div className="text-center">RUT</div>
-                  <div className="text-center">Estado</div>
+                  <SortHeader label="Usuario" field="last_name" sort={sort} onSort={handleSort} />
+                  <SortHeader label="Registro" field="created_at" sort={sort} onSort={handleSort} align="center" />
+                  <SortHeader label="RUT" field="rut" sort={sort} onSort={handleSort} align="center" />
+                  <SortHeader label="Estado" field="is_active" sort={sort} onSort={handleSort} align="center" />
                   <div className="text-center">Roles</div>
                   <div className="text-center">Acciones</div>
                 </div>
@@ -463,6 +559,11 @@ export const SuperadminUsersPanel = () => {
                       <div className="min-w-0 flex flex-col">
                         <span className="font-bold text-gray-900 text-sm truncate">{item.first_name} {item.last_name}</span>
                         <span className="text-xs text-gray-400 font-medium truncate mt-0.5">{item.email}</span>
+                      </div>
+
+                      {/* Celda: Registro (Centrado) */}
+                      <div className="text-center text-xs text-gray-500 font-semibold min-w-0">
+                        {formatDateTime(item.created_at)}
                       </div>
 
                       {/* Celda: RUT (Centrado) */}
@@ -541,8 +642,18 @@ export const SuperadminUsersPanel = () => {
 
             {/* Paginación */}
             <div className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between">
-              <span>Mostrando {start}-{end} de {total}</span>
+              <span>
+                Mostrando {start}-{end} de {total} · Página {currentPage} de {totalPages}
+              </span>
               <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={offset === 0 || loading}
+                  onClick={() => setOffset(0)}
+                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40 cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  Inicio
+                </button>
                 <button
                   type="button"
                   disabled={offset === 0 || loading}
@@ -558,6 +669,14 @@ export const SuperadminUsersPanel = () => {
                   className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40 cursor-pointer hover:bg-gray-50 transition-colors"
                 >
                   Siguiente
+                </button>
+                <button
+                  type="button"
+                  disabled={offset + PAGE_SIZE >= total || loading}
+                  onClick={() => setOffset((totalPages - 1) * PAGE_SIZE)}
+                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40 cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  Última
                 </button>
               </div>
             </div>
