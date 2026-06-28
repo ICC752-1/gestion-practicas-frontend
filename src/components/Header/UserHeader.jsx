@@ -10,6 +10,7 @@ import {
   getDisplayRoleForRoles,
   getRedirectPathForRoles,
   normalizeRoleNames,
+  SUPERADMIN_ROLE,
 } from "../../services/roleRouting";
 
 const ADMIN_TOGGLE_ROLES = new Set([
@@ -34,6 +35,7 @@ export const UserHeader = () => {
 
     const isAdminToggle = roleNames.some((role) => ADMIN_TOGGLE_ROLES.has(role));
     const isDirector = roleNames.includes(DIRECTOR_ROLE);
+    const isSuperadmin = roleNames.includes(SUPERADMIN_ROLE);
     const isDashboardActive = location.pathname === dashboardPath
         || location.pathname.startsWith(`${dashboardPath}/`)
         || (
@@ -62,7 +64,7 @@ export const UserHeader = () => {
         active: location.pathname === "/faq",
       },
       {
-        label: "Carta de Presentación",
+        label: isSuperadmin ? null : "Carta de Presentación",
         to: "/cartas-presentacion",
         active: location.pathname === "/cartas-presentacion",
       },
@@ -71,7 +73,7 @@ export const UserHeader = () => {
         to: "/requisitos",
         active: location.pathname === "/requisitos",
       },
-    ];
+    ].filter((item) => item.label);
 
     if (isAdminToggle) {
       navItems.splice(1, 0, {
