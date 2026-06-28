@@ -100,16 +100,13 @@ export const UserHeader = () => {
         fetchConfig();
     }, [isAdminToggle]);
 
-    // Cierra el popover al hacer click fuera
     useEffect(() => {
         if (!configOpen) return;
-
         const handleClickOutside = (event) => {
             if (configRef.current && !configRef.current.contains(event.target)) {
                 setConfigOpen(false);
             }
         };
-
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [configOpen]);
@@ -166,76 +163,94 @@ export const UserHeader = () => {
         }
     };
 
+    // Tu getNavLinkClass responsivo: compacto en lg, normal en xl
     const getNavLinkClass = (isActive) => [
-      "inline-flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-1.5 text-sm font-bold transition-colors",
+      "inline-flex items-center justify-center gap-1.5 rounded-lg border-2 font-bold transition-colors flex-shrink-0 text-center whitespace-nowrap",
+      "px-2 py-1 text-xs lg:px-2 lg:py-1 lg:text-[11px] xl:px-3 xl:py-1.5 xl:text-sm",
       isActive
-        ? "border-[#d22864] bg-[#d22864] text-white"
-        : "border-transparent text-[#d22864] hover:border-[#d22864] hover:bg-[#d22864] hover:text-white",
+        ? "border-[#d22864] bg-[#d22864] text-white shadow-sm"
+        : "border-transparent text-[#d22864] hover:border-[#d22864] hover:bg-[#d22864]/5",
     ].join(" ");
 
   return (
-    <header className="sticky top-0 z-50 flex min-h-16 w-full items-center justify-between gap-3 border-b-[3px] border-[#d22864] bg-white px-3 py-2 shadow-sm sm:min-h-20 sm:px-6 lg:px-10">
-      {/* Left Section: Logo and Title */}
-      <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none sm:gap-4">
-        <div className="flex-shrink-0 bg-[#d22864] p-1.5 rounded-xl shadow-sm">
-          <img
-            className="h-10 w-10 object-contain sm:h-12 sm:w-12"
-            alt="Universidad de La Frontera"
-            src={universityLogo}
-          />
-        </div>
-        <div className="flex min-w-0 flex-col items-start leading-tight">
-          <h1 className="text-sm font-bold leading-tight tracking-tight text-[#d22864] sm:text-xl">
-            Sistema de Gestión de Prácticas
-          </h1>
-          <p className="hidden font-semibold text-[#d22864] text-xs sm:block">
-            Facultad de Ingeniería y Ciencias
-          </p>
-        </div>
-      </div>
+    <header
+        className="sticky top-0 z-50 flex min-h-[60px] w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm"
+        style={{ padding: '0.4rem clamp(0.5rem, 2vw, 2.5rem)', gap: '0.5rem' }}
+      >
+      <div className="flex lg:grid lg:grid-cols-[auto_1fr_auto] xl:grid-cols-[1fr_auto_1fr] items-center justify-between w-full gap-2 xl:gap-4">
 
-      {/* Center Section: Navigation */}
-      <nav aria-label="Principal" className="hidden items-center gap-3 md:flex">
-        {navItems.map((item) => (
+        {/* Left: Logo + Title */}
+        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+          <div className="bg-[#d22864] rounded-lg shadow-sm flex-shrink-0 p-1" style={{ padding: 'clamp(4px, 0.4vw, 6px)' }}>
+            <img
+              style={{ width: 'clamp(36px, 3.5vw, 46px)', height: 'clamp(36px, 3.5vw, 46px)' }}
+              className="object-contain"
+              alt="Universidad de La Frontera"
+              src={universityLogo}
+            />            
+          </div>    
+            <div className="flex flex-col leading-tight min-w-0">
+              <h1 className="font-bold tracking-tight text-[#d22864] truncate"
+                style={{ fontSize: 'clamp(0.65rem, 2.0vw, 1.25rem)' }}>
+                Sistema de Gestión de Prácticas
+              </h1>
+            <p
+              className="font-semibold text-[#d22864] hidden sm:block mt-0.5"
+              style={{ fontSize: 'clamp(0.65rem, 0.9vw, 0.75rem)' }}
+            >
+              Facultad de Ingeniería y Ciencias
+            </p>
+          </div>
+        </div>
+
+        {/* Center: Nav — visible desde lg */}
+        <nav aria-label="Principal" className="hidden lg:flex items-center justify-center gap-1 xl:gap-2">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.to}
+              aria-current={item.active ? "page" : undefined}
+              className={getNavLinkClass(item.active)}
+            >
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        {/* Right: Actions */}
+        <div className="flex items-center flex-shrink-0 justify-end gap-2 xl:gap-3">
+
+          {/* Dashboard link móvil (oculto en lg+) */}
           <Link
-            key={item.label}
-            to={item.to}
-            aria-current={item.active ? "page" : undefined}
-            className={getNavLinkClass(item.active)}
+            to={dashboardPath}
+            aria-current={navItems[0].active ? "page" : undefined}
+            className={[
+              "inline-flex rounded-lg font-bold transition-colors lg:hidden flex-shrink-0",
+              navItems[0].active ? "bg-[#d22864] text-white" : "text-[#d22864] hover:bg-[#d22864] hover:text-white",
+            ].join(" ")}
+            style={{ padding: '4px 10px', fontSize: '11px' }}
           >
-            <span>{item.label}</span>
+            Dashboard
           </Link>
-        ))}
-      </nav>
 
-      {/* Right Section: User Profile & Actions */}
-      <div className="flex flex-shrink-0 items-center gap-2 sm:gap-4 lg:gap-6">
-        <Link
-          to={dashboardPath}
-          aria-label="Volver al dashboard"
-          title="Volver al dashboard"
-          aria-current={navItems[0].active ? "page" : undefined}
-          className={[
-            "inline-flex rounded-lg px-2 py-1.5 text-xs font-bold transition-colors md:hidden sm:px-3 sm:py-2",
-            navItems[0].active
-              ? "bg-[#d22864] text-white"
-              : "text-[#d22864] hover:bg-[#d22864] hover:text-white",
-          ].join(" ")}
-        >
-          Dashboard
-        </Link>
+          {/* Campana — completamente fuera del configRef */}
+          <NotificationBell />
 
-        <NotificationBell />
+          <div className="h-7 w-px bg-gray-200 flex-shrink-0 hidden sm:block" />
 
-        <div className="hidden h-8 w-px bg-gray-300 sm:block"></div>
-
-        <div className="flex items-center gap-2 sm:gap-4">
-          <div className="hidden flex-col items-end leading-none sm:flex">
-            <span className="font-bold text-[#d22864] text-base">{userName}</span>
-            <span className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider">{userRole}</span>
+          {/* Nombre y Rol */}
+          <div className="hidden md:flex flex-col items-end leading-none max-w-[120px] xl:max-w-[240px] truncate">
+            <span
+              className="font-bold text-[#d22864] truncate w-full text-right block"
+              style={{ fontSize: 'clamp(0.65rem, 1vw, 0.9rem)' }}
+            >{userName}</span>
+            <span
+              className="text-gray-500 font-semibold uppercase tracking-wider mt-0.5"
+              style={{ fontSize: 'clamp(0.5rem, 0.7vw, 0.625rem)' }}
+            >{userRole}</span>
           </div>
 
-          {/* Settings popover for admin roles (Encargado / Director) */}
+          {/* Settings popover — configRef solo envuelve este bloque */}
           {isAdminToggle && (
             <div className="relative" ref={configRef}>
               <button
@@ -257,7 +272,6 @@ export const UserHeader = () => {
                   </div>
 
                   <div className="px-5 py-4 space-y-5">
-                    {/* Consultas Generales toggle */}
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-bold text-gray-800">Consultas Generales</p>
@@ -272,15 +286,12 @@ export const UserHeader = () => {
                         }`}
                         aria-label="Alternar consultas generales"
                       >
-                        <span
-                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                            config.general_consultations_enabled ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                        />
+                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          config.general_consultations_enabled ? 'translate-x-5' : 'translate-x-0'
+                        }`} />
                       </button>
                     </div>
 
-                    {/* Inscripción de Prácticas toggle (sólo Director) */}
                     {isDirector && (
                       <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
                         <div>
@@ -296,11 +307,9 @@ export const UserHeader = () => {
                           }`}
                           aria-label="Alternar inscripción de prácticas"
                         >
-                          <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                              config.internship_applications_disabled ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
+                          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                            config.internship_applications_disabled ? 'translate-x-5' : 'translate-x-0'
+                          }`} />
                         </button>
                       </div>
                     )}
@@ -318,21 +327,29 @@ export const UserHeader = () => {
             </div>
           )}
 
-          <div className="relative">
-
-              <div className="h-9 w-9 rounded-full bg-blue-100 border-2 border-[#d22864] flex items-center justify-center overflow-hidden sm:h-11 sm:w-11">
-                  <img
-                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`}
-                          alt={userName}
-                          className="w-full h-full"
-                  />
-              </div>
+          {/* Avatar */}
+          <div
+            className="rounded-full bg-blue-100 border-2 border-[#d22864] flex items-center justify-center overflow-hidden flex-shrink-0"
+            style={{ width: 'clamp(32px, 3.5vw, 42px)', height: 'clamp(32px, 3.5vw, 42px)' }}
+          >
+            <img
+              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`}
+              alt={userName}
+              className="w-full h-full"
+            />
           </div>
-        </div>
 
-        <button onClick={handleLogout} className="p-1.5 text-[#d22864] hover:bg-red-50 hover:text-red-600 rounded-lg transition-all sm:p-2" title="Cerrar Sesión">
-          <LogOut size={22} strokeWidth={2.5} />
-        </button>
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            className="text-[#d22864] hover:bg-red-50 hover:text-red-600 rounded-lg transition-all flex-shrink-0"
+            style={{ padding: '6px' }}
+            title="Cerrar Sesión"
+          >
+            <LogOut size={18} strokeWidth={2.5} />
+          </button>
+
+        </div>
       </div>
     </header>
   );

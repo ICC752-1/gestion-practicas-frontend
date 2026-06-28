@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   CheckCircle2,
@@ -12,6 +12,7 @@ import { Header } from '../../components/Header/Header';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import { useAuth } from '../../context/useAuth';
+
 
 const requirementCards = [
   {
@@ -48,13 +49,25 @@ export const RequirementsPage = () => {
   const { isAuthenticated } = useAuth();
   const primaryActionPath = isAuthenticated ? '/practicas/nueva/preinscripcion' : '/login';
   const primaryActionLabel = isAuthenticated ? 'Ir a preinscripción' : 'Iniciar sesión';
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-[#f3f3f3] font-sans">
       {isAuthenticated ? <UserHeader /> : <Header />}
 
       <main className="bg-white">
-        <section className="mx-auto max-w-7xl px-6 py-16">
+        {/* Botón volver */}
+          <div className="max-w-7xl mx-auto py-3 px-6 w-full">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="inline-flex items-center gap-2 text-[#d22864] font-semibold hover:underline text-2xl"
+          >
+            ←
+          </button>
+        </div>
+
+        <section className="mx-auto max-w-7xl px-6 py-6">
           <div className="mx-auto max-w-4xl text-center">
             <p className="text-sm font-black uppercase tracking-wider text-[#d22864]">
               Antes de registrar tu práctica
@@ -91,7 +104,7 @@ export const RequirementsPage = () => {
               <div className="mb-5 inline-flex rounded-2xl bg-[#d22864]/10 p-3 text-[#d22864]">
                 <Icon size={28} />
               </div>
-              <h2 className="text-xl font-black text-gray-950">{title}</h2>
+              <h2 className="text-xl font-black text-gray-800">{title}</h2>
               <p className="mt-3 text-sm leading-relaxed text-gray-600">{description}</p>
             </article>
           ))}

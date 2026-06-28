@@ -16,12 +16,14 @@ export const StatCard = ({ label, value, Icon, variant = 'default' }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] flex items-center justify-between border border-gray-100/50">
+    <div className="bg-white rounded-2xl p-6 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] flex items-center border border-gray-100/50 relative overflow-hidden">
+      {/* El bloque de texto se queda fijo en su lugar original */}
       <div className="text-center sm:text-left">
         <p className="text-gray-400 text-sm font-medium">{label}</p>
         <p className="text-3xl font-bold text-gray-800">{value}</p>
       </div>
-      <div className={`${bgVariants[variant] || bgVariants.default} p-3 rounded-xl`}>
+      
+      <div className={`${bgVariants[variant] || bgVariants.default} p-3 rounded-xl ml-auto -mr-2 flex-shrink-0`}>
         <Icon size={32} className={`${iconVariants[variant] || iconVariants.default}`} />
       </div>
     </div>

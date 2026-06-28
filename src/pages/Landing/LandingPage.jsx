@@ -99,30 +99,45 @@ export const LandingPage = () => {
           </section>
 
           {/* Info columns */}
-          <section className="bg-brand-medium py-20 px-6 text-white">
+          <section className="bg-brand-medium py-18 px-6 text-white">
             <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-32">
+              
+              {/* Columna Estudiantes */}
               <motion.div initial={{ x: -20, opacity: 0 }} whileInView={{ x: 0, opacity: 1 }} viewport={{ once: true }}>
                 <h3 className="text-2xl font-bold mb-8">Para Estudiantes</h3>
                 <ul className="space-y-6">
-                  {["Inscribe tu práctica de forma rápida y sencilla", "Sube y gestiona todos tus documentos en un solo lugar", "Recibe notificaciones sobre el estado de tu práctica", "Accede a preguntas frecuentes y soporte"].map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-4">
-                      <div className="mt-1 bg-white rounded-full p-1 text-brand-medium shrink-0"><CheckCircle2 size={16} fill="currentColor" className="text-white" /></div>
-                      <span className="text-lg opacity-90">{item}</span>
+                  {["Inscribe tu práctica de forma rápida y sencilla", "Sube y gertiona todos tus documentos en un solo lugar", "Recibe notificaciones sobre el estado de tu práctica", "Accede a preguntas frecuentes y soporte"].map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-4 group">
+                      {/* SOLUCIÓN: Caja contenedora rígida con h-[28px] (la altura promedio de la primera línea) para forzar centrado vertical exacto */}
+                      <div className="flex items-center h-[28px] flex-shrink-0">
+                        <div className="bg-white rounded-full p-1 text-brand-medium w-5 h-5 flex items-center justify-center">
+                          <CheckCircle2 size={12} fill="currentColor" className="text-white" />
+                        </div>
+                      </div>
+                      <span className="text-lg opacity-90 leading-normal">{item}</span>
                     </li>
                   ))}
                 </ul>
               </motion.div>
+              
+              {/* Columna Encargados y Supervisores */}
               <motion.div initial={{ x: 20, opacity: 0 }} whileInView={{ x: 0, opacity: 1 }} viewport={{ once: true }}>
                 <h3 className="text-2xl font-bold mb-8">Para Encargados y Supervisores</h3>
                 <ul className="space-y-6">
                   {["Gestiona todas las prácticas desde un panel centralizado", "Revisa y aprueba documentos de manera eficiente", "Completa evaluaciones directamente en la plataforma", "Genera reportes y estadísticas en tiempo real"].map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-4">
-                      <div className="mt-1 bg-white rounded-full p-1 text-brand-medium shrink-0"><CheckCircle2 size={16} fill="currentColor" className="text-white" /></div>
-                      <span className="text-lg opacity-90">{item}</span>
+                    <li key={idx} className="flex items-start gap-4 group">
+                      {/* SOLUCIÓN: Caja contenedora rígida con h-[28px] (la altura promedio de la primera línea) para forzar centrado vertical exacto */}
+                      <div className="flex items-center h-[28px] flex-shrink-0">
+                        <div className="bg-white rounded-full p-1 text-brand-medium w-5 h-5 flex items-center justify-center">
+                          <CheckCircle2 size={12} fill="currentColor" className="text-white" />
+                        </div>
+                      </div>
+                      <span className="text-lg opacity-90 leading-normal">{item}</span>
                     </li>
                   ))}
                 </ul>
               </motion.div>
+
             </div>
           </section>
 
@@ -134,14 +149,12 @@ export const LandingPage = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button 
                 onClick={() => navigate("/login")}
-                className="w-full sm:w-auto bg-brand-medium text-white px-12 py-3 rounded-md font-bold hover:bg-brand-dark transition-all transform hover:scale-105 cursor-pointer"
-              >
+                className="w-full sm:w-56 bg-brand-medium text-white py-3 rounded-md font-bold hover:bg-brand-dark transition-all transform hover:scale-105 cursor-pointer"              >
                 Iniciar Sesión
               </button>
               <button 
                 onClick={() => navigate("/faq")}
-                className="w-full sm:w-auto bg-brand-medium text-white px-12 py-3 rounded-md font-bold hover:bg-brand-dark transition-all transform hover:scale-105 cursor-pointer"
-              >
+                className="w-full sm:w-56 bg-brand-medium text-white py-3 rounded-md font-bold hover:bg-brand-dark transition-all transform hover:scale-105 cursor-pointer"              >
                 Preguntas frecuentes
               </button>
             </div>

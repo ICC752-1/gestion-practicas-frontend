@@ -197,7 +197,7 @@ export const SeguimientoListPage = () => {
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex flex-col">
       <UserHeader />
 
-      <main className="max-w-5xl mx-auto w-full py-12 px-6 flex-grow">
+      <main className="max-w-7xl mx-auto w-full py-12 px-6 flex-grow">
         {/* Title */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
           <h2 className="text-[#d22864] text-2xl md:text-3xl font-bold tracking-tight">

@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import { useAuth } from '../../context/useAuth';
 import { getDisplayRoleForRoles } from '../../services/roleRouting';
+import { Search, Filter, Inbox } from 'lucide-react'; // Íconos para dar consistencia
 import {
   assignUserRole,
   createUser,
@@ -214,7 +215,6 @@ export const SuperadminUsersPage = () => {
 
   const handleRutChange = (event) => {
     const formattedRut = formatRut(event.target.value);
-
     setForm((current) => ({ ...current, rut: formattedRut }));
   };
 
@@ -361,14 +361,19 @@ export const SuperadminUsersPage = () => {
   const start = total === 0 ? 0 : offset + 1;
   const end = Math.min(offset + PAGE_SIZE, total);
 
+  // CLASE DE REJILLA UNIFICADA: Controla anchos y espaciados de la tabla de forma fluida
+  const gridLayoutClass = "grid grid-cols-[1.5fr_1fr_1.1fr_1.3fr_0.9fr] items-center gap-4 px-6 py-4 w-full";
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <UserHeader userName={userName} userRole={userRole} />
       <main className="flex-grow container mx-auto max-w-7xl px-4 py-8">
+        
+        {/* Cabecera / Banner */}
         <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
           <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Superadmin</p>
-          <h1 className="mt-3 text-3xl font-black text-gray-900">Administración de usuarios</h1>
-          <p className="mt-4 text-gray-600">
+          <h1 className="mt-2 text-3xl font-black text-gray-900">Administración de usuarios</h1>
+          <p className="mt-3 text-gray-600 text-sm leading-relaxed">
             Gestiona cuentas y roles técnicos sin conceder permisos académicos implícitos.
             Las cuentas nuevas reciben un enlace de activación de un solo uso para definir su contraseña.
           </p>
@@ -385,21 +390,26 @@ export const SuperadminUsersPage = () => {
           </div>
         )}
 
+        {/* Sección de Tabla de datos + Formulario */}
         <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm flex flex-col justify-between">
+            
+            {/* Barra de Filtros */}
             <form onSubmit={handleApplyFilters} className="grid gap-3 md:grid-cols-4">
-              <input
-                name="search"
-                value={filters.search}
-                onChange={handleFilterChange}
-                placeholder="Nombre, correo o RUT"
-                className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
-              />
+              <div className="relative flex items-center">
+                <input
+                  name="search"
+                  value={filters.search}
+                  onChange={handleFilterChange}
+                  placeholder="Nombre, correo o RUT"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
+                />
+              </div>
               <select
                 name="role"
                 value={filters.role}
                 onChange={handleFilterChange}
-                className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
+                className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864] cursor-pointer bg-white"
               >
                 <option value="">Todos los roles</option>
                 {roles.map((role) => (
@@ -410,7 +420,7 @@ export const SuperadminUsersPage = () => {
                 name="is_active"
                 value={filters.is_active}
                 onChange={handleFilterChange}
-                className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
+                className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864] cursor-pointer bg-white"
               >
                 <option value="">Todos los estados</option>
                 <option value="true">Activos</option>
@@ -418,70 +428,85 @@ export const SuperadminUsersPage = () => {
               </select>
               <button
                 type="submit"
-                className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-bold text-white hover:bg-gray-800"
+                className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-bold text-white hover:bg-gray-800 transition-colors cursor-pointer"
               >
                 Filtrar
               </button>
             </form>
 
-            <div className="mt-6 overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-100 text-sm">
-                <thead>
-                  <tr className="text-left text-xs font-black uppercase tracking-wide text-gray-500">
-                    <th className="px-3 py-3">Usuario</th>
-                    <th className="px-3 py-3">RUT</th>
-                    <th className="px-3 py-3">Estado</th>
-                    <th className="px-3 py-3">Roles</th>
-                    <th className="px-3 py-3">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+            {/* Contenedor de Tabla Fluid / Responsive sin Scroll Horizontal */}
+            <div className="w-full mt-6 rounded-xl border border-gray-100 overflow-hidden bg-white">
+              <div className="w-full table-layout-fixed">
+                
+                {/* Cabecera Grid de la Tabla */}
+                <div className={`${gridLayoutClass} bg-gray-50/70 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider`}>
+                  <div>Usuario</div>
+                  <div className="text-center">RUT</div>
+                  <div className="text-center">Estado</div>
+                  <div className="text-center">Roles</div>
+                  <div className="text-center">Acciones</div>
+                </div>
+
+                {/* Cuerpo Grid de la Tabla */}
+                <div className="divide-y divide-gray-100">
                   {loading && (
-                    <tr>
-                      <td colSpan="5" className="px-3 py-8 text-center font-semibold text-gray-500">
-                        Cargando usuarios...
-                      </td>
-                    </tr>
+                    <div className="p-12 text-center font-semibold text-gray-500 text-sm">
+                      Cargando usuarios...
+                    </div>
                   )}
+                  
                   {!loading && users.length === 0 && (
-                    <tr>
-                      <td colSpan="5" className="px-3 py-8 text-center font-semibold text-gray-500">
-                        No hay usuarios para los filtros seleccionados.
-                      </td>
-                    </tr>
+                    <div className="p-12 text-center font-semibold text-gray-500 text-sm flex flex-col items-center gap-2">
+                      <Inbox className="text-gray-300 w-8 h-8" />
+                      <span>No hay usuarios para los filtros seleccionados.</span>
+                    </div>
                   )}
+
                   {!loading && users.map((item) => (
-                    <tr key={item.id} className="align-top">
-                      <td className="px-3 py-4">
-                        <p className="font-black text-gray-900">{item.first_name} {item.last_name}</p>
-                        <p className="text-gray-500">{item.email}</p>
-                      </td>
-                      <td className="px-3 py-4 text-gray-600">{item.rut}</td>
-                      <td className="px-3 py-4">
-                        <span className={`rounded-full px-3 py-1 text-xs font-black ${item.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <div key={item.id} className={`${gridLayoutClass} hover:bg-gray-50/40 transition-colors min-w-0`}>
+                      
+                      {/* Celda: Usuario */}
+                      <div className="min-w-0 flex flex-col">
+                        <span className="font-bold text-gray-900 text-sm truncate">{item.first_name} {item.last_name}</span>
+                        <span className="text-xs text-gray-400 font-medium truncate mt-0.5">{item.email}</span>
+                      </div>
+
+                      {/* Celda: RUT (Centrado) */}
+                      <div className="text-center text-sm text-gray-600 font-medium truncate min-w-0">
+                        {item.rut || 'N/A'}
+                      </div>
+
+                      {/* Celda: Estado (Centrado) */}
+                      <div className="flex flex-col items-center justify-center min-w-0 w-full gap-1">
+                        <span className={`rounded-full px-3 py-1 text-[10px] font-bold shadow-sm inline-block min-w-[75px] text-center ${item.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 text-gray-500'}`}>
                           {item.is_active ? 'Activo' : 'Inactivo'}
                         </span>
                         {item.must_change_password && (
-                          <span className="mt-2 block rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
-                            Cambio de contraseña pendiente
+                          <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full text-center max-w-full truncate border border-amber-100">
+                            Contraseña temporal
                           </span>
                         )}
-                      </td>
-                      <td className="px-3 py-4">
-                        <div className="flex max-w-xs flex-wrap gap-2">
+                      </div>
+
+                      {/* Celda: Roles (Centrado) */}
+                      <div className="flex flex-col items-center justify-center min-w-0 w-full">
+                        <div className="flex flex-wrap gap-1 justify-center max-h-[55px] overflow-y-auto w-full px-1">
                           {(item.roles || []).map((role) => (
                             <button
                               key={role}
                               type="button"
                               disabled={saving}
+
                               onClick={() => handleRequestRemoveRole(item, role)}
-                              className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-700 hover:border-red-200 hover:text-red-600"
+                              className="rounded-full border border-gray-100 bg-gray-50/80 px-2 py-0.5 text-[10px] font-bold text-gray-600 hover:border-red-200 hover:text-red-600 transition-all cursor-pointer flex-shrink-0"
+
                               title="Retirar rol"
                             >
                               {role}
                             </button>
                           ))}
                         </div>
+                        
                         <select
                           defaultValue=""
                           disabled={saving}
@@ -489,7 +514,7 @@ export const SuperadminUsersPage = () => {
                             handleAddRole(item, event.target.value);
                             event.target.value = '';
                           }}
-                          className="mt-3 w-full rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold outline-none focus:border-[#d22864]"
+                          className="mt-2 w-full max-w-[130px] rounded-lg border border-gray-200 px-2 py-1 text-[12px] font-semibold outline-none focus:border-[#d22864] bg-white cursor-pointer"
                         >
                           <option value="">Asignar rol</option>
                           {roles
@@ -498,23 +523,29 @@ export const SuperadminUsersPage = () => {
                               <option key={role.id} value={role.id}>{role.name}</option>
                             ))}
                         </select>
-                      </td>
-                      <td className="px-3 py-4">
+                      </div>
+
+                      {/* Celda: Acciones (Centrado) */}
+                      <div className="text-center min-w-0">
                         <button
                           type="button"
                           disabled={saving}
+                          
                           onClick={() => handleRequestToggleUserStatus(item)}
-                          className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-black text-gray-700 hover:border-[#d22864] hover:text-[#d22864] disabled:opacity-50"
+                          className="rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-700 hover:border-[#d22864] hover:text-[#d22864] disabled:opacity-50 transition-all cursor-pointer whitespace-nowrap"
                         >
                           {item.is_active ? 'Desactivar' : 'Reactivar'}
                         </button>
-                      </td>
-                    </tr>
+                      </div>
+
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+
+              </div>
             </div>
 
+            {/* Paginación */}
             <div className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between">
               <span>Mostrando {start}-{end} de {total}</span>
               <div className="flex gap-2">
@@ -522,7 +553,7 @@ export const SuperadminUsersPage = () => {
                   type="button"
                   disabled={offset === 0 || loading}
                   onClick={() => setOffset((current) => Math.max(0, current - PAGE_SIZE))}
-                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40"
+                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40 cursor-pointer hover:bg-gray-50 transition-colors"
                 >
                   Anterior
                 </button>
@@ -530,7 +561,7 @@ export const SuperadminUsersPage = () => {
                   type="button"
                   disabled={offset + PAGE_SIZE >= total || loading}
                   onClick={() => setOffset((current) => current + PAGE_SIZE)}
-                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40"
+                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40 cursor-pointer hover:bg-gray-50 transition-colors"
                 >
                   Siguiente
                 </button>
@@ -538,17 +569,27 @@ export const SuperadminUsersPage = () => {
             </div>
           </div>
 
-          <form onSubmit={handleCreateUser} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          {/* Formulario Lateral: Crear Usuario */}
+          <form onSubmit={handleCreateUser} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm h-fit">
             <h2 className="text-xl font-black text-gray-900">Crear usuario</h2>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-gray-500 leading-relaxed">
               El sistema enviará un enlace de activación al correo indicado. El usuario definirá su contraseña desde ese enlace.
             </p>
             <div className="mt-5 grid gap-3">
-              <input name="email" type="email" required value={form.email} onChange={handleFormChange} placeholder="Correo" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
+              <input 
+                name="email" 
+                type="email" 
+                required 
+                value={form.email} 
+                onChange={handleFormChange} 
+                placeholder="Correo electrónico" 
+                className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" 
+              />
               <div className="grid gap-3 sm:grid-cols-2">
                 <input name="first_name" required value={form.first_name} onChange={handleFormChange} placeholder="Nombres" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
                 <input name="last_name" required value={form.last_name} onChange={handleFormChange} placeholder="Apellidos" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
               </div>
+              
               <div>
                 <input
                   name="rut"
@@ -574,6 +615,7 @@ export const SuperadminUsersPage = () => {
                     : 'Formato automático: 12.345.678-5'}
                 </p>
               </div>
+
               {isStudentSelected && (
                 <input
                   name="admission_year"
@@ -586,14 +628,15 @@ export const SuperadminUsersPage = () => {
                   className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
                 />
               )}
-              <div className="rounded-2xl border border-gray-100 p-4">
+
+              <div className="rounded-2xl border border-gray-100 p-4 bg-gray-50/50">
                 <p className="text-xs font-black uppercase tracking-wide text-gray-500">Roles iniciales</p>
                 <p className="mt-1 text-xs font-semibold text-gray-400">
                   {form.role_ids.length === 0
                     ? 'Sin roles seleccionados'
                     : `${form.role_ids.length} rol(es) seleccionado(s)`}
                 </p>
-                <div className="mt-3 grid gap-2">
+                <div className="mt-3 grid gap-2 max-h-[200px] overflow-y-auto pr-1">
                   {roles.map((role) => {
                     const isSelected = form.role_ids.includes(role.id);
 
@@ -624,10 +667,11 @@ export const SuperadminUsersPage = () => {
                   })}
                 </div>
               </div>
+              
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white hover:bg-[#b01e52] disabled:opacity-60"
+                className="rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white hover:bg-[#b01e52] disabled:opacity-60 transition-colors cursor-pointer"
               >
                 {saving ? 'Guardando...' : 'Crear usuario'}
               </button>

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Inbox, Filter } from 'lucide-react';
+import { Inbox, Filter, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import { getAdminBasePathForRoles } from '../../services/roleRouting';
@@ -26,7 +26,7 @@ export const StudentTable = ({ students = [] }) => {
     if (statusStr.includes('revisi') || status === 'in_review') return { label: 'En Revisión', color: 'bg-blue-500', value: 'En Revisión' };
     if (statusStr.includes('aprob') || status === 'approved') return { label: 'Solicitud Aprobada', color: 'bg-emerald-500', value: 'Aprobada' };
     if (statusStr.includes('rechaz') || status === 'rejected') return { label: 'Rechazada', color: 'bg-red-500', value: 'Rechazada' };
-    if (!status || statusStr === 'pendiente' || status === 'submitted' || status === 'submited') return { label: 'Pendiente', color: 'bg-amber-500', value: 'Pendiente' };
+    if (!status || statusStr === 'pendiente' || status === 'submitted' || status === 'submited') return { label: 'Pendiente', color: 'bg-amber-500', value: 'Práctica Pendiente' };
     return { label: statusLabel || 'Pendiente', color: 'bg-gray-500', value: statusLabel || 'Pendiente' };
   };
 
@@ -39,13 +39,11 @@ export const StudentTable = ({ students = [] }) => {
   }, [students]);
 
   const filteredStudents = students.filter(s => {
-    // FE4: Mapear datos reales (estudiante, organización, ciudad, región, fechas, tipo de práctica)
     const name = s.student ? `${s.student.first_name} ${s.student.last_name}`.toLowerCase() : '';
     const email = s.student?.email?.toLowerCase() || '';
     const degree = (s.student?.degree || s.student?.cod_degree || '').toLowerCase();
     const org = s.org_name?.toLowerCase() || '';
     
-    // Datos FE4 mapeados para búsqueda (sin mostrar columnas en tabla)
     const city = s.city?.toLowerCase() || '';
     const region = s.region?.toLowerCase() || '';
     const practiceType = (s.modality || s.practice_type || '').toLowerCase();
@@ -71,6 +69,8 @@ export const StudentTable = ({ students = [] }) => {
 
     return matchesSearch && matchesDegree && matchesCompany;
   });
+
+  const gridLayoutClass = "grid grid-cols-[1.4fr_1fr_1.3fr_1.1fr_0.9fr] items-center gap-3 px-4 py-4 w-full";
 
   const handleOpenDetails = async (internship) => {
     setOpeningId(internship.id);
@@ -101,33 +101,35 @@ export const StudentTable = ({ students = [] }) => {
   }
 
   return (
-    <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
-      <div className="flex flex-col space-y-4 mb-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
-          <h2 className="text-2xl font-bold text-gray-800">Solicitudes de práctica</h2>
-          <div className="relative w-full md:w-96">
+    <div className="space-y-6 w-full">
+      {/* Sección Filtros Internos y Buscador Secundario */}
+      <div className="flex flex-col gap-4 w-full">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+          <h3 className="text-lg font-bold text-gray-800 flex-shrink-0">Solicitudes de práctica</h3>
+          
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Buscar por estudiante, carrera o empresa..."
+              placeholder="Buscar estudiante o empresa..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-ufro-primary/20 focus:border-ufro-primary transition-all"
+              className="w-full h-10 pl-9 pr-4 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] transition-all"
             />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
           </div>
         </div>
 
-        {/* Filtros */}
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex items-center text-gray-500 mr-2">
-            <Filter size={18} className="mr-2" />
-            <span className="text-sm font-medium">Filtros:</span>
+        {/* Fila de Selectores */}
+        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100 w-full">
+          <div className="flex items-center gap-1.5 font-bold text-gray-500 mr-1 flex-shrink-0">
+            <Filter size={16} />
+            <span>Filtros:</span>
           </div>
 
           <select 
             value={degreeFilter}
             onChange={(e) => setDegreeFilter(e.target.value)}
-            className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-ufro-primary focus:border-ufro-primary block p-2.5"
+            className="h-9 px-2 bg-white border border-gray-200 rounded-lg outline-none text-xs font-medium focus:border-[#d22864] max-w-[160px] truncate cursor-pointer"
           >
             <option value="">Todas las Carreras</option>
             {uniqueDegrees.map(degree => (
@@ -138,7 +140,7 @@ export const StudentTable = ({ students = [] }) => {
           <select 
             value={companyFilter}
             onChange={(e) => setCompanyFilter(e.target.value)}
-            className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-ufro-primary focus:border-ufro-primary block p-2.5 max-w-xs truncate"
+            className="h-9 px-2 bg-white border border-gray-200 rounded-lg outline-none text-xs font-medium focus:border-[#d22864] max-w-[160px] truncate cursor-pointer"
           >
             <option value="">Todas las Empresas</option>
             {uniqueCompanies.map(company => (
@@ -149,7 +151,7 @@ export const StudentTable = ({ students = [] }) => {
           {(degreeFilter || companyFilter) && (
             <button 
               onClick={() => { setDegreeFilter(''); setCompanyFilter(''); }}
-              className="text-sm text-ufro-primary font-medium hover:underline ml-auto"
+              className="text-xs text-[#d22864] font-bold hover:underline sm:ml-auto flex-shrink-0"
             >
               Limpiar filtros
             </button>
@@ -157,71 +159,79 @@ export const StudentTable = ({ students = [] }) => {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b-2 border-gray-100">
-              <th className="pb-4 text-left font-bold text-gray-800">Estudiante</th>
-              <th className="pb-4 text-left font-bold text-gray-800">Carrera</th>
-              <th className="pb-4 text-left font-bold text-gray-800">Empresa</th>
-              <th className="pb-4 text-center font-bold text-gray-800">Estado de solicitud</th>
-              <th className="pb-4 text-right font-bold text-gray-800">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
+      {/* Contenedor de la Tabla Estructurada - SIN OVERFLOW NI MIN-W */}
+      <div className="w-full rounded-xl border border-gray-100 bg-white shadow-sm">
+        <div className="w-full table-layout-fixed">
+          
+          {/* Cabecera de la Tabla */}
+          <div className={`${gridLayoutClass} bg-gray-50/70 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider`}>
+            <div>Estudiante</div>
+            <div>Carrera</div>
+            <div>Empresa</div>
+            <div className="text-center">Estado</div>
+            <div className="text-center">Acciones</div>
+          </div>
+
+          {/* Cuerpo de la Tabla */}
+          <div className="divide-y divide-gray-100 bg-white">
             {filteredStudents.length > 0 ? (
               filteredStudents.map((student) => {
                 const normalizedStatus = getNormalizedStatus(student);
 
                 return (
-                  <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="py-5 px-4">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-gray-800 leading-tight text-sm">
-                          {student.student ? `${student.student.first_name} ${student.student.last_name}` : 'Estudiante no registrado'}
-                        </span>
-                        <span className="text-xs text-gray-400 font-medium">{student.student?.email}</span>
-                      </div>
-                    </td>
+                  <div key={student.id} className={`${gridLayoutClass} hover:bg-gray-50/40 transition-colors`}>
+                    
+                    {/* Estudiante (Con min-w-0 para activar el truncado fluido) */}
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-bold text-gray-800 leading-tight text-sm truncate">
+                        {student.student ? `${student.student.first_name} ${student.student.last_name}` : 'Estudiante no registrado'}
+                      </span>
+                      <span className="text-xs text-gray-400 font-medium truncate mt-0.5">{student.student?.email}</span>
+                    </div>
 
-                    <td className="py-5 px-4">
-                      <p className="text-sm text-gray-700 font-medium">{student.student?.degree || student.student?.cod_degree || 'N/A'}</p>
-                    </td>
+                    {/* Carrera (Se corrigió la etiqueta td invasiva de develop para mantener la rejilla CSS Grid limpia) */}
+                    <div className="min-w-0">
+                      <p className="text-sm text-gray-600 font-medium truncate">
+                        {student.student?.degree || student.student?.cod_degree || 'N/A'}
+                      </p>
+                    </div>
 
-                    <td className="py-5 px-4">
-                      <p className="text-sm text-gray-700 font-medium">{student.org_name || 'N/A'}</p>
-                    </td>
+                    {/* Empresa */}
+                    <div className="min-w-0">
+                      <p className="text-sm text-gray-600 font-medium truncate">{student.org_name || 'N/A'}</p>
+                    </div>
 
-                    <td className="py-5 px-4 text-center">
+                    {/* Estado */}
+                    <div className="flex justify-center min-w-0 w-full">
                       <span className={`
-                        px-6 py-1.5 rounded-full text-white text-xs font-bold inline-block min-w-32
+                        px-2 sm:px-4 py-1.5 rounded-full text-white text-[11px] font-bold text-center w-full max-w-[100px] block shadow-sm truncate
                         ${normalizedStatus.color}
                       `}>
                         {normalizedStatus.label}
                       </span>
-                    </td>
+                    </div>
 
-                    <td className="py-5 px-4 text-right">
+                    {/* Acciones */}
+                    <div className="text-center whitespace-nowrap min-w-0">
                       <button
                         onClick={() => handleOpenDetails(student)}
                         disabled={openingId === student.id}
-                        className="text-ufro-primary font-bold hover:underline text-sm transition-all"
+                        className="text-[#d22864] font-bold hover:underline text-sm transition-all disabled:opacity-50"
                       >
                         {openingId === student.id ? 'Abriendo...' : 'Ver detalles'}
                       </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 );
               })
             ) : (
-              <tr>
-                <td colSpan="5" className="py-8 text-center text-gray-500">
-                  No se encontraron solicitudes que coincidan con los filtros.
-                </td>
-              </tr>
+              <div className="py-12 text-center text-gray-500 text-sm bg-white">
+                No se encontraron solicitudes que coincidan con los filtros.
+              </div>
             )}
-          </tbody>
-        </table>
+          </div>
+
+        </div>
       </div>
     </div>
   );

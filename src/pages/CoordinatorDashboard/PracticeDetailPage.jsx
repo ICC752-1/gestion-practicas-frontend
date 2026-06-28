@@ -358,8 +358,6 @@ export const PracticeDetailPage = () => {
   };
   const supervisorInvitationUnavailableMessage = getSupervisorInvitationUnavailableMessage();
 
-  // Usamos el estudiante que pasamos en la navegación desde StudentTable como fuente principal.
-  // Si no está (ej. si el usuario entra directo a la URL), intentamos buscarlo en el practice.
   const studentFromState = location.state?.student;
   const studentData = studentFromState || practice?.student || practice?.user || practice;
 
@@ -399,7 +397,7 @@ export const PracticeDetailPage = () => {
     <div className="min-h-screen flex flex-col bg-ufro-bg">
       <UserHeader userName={userName} userRole={userRole} />
 
-      <main className="flex-grow container mx-auto px-4 py-12 max-w-4xl animate-fade-in">
+      <main className="flex-grow container mx-auto px-4 py-8 max-w-4xl animate-fade-in">
         <button
           onClick={() => navigate(adminBasePath)}
           className="flex items-center text-ufro-primary hover:underline mb-6 font-medium cursor-pointer"
@@ -470,8 +468,8 @@ export const PracticeDetailPage = () => {
                     <DetailItem icon={ShieldAlert} label="Seguro escolar declarado" value={practice.has_school_insurance ? 'Sí' : 'No'} />
                     <DetailItem icon={FileText} label="Estado DIRAE" value={practice.dirae_status} />
                   </div>
-
-                  {practice.act_description && (
+              {/* Sección de Práctica */}
+             {practice.act_description && (
                     <div className="mt-6 border-t border-gray-100 pt-5">
                       <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Actividades a realizar</p>
                       <p className="mt-2 text-sm leading-relaxed text-gray-700">{practice.act_description}</p>
@@ -487,6 +485,40 @@ export const PracticeDetailPage = () => {
                       <DetailItem icon={DollarSign} label="Apoyo económico" value={formatMoney(practice.amount)} />
                     </div>
                   )}
+                </DetailSection>
+
+                <DetailSection
+                  icon={Building}
+                  title="Organización"
+                  summary={companyAddress || practice.org_name || 'Datos de la organización'}
+                  isOpen={expandedSections.organization}
+                  onToggle={() => toggleSection('organization')}
+                >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <DetailItem icon={Building} label="Nombre" value={practice.org_name} />
+                    <DetailItem icon={Briefcase} label="Rubro" value={practice.sector} />
+                    <DetailItem icon={MapPin} label="Dirección casa matriz" value={practice.address} />
+                    <DetailItem icon={MapPin} label="Ciudad" value={practice.city} />
+                    <DetailItem icon={Phone} label="Teléfono" value={practice.org_phone} />
+                    <DetailItem icon={Globe2} label="Página web" value={practice.web} />
+                  </div>
+                </DetailSection>
+
+                <DetailSection
+                  icon={User}
+                  title="Supervisor/a"
+                  summary={practice.supervisor_email || 'Datos del supervisor externo'}
+                  isOpen={expandedSections.supervisor}
+                  onToggle={() => toggleSection('supervisor')}
+                >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <DetailItem icon={User} label="Nombre" value={practice.supervisor_name} />
+                    <DetailItem icon={Briefcase} label="Profesión" value={practice.supervisor_profession} />
+                    <DetailItem icon={Briefcase} label="Cargo" value={practice.supervisor_position} />
+                    <DetailItem icon={Building} label="Departamento" value={practice.supervisor_department} />
+                    <DetailItem icon={Mail} label="Correo" value={practice.supervisor_email} />
+                    <DetailItem icon={Phone} label="Teléfono" value={practice.supervisor_phone} />
+                  </div>
                 </DetailSection>
 
                 <DetailSection
@@ -728,7 +760,7 @@ export const PracticeDetailPage = () => {
 
                       return (
                         <div key={entry.id} className="relative group">
-                          {/* Circle on the left line */}
+                          {/* Circle on the left line unificado */}
                           <div className={`absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white shadow-sm transition-transform group-hover:scale-110 ${getTimelineCircleColor(historyTitle, entry.status)}`} />
 
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-4">

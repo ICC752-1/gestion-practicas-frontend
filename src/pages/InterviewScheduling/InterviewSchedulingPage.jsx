@@ -465,22 +465,25 @@ export const InterviewSchedulingPage = () => {
 
     // Cancel Appointment (Student/Coordinator)
     const handleCancelAppointment = async (appointmentId, reason) => {
-        setSubmitting(true);
-        setMessage(null);
+    setSubmitting(true);
+    setMessage(null);
 
-        try {
-            await schedulingService.cancelAppointment(appointmentId, reason);
-            showToast({
-                type: 'success',
-                title: 'Cita cancelada',
-                message: 'La cita agendada ha sido cancelada.',
-            });
-            await loadData({ clearMessage: false });
-        } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
-        } finally {
-            setSubmitting(false);
-        }
+    try {
+        await schedulingService.cancelAppointment(appointmentId, reason);
+        showToast({
+            type: 'success',
+            title: 'Cita cancelada',
+            message: 'La cita agendada ha sido cancelada.',
+        });
+        // Forzar recarga completa desde cero
+        await loadData({ clearMessage: false });
+        // Redirigir al tab de solicitudes para que vea el estado actualizado
+        setActiveTab('requests');
+    } catch (error) {
+        setMessage({ type: 'error', text: getErrorMessage(error) });
+    } finally {
+        setSubmitting(false);
+    }
     };
 
     const handleConfirmAppointment = async (appointmentId) => {
@@ -925,14 +928,18 @@ export const InterviewSchedulingPage = () => {
                 <div className="grid items-start gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
                     
                     {/* Sidebar: Calendar & Stats */}
-                    <aside className="space-y-4 xl:sticky xl:top-24">
-                        <CalendarView
-                            selectedDate={selectedDate}
-                            onSelectDate={setSelectedDate}
-                            savedDates={calendarMarkers}
-                        />
+                    <aside className="w-full space-y-4 xl:sticky xl:top-24">
+                        
+                        <div className="w-full max-w-[460px] mx-auto">
+                            <CalendarView
+                                selectedDate={selectedDate}
+                                onSelectDate={setSelectedDate}
+                                savedDates={calendarMarkers}
+                            />
+                        </div>
 
-                        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                        {/* Las estadísticas sí pueden expandirse de forma responsiva normal */}
+                        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 max-w-[380px] sm:max-w-none mx-auto">
                             <StatsCard
                                 title="Citas del Día"
                                 value={selectedDayAppointments.length}
@@ -1006,6 +1013,7 @@ export const InterviewSchedulingPage = () => {
                                                 )}
                                             </div>
                                         )}
+                                        </div>
 
                                         {formPurpose === 'final_presentation' && (
                                             <div className="sm:col-span-2">
@@ -1051,31 +1059,38 @@ export const InterviewSchedulingPage = () => {
                                         )}
 
                                         <div className="sm:col-span-2">
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">
-                                                Fechas Preferidas (Selecciona hasta 3 fechas)
-                                            </label>
-                                            <div className="grid gap-3 sm:grid-cols-3">
-                                                {formPreferredDates.map((dateValue, index) => (
-                                                    <div key={index} className="relative">
-                                                        <span className="absolute left-3 top-3.5 text-xs text-slate-400 font-bold">{index + 1}°</span>
-                                                        <input
-                                                            type="date"
-                                                            value={dateValue}
-                                                            onChange={(e) => {
-                                                                const updated = [...formPreferredDates];
-                                                                updated[index] = e.target.value;
-                                                                setFormPreferredDates(updated);
-                                                            }}
-                                                            min={today.toISOString().split('T')[0]}
-                                                            className="w-full rounded-2xl border border-slate-200 bg-white pl-8 pr-3 py-3 text-sm focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition"
-                                                            required={index === 0}
-                                                        />
-                                                    </div>
-                                                ))}
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">
+                                            Fechas Preferidas (Selecciona hasta 3 fechas)
+                                        </label>
+                                        <div className="grid gap-3 sm:grid-cols-3">
+                                        {formPreferredDates.map((dateValue, index) => (
+                                            <div 
+                                                key={index} 
+                                                className="flex items-center w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 focus-within:border-[#d22864] focus-within:ring-1 focus-within:ring-[#d22864] transition"
+                                            >
+                                                {/* El número indicativo */}
+                                                <span className="text-sm text-slate-400 font-bold pr-2 select-none flex-shrink-0 leading-none">
+                                                    {index + 1}°
+                                                </span>
+                                                
+                                                {/* El input con corrección de altura de línea interna */}
+                                                <input
+                                                    type="date"
+                                                    value={dateValue}
+                                                    onChange={(e) => {
+                                                        const updated = [...formPreferredDates];
+                                                        updated[index] = e.target.value;
+                                                        setFormPreferredDates(updated);
+                                                    }}
+                                                    min={today.toISOString().split('T')[0]}
+                                                    className="w-full bg-transparent text-sm text-slate-800 focus:outline-none outline-none transition cursor-pointer leading-none h-auto p-0 m-0"
+                                                    required={index === 0}
+                                                />
                                             </div>
-                                        </div>
+                                        ))}
+                                    </div>
 
-                                        <div className="sm:col-span-2">
+                                        <div className="sm:col-span-2 mt-4">
                                             <label className="block text-sm font-bold text-slate-700 mb-2">
                                                 Mensaje u Observaciones (Opcional)
                                             </label>

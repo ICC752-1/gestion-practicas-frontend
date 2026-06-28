@@ -5,6 +5,7 @@ import { Header } from "../../components/Header/Header";
 import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
 import { useAuth } from "../../context/useAuth";
+import { useNavigate } from "react-router-dom";
 
 const SUPPORT_EMAIL = "secretaria.vincfica@ufrontera.cl";
 
@@ -71,6 +72,7 @@ export const FAQPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("Todas");
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const categories = ["Todas", ...new Set(faqItems.map((item) => item.category))];
   const normalizedSearchTerm = normalizeText(searchTerm.trim());
@@ -94,13 +96,23 @@ export const FAQPage = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="max-w-7xl mx-auto py-16 px-6 grow w-full"
+          className="max-w-7xl mx-auto py-3 px-6 grow w-full"
         >
-          <div className="text-center mb-12">
+          <div className="mb-12">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="inline-flex items-center gap-2 text-brand-medium font-semibold hover:underline mb-8 text-2xl"
+          >
+            ← 
+          </button>
+
+          <div className="text-center">
             <h2 className="text-4xl font-bold text-brand-medium mb-4">Preguntas Frecuentes</h2>
             <p className="text-lg text-brand-medium opacity-80">
               Encuentra respuestas a las preguntas más comunes sobre prácticas profesionales
             </p>
+          </div>
           </div>
 
           <div className="max-w-3xl mx-auto mb-12 relative">
@@ -125,8 +137,8 @@ export const FAQPage = () => {
                 onClick={() => handleCategoryClick(cat)}
                 className={`px-8 py-2.5 rounded-full font-semibold transition-colors shadow-sm cursor-pointer ${
                   activeCategory === cat
-                    ? "bg-brand-dark text-white"
-                    : "bg-brand-medium text-white hover:bg-brand-dark"
+                  ? "bg-white text-brand-dark border border-brand-dark shadow-md"
+                  : "bg-brand-medium text-white hover:bg-brand-dark"
                 }`}
               >
                 {cat}
@@ -165,7 +177,7 @@ export const FAQPage = () => {
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                     >
-                      <div className="px-10 pb-10 text-gray-600 leading-relaxed border-t border-gray-50 pt-6">
+                      <div className="px-10 pb-10 text-gray-600 leading-relaxed border-t border-gray-50 pt-0">
                         {item.answer}
                       </div>
                     </motion.div>
@@ -184,13 +196,15 @@ export const FAQPage = () => {
           <div className="max-w-5xl mx-auto mb-12">
             <div className="bg-brand-medium text-white py-16 px-10 rounded-[2.5rem] text-center shadow-xl">
               <h3 className="text-3xl font-bold mb-4">¿No encontraste lo que buscabas?</h3>
-              <p className="text-lg opacity-90 mb-10 italic">
+              <p className="text-lg opacity-90 mb-6 italic">
                 Contáctanos y con gusto te ayudaremos con tus dudas
               </p>
+
               <a
                 href={`mailto:${SUPPORT_EMAIL}`}
                 className="inline-flex bg-white text-brand-medium px-12 py-3 rounded-xl font-bold hover:bg-gray-100 transition-colors shadow-lg cursor-pointer"
               >
+
                 Ir al soporte
               </a>
             </div>

@@ -54,6 +54,7 @@ const isSelfEvaluationAvailable = (internship) => {
   if (!internship || internship.is_cancelled) return false;
   if (ENABLED_COMPLETION_STATUSES.has(internship.completion_status)) return true;
   if (internship.status_id !== 4) return false;
+  if (internship.status_id === 5) return false;
 
   const start = businessWindowStart(
     internship.end_date,
