@@ -1,4 +1,5 @@
 export const BENEFIT_OPTIONS = [
+  { id: 'sin_beneficio', label: 'Sin beneficios' },
   { id: 'locomocion', label: 'Bono locomoción' },
   { id: 'movilizacion', label: 'Movilización organización' },
   { id: 'colacion_bono', label: 'Bono colación' },
@@ -12,13 +13,17 @@ const BENEFIT_LABELS = Object.fromEntries(
 );
 
 export const formatBenefitLabels = (value) => {
+  if (!value || (Array.isArray(value) && value.length === 0)) return 'Sin beneficios';
+  
   const items = Array.isArray(value)
     ? value
     : String(value || '').split(',');
 
-  return items
-    .map((item) => item.trim())
-    .filter(Boolean)
+  const filtered = items.map((item) => item.trim()).filter(Boolean);
+  if (filtered.length === 0) return 'Sin beneficios';
+  if (filtered.includes('sin_beneficio')) return 'Sin beneficios';
+
+  return filtered
     .map((item) => BENEFIT_LABELS[item] || item)
     .join(', ');
 };

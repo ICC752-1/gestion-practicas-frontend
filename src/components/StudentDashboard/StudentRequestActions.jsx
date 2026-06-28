@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react';
 import { internshipService } from '../../services/internshipService';
+import { BENEFIT_OPTIONS } from '../../constants/benefits';
 
 const EDITABLE_FIELDS = [
   { name: 'org_name', label: 'Organización', type: 'text' },
@@ -29,7 +30,7 @@ const EDITABLE_FIELDS = [
   { name: 'days', label: 'Días', type: 'text' },
   { name: 'internship_address', label: 'Dirección práctica', type: 'text' },
   { name: 'act_description', label: 'Actividades', type: 'textarea' },
-  { name: 'ben_description', label: 'Beneficios', type: 'textarea' },
+  // ben_description se maneja aparte con checkboxes
   { name: 'amount', label: 'Apoyo económico', type: 'number' },
 ];
 
@@ -53,17 +54,25 @@ const SELECT_FIELDS = {
   },
 };
 
+// 2. En getApiErrorMessage — traducir errores de Pydantic
 const getApiErrorMessage = (error) => {
   const detail = error.response?.data?.detail;
-
   if (typeof detail === 'string') return detail;
   if (detail?.message) return detail.message;
   if (Array.isArray(detail?.reasons) && detail.reasons.length > 0) {
     return 'La solicitud ya no permite esta acción.';
   }
-  if (Array.isArray(detail)) return detail.map((item) => item.msg).join(', ');
+  if (Array.isArray(detail)) {
+    return detail.map((item) => {
+      // Traducir mensajes comunes de Pydantic
+      const msg = item.msg || '';
+      if (msg.includes('valid string')) return 'Uno o más campos tienen un valor inválido.';
+      if (msg.includes('field required')) return 'Hay campos obligatorios sin completar.';
+      if (msg.includes('value is not a valid')) return 'El formato de uno o más campos es incorrecto.';
+      return msg;
+    }).join(', ');
+  }
   if (!error.response) return 'No se pudo conectar con el servidor.';
-
   return 'No se pudo completar la acción.';
 };
 
@@ -72,40 +81,40 @@ const normalizeValue = (value) => {
   return String(value);
 };
 
+const normalizeBenefits = (value) => {
+  if (Array.isArray(value) && value.length > 0) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = value.split(',').map((v) => v.trim()).filter(Boolean);
+    if (parsed.length > 0) return parsed;
+  }
+  // Si no hay nada → sin beneficios por defecto
+  return ['sin_beneficio'];
+};
+
 const buildInitialForm = (internship) => {
   const base = {};
-
   EDITABLE_FIELDS.forEach((field) => {
     base[field.name] = normalizeValue(internship?.[field.name]);
   });
-
   Object.keys(SELECT_FIELDS).forEach((fieldName) => {
     base[fieldName] = normalizeValue(internship?.[fieldName]);
   });
-
+  base.ben_description = normalizeBenefits(internship?.ben_description);
   return base;
 };
 
 const formatDeadline = (value) => {
   if (!value) return '';
-  // Server returns UTC-naive strings; append 'Z' to parse as UTC → display local
   const d = value.endsWith('Z') ? new Date(value) : new Date(value + 'Z');
   return d.toLocaleString('es-CL', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   });
 };
 
 const REQUIRED_UPDATE_REASON_MESSAGE = 'El motivo de corrección es obligatorio.';
 
-export const StudentRequestActions = ({
-  internship,
-  actions,
-  onUpdated,
-}) => {
+export const StudentRequestActions = ({ internship, actions, onUpdated }) => {
   const initialForm = useMemo(() => buildInitialForm(internship), [internship]);
   const [mode, setMode] = useState(null);
   const [formData, setFormData] = useState(initialForm);
@@ -126,11 +135,7 @@ export const StudentRequestActions = ({
   };
 
   const toggleMode = (nextMode) => {
-    if (mode === nextMode) {
-      setMode(null);
-      return;
-    }
-
+    if (mode === nextMode) { setMode(null); return; }
     resetForm();
     setMode(nextMode);
   };
@@ -138,13 +143,27 @@ export const StudentRequestActions = ({
   const canUpdate = actions?.can_update;
   const canCancel = actions?.can_cancel;
 
-  if (!canUpdate && !canCancel) {
-    return null;
-  }
+  if (!canUpdate && !canCancel) return null;
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setError(null);
+    setMessage(null);
+  };
+
+  const handleBenefitClick = (id) => {
+    const current = Array.isArray(formData.ben_description) ? formData.ben_description : [];
+    if (id === 'sin_beneficio') {
+      const next = current.includes('sin_beneficio') ? [] : ['sin_beneficio'];
+      setFormData(prev => ({ ...prev, ben_description: next }));
+      return;
+    }
+    const withoutNone = current.filter(b => b !== 'sin_beneficio');
+    const next = withoutNone.includes(id)
+      ? withoutNone.filter(b => b !== id)
+      : [...withoutNone, id];
+    setFormData(prev => ({ ...prev, ben_description: next }));
     setError(null);
     setMessage(null);
   };
@@ -158,16 +177,24 @@ export const StudentRequestActions = ({
 
   const buildUpdatePayload = () => {
     const payload = { reason: updateReason.trim() };
-
     Object.entries(formData).forEach(([key, value]) => {
+      if (key === 'ben_description') {
+        const originalBenefits = JSON.stringify(initialForm.ben_description);
+        const currentBenefits = JSON.stringify(value);
+        if (currentBenefits !== originalBenefits) {
+          // Convertir array a string con comas para el backend
+          const asArray = Array.isArray(value) ? value : [];
+          const filtered = asArray.filter(b => b !== 'sin_beneficio');
+          payload[key] = filtered.join(',');
+        }
+        return;
+      }
       const originalValue = normalizeValue(initialForm[key]);
       const currentValue = normalizeValue(value);
-
       if (currentValue !== originalValue) {
         payload[key] = key === 'amount' ? Number(currentValue || 0) : currentValue;
       }
     });
-
     return payload;
   };
 
@@ -237,7 +264,6 @@ export const StudentRequestActions = ({
             </p>
           )}
         </div>
-
         <div className="flex flex-wrap gap-3">
           {canUpdate && (
             <button
@@ -305,6 +331,47 @@ export const StudentRequestActions = ({
               </label>
             ))}
 
+            {/* Beneficios — checkboxes */}
+            <div className="md:col-span-2">
+              <span className="mb-2 block text-xs font-black uppercase tracking-wider text-gray-400">
+                Beneficios
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {BENEFIT_OPTIONS.map((benefit) => {
+                  const isChecked = formData.ben_description.includes(benefit.id);
+                  const isNone = benefit.id === 'sin_beneficio';
+                  return (
+                    <div
+                      key={benefit.id}
+                      onClick={() => handleBenefitClick(benefit.id)}
+                      className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors border ${
+                        isChecked
+                          ? isNone
+                            ? 'border-gray-400 bg-gray-100'
+                            : 'border-[#d22864] bg-[#ffe7f0]/40'
+                          : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                        isChecked
+                          ? isNone ? 'bg-gray-500 border-gray-500' : 'bg-[#d22864] border-[#d22864]'
+                          : 'bg-white border-gray-400'
+                      }`}>
+                        {isChecked && (
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className={`text-sm font-semibold ${isNone ? 'text-gray-500 italic' : 'text-gray-700'}`}>
+                        {benefit.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {Object.entries(SELECT_FIELDS).map(([fieldName, field]) => (
               <label key={fieldName}>
                 <span className="mb-1 block text-xs font-black uppercase tracking-wider text-gray-400">
@@ -317,9 +384,7 @@ export const StudentRequestActions = ({
                   className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none focus:border-[#d22864]"
                 >
                   {field.options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
+                    <option key={option} value={option}>{option}</option>
                   ))}
                 </select>
               </label>
@@ -381,7 +446,6 @@ export const StudentRequestActions = ({
               className="w-full rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none focus:border-red-300"
             />
           </label>
-
           <div className="flex flex-wrap justify-end gap-3">
             <button
               type="button"
