@@ -12,6 +12,11 @@ import {
   removeUserRole,
   updateUser,
 } from '../../services/superadminService';
+import {
+  analyzeEnrollment,
+  cleanEnrollment,
+  getEnrollmentError,
+} from '../../utils/enrollment';
 
 const PAGE_SIZE = 10;
 const STUDENT_ROLE_NAME = 'Estudiante';
@@ -32,13 +37,15 @@ const initialForm = {
   first_name: '',
   last_name: '',
   rut: '',
-  admission_year: '',
+  enrollment: '',
   role_ids: [],
 };
 
 const ERROR_TRANSLATIONS = {
   'Email already exists': 'El correo ya existe.',
   'RUT already exists': 'El RUT ya existe.',
+  'Enrollment already exists': 'La matrícula ya está registrada.',
+  'Enrollment is required for student accounts': 'La matrícula es obligatoria para estudiantes.',
   'User not found': 'No se encontró el usuario.',
   'Role not found': 'No se encontró el rol.',
 };
@@ -271,6 +278,13 @@ export const SuperadminUsersPanel = () => {
     setForm((current) => ({ ...current, rut: formattedRut }));
   };
 
+  const handleEnrollmentChange = (event) => {
+    setForm((current) => ({
+      ...current,
+      enrollment: cleanEnrollment(event.target.value),
+    }));
+  };
+
   const handleRoleToggle = (roleId) => {
     setForm((current) => {
       const hasRole = current.role_ids.includes(roleId);
@@ -290,18 +304,24 @@ export const SuperadminUsersPanel = () => {
     setMessage('');
 
     try {
-      if (!isValidRut(form.rut)) {
-        setError('Ingresa un RUT válido con dígito verificador correcto.');
-        return;
-      }
+      let payload;
 
-      const payload = {
-        ...form,
-        admission_year:
-          isStudentSelected && form.admission_year
-            ? Number(form.admission_year)
-            : undefined,
-      };
+      if (isStudentSelected) {
+        const enrollmentError = getEnrollmentError(form.enrollment);
+        if (enrollmentError) {
+          setError(enrollmentError);
+          return;
+        }
+
+        payload = { ...form, rut: undefined };
+      } else {
+        if (!isValidRut(form.rut)) {
+          setError('Ingresa un RUT válido con dígito verificador correcto.');
+          return;
+        }
+
+        payload = { ...form, enrollment: undefined };
+      }
 
       await createUser(payload);
       setForm(initialForm);
@@ -415,6 +435,7 @@ export const SuperadminUsersPanel = () => {
   const end = Math.min(offset + PAGE_SIZE, total);
   const currentPage = total === 0 ? 0 : Math.floor(offset / PAGE_SIZE) + 1;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const enrollmentDetails = analyzeEnrollment(form.enrollment);
 
   // CLASE DE REJILLA UNIFICADA: Controla anchos y espaciados de la tabla de forma fluida
   const gridLayoutClass = "grid grid-cols-[1.6fr_1fr_0.9fr_0.9fr_1.3fr_0.85fr] items-center gap-4 px-6 py-4 w-full";
@@ -453,7 +474,7 @@ export const SuperadminUsersPanel = () => {
                   name="search"
                   value={filters.search}
                   onChange={handleFilterChange}
-                  placeholder="Nombre, correo o RUT"
+                  placeholder="Nombre, correo, RUT o matrícula"
                   className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
                 />
               </div>
@@ -531,7 +552,7 @@ export const SuperadminUsersPanel = () => {
                 <div className={`${gridLayoutClass} bg-gray-50/70 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider`}>
                   <SortHeader label="Usuario" field="last_name" sort={sort} onSort={handleSort} />
                   <SortHeader label="Registro" field="created_at" sort={sort} onSort={handleSort} align="center" />
-                  <SortHeader label="RUT" field="rut" sort={sort} onSort={handleSort} align="center" />
+                  <SortHeader label="Identificación" field="rut" sort={sort} onSort={handleSort} align="center" />
                   <SortHeader label="Estado" field="is_active" sort={sort} onSort={handleSort} align="center" />
                   <div className="text-center">Roles</div>
                   <div className="text-center">Acciones</div>
@@ -566,9 +587,11 @@ export const SuperadminUsersPanel = () => {
                         {formatDateTime(item.created_at)}
                       </div>
 
-                      {/* Celda: RUT (Centrado) */}
+                      {/* Celda: identificación (Centrado) */}
                       <div className="text-center text-sm text-gray-600 font-medium truncate min-w-0">
-                        {item.rut || 'N/A'}
+                        {item.roles?.includes(STUDENT_ROLE_NAME) && item.enrollment
+                          ? item.enrollment
+                          : (item.rut || 'N/A')}
                       </div>
 
                       {/* Celda: Estado (Centrado) */}
@@ -703,43 +726,71 @@ export const SuperadminUsersPanel = () => {
                 <input name="last_name" required value={form.last_name} onChange={handleFormChange} placeholder="Apellidos" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
               </div>
               
-              <div>
-                <input
-                  name="rut"
-                  required
-                  value={form.rut}
-                  onChange={handleRutChange}
-                  placeholder="RUT"
-                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-[#d22864] ${
-                    form.rut && !isValidRut(form.rut)
-                      ? 'border-red-200 bg-red-50'
-                      : 'border-gray-200'
-                  }`}
-                />
-                <p
-                  className={`mt-1 text-xs font-semibold ${
-                    form.rut && !isValidRut(form.rut)
-                      ? 'text-red-600'
-                      : 'text-gray-400'
-                  }`}
-                >
-                  {form.rut && !isValidRut(form.rut)
-                    ? 'RUT inválido o dígito verificador incorrecto.'
-                    : 'Formato automático: 12.345.678-5'}
-                </p>
-              </div>
-
-              {isStudentSelected && (
-                <input
-                  name="admission_year"
-                  type="number"
-                  min="1900"
-                  max="2100"
-                  value={form.admission_year}
-                  onChange={handleFormChange}
-                  placeholder="Año de ingreso (opcional)"
-                  className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
-                />
+              {isStudentSelected ? (
+                <>
+                  <div>
+                    <input
+                      name="enrollment"
+                      required
+                      inputMode="numeric"
+                      value={form.enrollment}
+                      onChange={handleEnrollmentChange}
+                      placeholder="Matrícula, ej: 12345678523"
+                      className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-[#d22864] ${
+                        form.enrollment && !enrollmentDetails.isValid
+                          ? 'border-red-200 bg-red-50'
+                          : 'border-gray-200'
+                      }`}
+                    />
+                    <p className={`mt-1 text-xs font-semibold ${
+                      form.enrollment && !enrollmentDetails.isRutValid
+                        ? 'text-red-600'
+                        : 'text-gray-500'
+                    }`}>
+                      RUT asociado: {enrollmentDetails.rut || 'se calculará automáticamente'}
+                    </p>
+                    <p className={`mt-1 text-xs font-semibold ${
+                      form.enrollment && !enrollmentDetails.isAdmissionYearValid
+                        ? 'text-red-600'
+                        : 'text-gray-500'
+                    }`}>
+                      Año de ingreso: {enrollmentDetails.admissionYear || 'se calculará automáticamente'}
+                    </p>
+                  </div>
+                  <input
+                    value={enrollmentDetails.admissionYear || ''}
+                    readOnly
+                    aria-label="Año de ingreso calculado"
+                    placeholder="Año de ingreso"
+                    className="cursor-not-allowed rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 outline-none"
+                  />
+                </>
+              ) : (
+                <div>
+                  <input
+                    name="rut"
+                    required
+                    value={form.rut}
+                    onChange={handleRutChange}
+                    placeholder="RUT"
+                    className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-[#d22864] ${
+                      form.rut && !isValidRut(form.rut)
+                        ? 'border-red-200 bg-red-50'
+                        : 'border-gray-200'
+                    }`}
+                  />
+                  <p
+                    className={`mt-1 text-xs font-semibold ${
+                      form.rut && !isValidRut(form.rut)
+                        ? 'text-red-600'
+                        : 'text-gray-400'
+                    }`}
+                  >
+                    {form.rut && !isValidRut(form.rut)
+                      ? 'RUT inválido o dígito verificador incorrecto.'
+                      : 'Formato automático: 12.345.678-5'}
+                  </p>
+                </div>
               )}
 
               <div className="rounded-2xl border border-gray-100 p-4 bg-gray-50/50">

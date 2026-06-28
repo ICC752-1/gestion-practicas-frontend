@@ -4,6 +4,11 @@ import { ArrowDown, ArrowDownUp, ArrowUp, Search, UserPlus, Users } from 'lucide
 import { Footer } from '../../components/Footer/Footer';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { studentAccountService } from '../../services/studentAccountService';
+import {
+  analyzeEnrollment,
+  cleanEnrollment,
+  getEnrollmentError,
+} from '../../utils/enrollment';
 
 const PAGE_SIZE = 10;
 
@@ -21,8 +26,7 @@ const initialForm = {
   email: '',
   first_name: '',
   last_name: '',
-  rut: '',
-  admission_year: '',
+  enrollment: '',
   degree: 'Ingenieria Civil Informatica',
   cod_degree: 'ICI',
 };
@@ -30,6 +34,8 @@ const initialForm = {
 const ERROR_TRANSLATIONS = {
   'Email already exists': 'El correo ya existe.',
   'RUT already exists': 'El RUT ya existe.',
+  'Enrollment already exists': 'La matrícula ya está registrada.',
+  'Enrollment is required for student accounts': 'La matrícula es obligatoria para estudiantes.',
   'User not found': 'No se encontró el usuario.',
 };
 
@@ -39,45 +45,6 @@ const getErrorMessage = (error) => {
     return ERROR_TRANSLATIONS[detail] || detail;
   }
   return detail?.message || 'No se pudo completar la acción.';
-};
-
-const cleanRut = (value) => {
-  const raw = value.replace(/[^0-9kK]/g, '').toUpperCase();
-  if (!raw) return '';
-  const verifier = raw.slice(-1);
-  const number = (verifier === 'K' ? raw.slice(0, -1) : raw).replace(/\D/g, '');
-  return `${number}${verifier === 'K' ? 'K' : ''}`;
-};
-
-const calculateRutVerifier = (number) => {
-  let total = 0;
-  let multiplier = 2;
-
-  for (let index = number.length - 1; index >= 0; index -= 1) {
-    total += Number(number[index]) * multiplier;
-    multiplier = multiplier === 7 ? 2 : multiplier + 1;
-  }
-
-  const remainder = 11 - (total % 11);
-  if (remainder === 11) return '0';
-  if (remainder === 10) return 'K';
-  return String(remainder);
-};
-
-const formatRut = (value) => {
-  const cleaned = cleanRut(value);
-  if (cleaned.length <= 1) return cleaned;
-  const number = cleaned.slice(0, -1);
-  const verifier = cleaned.slice(-1);
-  return `${Number(number).toLocaleString('es-CL')}-${verifier}`;
-};
-
-const isValidRut = (value) => {
-  const cleaned = cleanRut(value);
-  if (cleaned.length < 2) return false;
-  const number = cleaned.slice(0, -1).replace(/^0+/, '');
-  const verifier = cleaned.slice(-1);
-  return Boolean(number) && /^\d+$/.test(number) && calculateRutVerifier(number) === verifier;
 };
 
 const formatDateTime = (value) => {
@@ -195,8 +162,11 @@ export const StudentAccountsPanel = () => {
     setForm((current) => ({ ...current, [name]: value }));
   };
 
-  const handleRutChange = (event) => {
-    setForm((current) => ({ ...current, rut: formatRut(event.target.value) }));
+  const handleEnrollmentChange = (event) => {
+    setForm((current) => ({
+      ...current,
+      enrollment: cleanEnrollment(event.target.value),
+    }));
   };
 
   const handleCreateStudent = async (event) => {
@@ -206,14 +176,14 @@ export const StudentAccountsPanel = () => {
     setMessage('');
 
     try {
-      if (!isValidRut(form.rut)) {
-        setError('Ingresa un RUT valido con digito verificador correcto.');
+      const enrollmentError = getEnrollmentError(form.enrollment);
+      if (enrollmentError) {
+        setError(enrollmentError);
         return;
       }
 
       const payload = {
         ...form,
-        admission_year: form.admission_year ? Number(form.admission_year) : undefined,
         sexo: 'No definido',
       };
 
@@ -256,6 +226,7 @@ export const StudentAccountsPanel = () => {
   const end = Math.min(offset + PAGE_SIZE, total);
   const currentPage = total === 0 ? 0 : Math.floor(offset / PAGE_SIZE) + 1;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const enrollmentDetails = analyzeEnrollment(form.enrollment);
 
   return (
     <>
@@ -294,7 +265,7 @@ export const StudentAccountsPanel = () => {
                   name="search"
                   value={filters.search}
                   onChange={handleFilterChange}
-                  placeholder="Nombre, correo o RUT"
+                  placeholder="Nombre, correo o matrícula"
                   className="w-full rounded-xl border border-gray-200 py-3 pl-11 pr-4 text-sm outline-none focus:border-[#d22864]"
                 />
               </label>
@@ -361,7 +332,7 @@ export const StudentAccountsPanel = () => {
                       <SortHeader label="Registro" field="created_at" sort={sort} onSort={handleSort} align="center" />
                     </th>
                     <th className="px-3 py-3">
-                      <SortHeader label="RUT" field="rut" sort={sort} onSort={handleSort} align="center" />
+                      <SortHeader label="Matrícula" field="enrollment" sort={sort} onSort={handleSort} align="center" />
                     </th>
                     <th className="px-3 py-3">
                       <SortHeader label="Ingreso" field="admission_year" sort={sort} onSort={handleSort} align="center" />
@@ -394,7 +365,7 @@ export const StudentAccountsPanel = () => {
                         <p className="text-gray-500">{student.email}</p>
                       </td>
                       <td className="px-3 py-4 text-center text-xs font-semibold text-gray-500">{formatDateTime(student.created_at)}</td>
-                      <td className="px-3 py-4 text-gray-600">{student.rut}</td>
+                      <td className="px-3 py-4 text-gray-600">{student.enrollment || '-'}</td>
                       <td className="px-3 py-4 text-center text-gray-600">{student.admission_year || '-'}</td>
                       <td className="px-3 py-4">
                         <span className={`rounded-full px-3 py-1 text-xs font-black ${student.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
@@ -482,20 +453,40 @@ export const StudentAccountsPanel = () => {
               </div>
               <div>
                 <input
-                  name="rut"
+                  name="enrollment"
                   required
-                  value={form.rut}
-                  onChange={handleRutChange}
-                  placeholder="RUT"
+                  inputMode="numeric"
+                  value={form.enrollment}
+                  onChange={handleEnrollmentChange}
+                  placeholder="Matrícula, ej: 12345678523"
                   className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-[#d22864] ${
-                    form.rut && !isValidRut(form.rut) ? 'border-red-200 bg-red-50' : 'border-gray-200'
+                    form.enrollment && !enrollmentDetails.isValid
+                      ? 'border-red-200 bg-red-50'
+                      : 'border-gray-200'
                   }`}
                 />
-                <p className={`mt-1 text-xs font-semibold ${form.rut && !isValidRut(form.rut) ? 'text-red-600' : 'text-gray-400'}`}>
-                  {form.rut && !isValidRut(form.rut) ? 'RUT invalido o digito verificador incorrecto.' : 'Formato automatico: 12.345.678-5'}
+                <p className={`mt-1 text-xs font-semibold ${
+                  form.enrollment && !enrollmentDetails.isRutValid
+                    ? 'text-red-600'
+                    : 'text-gray-500'
+                }`}>
+                  RUT asociado: {enrollmentDetails.rut || 'se calculará automáticamente'}
+                </p>
+                <p className={`mt-1 text-xs font-semibold ${
+                  form.enrollment && !enrollmentDetails.isAdmissionYearValid
+                    ? 'text-red-600'
+                    : 'text-gray-500'
+                }`}>
+                  Año de ingreso: {enrollmentDetails.admissionYear || 'se calculará automáticamente'}
                 </p>
               </div>
-              <input name="admission_year" type="number" min="1900" max="2100" value={form.admission_year} onChange={handleFormChange} placeholder="Ano de ingreso (opcional)" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
+              <input
+                value={enrollmentDetails.admissionYear || ''}
+                readOnly
+                aria-label="Año de ingreso calculado"
+                placeholder="Año de ingreso"
+                className="cursor-not-allowed rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 outline-none"
+              />
               <input name="degree" value={form.degree} onChange={handleFormChange} placeholder="Carrera" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
               <input name="cod_degree" value={form.cod_degree} onChange={handleFormChange} placeholder="Codigo de carrera" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
               <button type="submit" disabled={saving} className="rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white hover:bg-[#b01e52] disabled:opacity-60">
