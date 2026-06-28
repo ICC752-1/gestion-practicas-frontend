@@ -1,13 +1,24 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
+  Braces,
+  CalendarDays,
+  Check,
   CheckCircle2,
+  Copy,
   Download,
+  Eye,
   FileText,
+  Hash,
+  ImagePlus,
+  ListChecks,
   Loader2,
   Mail,
   RefreshCw,
   Save,
   Send,
+  Trash2,
+  UserRound,
+  X,
 } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
@@ -24,13 +35,55 @@ const PRACTICE_TYPES = [
   'Práctica de Estudio II',
 ];
 
-const VARIABLES = [
-  '{{student_name}}',
-  '{{student_identifier}}',
-  '{{practice_type}}',
-  '{{current_date}}',
-  '{{minimum_hours}}',
-  '{{learning_outcomes}}',
+const TEMPLATE_VARIABLES = [
+  {
+    token: '{{student_name}}',
+    title: 'Nombre del estudiante',
+    description: 'Nombres y apellidos registrados en la cuenta del estudiante.',
+    example: 'Ej.: Camila Rojas',
+    recommendedFields: 'Introducción o presentación del estudiante.',
+    icon: UserRound,
+  },
+  {
+    token: '{{student_identifier}}',
+    title: 'Número de matrícula',
+    description: 'Matrícula calculada con RUT sin formato y los dos últimos dígitos del año de ingreso.',
+    example: 'Ej.: 12345678924',
+    recommendedFields: 'Presentación del estudiante.',
+    icon: Hash,
+  },
+  {
+    token: '{{practice_type}}',
+    title: 'Tipo de práctica',
+    description: 'Tipo seleccionado para la plantilla activa.',
+    example: 'Ej.: Práctica de Estudio I',
+    recommendedFields: 'Título, subtítulo o descripción específica.',
+    icon: FileText,
+  },
+  {
+    token: '{{current_date}}',
+    title: 'Fecha de emisión',
+    description: 'Fecha exacta en que se genera la carta.',
+    example: 'Ej.: 28 de junio del 2026',
+    recommendedFields: 'Introducción, cierre o referencias formales.',
+    icon: CalendarDays,
+  },
+  {
+    token: '{{minimum_hours}}',
+    title: 'Horas mínimas',
+    description: 'Valor configurado en el campo “Horas mínimas” de esta plantilla.',
+    example: 'Ej.: 168',
+    recommendedFields: 'Descripción de práctica o cláusulas académicas.',
+    icon: Hash,
+  },
+  {
+    token: '{{learning_outcomes}}',
+    title: 'Aprendizajes esperados',
+    description: 'Lista generada desde el campo “Aprendizajes esperados”.',
+    example: 'Ej.: listado con viñetas',
+    recommendedFields: 'Descripción de práctica o cierre académico.',
+    icon: ListChecks,
+  },
 ];
 
 const DIRECTOR_ROLE = 'Director de carrera';
@@ -53,6 +106,7 @@ const DEFAULT_TEMPLATE_FORM = {
   signature_name: '',
   signature_role: '',
   signature_institution: '',
+  signature_image_uploaded: false,
   is_active: true,
 };
 
@@ -93,17 +147,186 @@ const toTemplateForm = (template) => ({
   signature_name: template?.signature_name || '',
   signature_role: template?.signature_role || '',
   signature_institution: template?.signature_institution || '',
+  signature_image_uploaded: Boolean(template?.signature_image_uploaded),
   is_active: template?.is_active ?? true,
 });
 
-const buildTemplatePayload = (form) => ({
-  ...form,
-  minimum_hours: Number(form.minimum_hours),
-  learning_outcomes: form.learning_outcomes
+const buildTemplatePayload = (form) => {
+  const { signature_image_uploaded: _signatureImageUploaded, ...editableFields } = form;
+
+  return {
+    ...editableFields,
+    minimum_hours: Number(form.minimum_hours),
+    learning_outcomes: form.learning_outcomes
+      .split('\n')
+      .map((item) => item.trim())
+      .filter(Boolean),
+  };
+};
+
+const MONTHS_ES = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+
+const formatPreviewDate = (date) => (
+  `${date.getDate()} de ${MONTHS_ES[date.getMonth()]} del ${date.getFullYear()}`
+);
+
+const renderTemplateText = (text, variables) => (
+  Object.entries(variables).reduce(
+    (rendered, [key, value]) => rendered.replaceAll(`{{${key}}}`, value),
+    text || '',
+  )
+);
+
+const VARIABLE_TOKEN_PATTERN = /({{[a-z_]+}})/g;
+const KNOWN_VARIABLE_TOKENS = new Set(TEMPLATE_VARIABLES.map((variable) => variable.token));
+
+const renderHighlightedTemplateText = (value, placeholder) => {
+  const text = value || placeholder || ' ';
+  const parts = text.split(VARIABLE_TOKEN_PATTERN);
+
+  return parts.map((part, index) => {
+    if (!part) return null;
+    if (KNOWN_VARIABLE_TOKENS.has(part)) {
+      return (
+        <mark
+          key={`${part}-${index}`}
+          className="rounded-md bg-[#fff0f6] px-1 font-black text-[#b01e52]"
+        >
+          {part}
+        </mark>
+      );
+    }
+
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
+};
+
+const getPreviewLearningOutcomes = (form) => {
+  const outcomes = form.learning_outcomes
     .split('\n')
     .map((item) => item.trim())
-    .filter(Boolean),
-});
+    .filter(Boolean);
+
+  if (outcomes.length > 0) {
+    return outcomes;
+  }
+
+  return [
+    'Aplicar conocimientos disciplinares en un contexto profesional.',
+    'Comunicar avances y resultados de manera clara y responsable.',
+  ];
+};
+
+const buildLetterPreview = (form, selectedType) => {
+  const generatedAt = new Date();
+  const learningOutcomes = getPreviewLearningOutcomes(form);
+  const learningOutcomesText = learningOutcomes
+    .map((outcome) => `• ${outcome}`)
+    .join('\n');
+  const variables = {
+    student_name: 'Camila Rojas Soto',
+    student_identifier: '12345678924',
+    practice_type: selectedType,
+    current_date: formatPreviewDate(generatedAt),
+    minimum_hours: String(form.minimum_hours || 168),
+    learning_outcomes: learningOutcomesText,
+  };
+  const practiceLabel = renderTemplateText(
+    form.subtitle || `Estudiante en ${selectedType}`,
+    variables,
+  ).replace('Estudiante en ', '');
+  const minimumHoursClause = (
+    'Es importante destacar que la duración mínima de la '
+    + `${practiceLabel} es de ${variables.minimum_hours} horas cronológicas, `
+    + 'y que una vez completada con éxito el/la estudiante debe ser '
+    + 'capaz de evidenciar los siguientes aprendizajes:'
+  );
+
+  return {
+    date: `Temuco, ${variables.current_date}`,
+    title: renderTemplateText(form.title || 'Carta de presentación', variables).toUpperCase(),
+    subtitle: renderTemplateText(form.subtitle || `Estudiante en ${selectedType}`, variables),
+    paragraphs: [
+      renderTemplateText(form.base_intro, variables),
+      renderTemplateText(form.student_presentation_template, variables),
+      renderTemplateText(form.practice_description, variables),
+      minimumHoursClause,
+    ].filter(Boolean),
+    learningOutcomes,
+    insuranceClause: renderTemplateText(form.insurance_clause, variables),
+    closingText: renderTemplateText(form.closing_text, variables),
+    signatureName: renderTemplateText(form.signature_name, variables),
+    signatureRole: renderTemplateText(form.signature_role, variables),
+    signatureInstitution: renderTemplateText(form.signature_institution, variables),
+  };
+};
+
+const TemplateTextarea = ({
+  label,
+  value,
+  onValueChange,
+  disabled,
+  required,
+  rows = 3,
+  placeholder = '',
+}) => {
+  const textareaRef = useRef(null);
+  const minHeight = rows * 24 + 28;
+
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.max(textarea.scrollHeight, minHeight)}px`;
+  }, [value, minHeight]);
+
+  return (
+    <label className="block text-sm font-bold text-gray-700">
+      {label}
+      <div
+        className={`relative mt-1 rounded-xl border transition focus-within:border-[#d22864] ${
+          disabled ? 'border-gray-200 bg-gray-50' : 'border-gray-200 bg-white'
+        }`}
+      >
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none min-h-full whitespace-pre-wrap break-words px-3 py-3 text-sm leading-6 ${
+            value ? 'text-gray-700' : 'text-gray-400'
+          }`}
+          style={{ minHeight }}
+        >
+          {renderHighlightedTemplateText(value, placeholder)}
+          {'\n'}
+        </div>
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(event) => onValueChange(event.target.value)}
+          disabled={disabled}
+          required={required}
+          rows={rows}
+          spellCheck="true"
+          className="absolute inset-0 h-full w-full resize-none overflow-hidden rounded-xl bg-transparent px-3 py-3 text-sm leading-6 text-transparent caret-gray-900 outline-none selection:bg-[#d22864]/20 disabled:cursor-not-allowed"
+          style={{ minHeight }}
+        />
+      </div>
+    </label>
+  );
+};
 
 const StudentLetterCard = ({ letter, onDownload, downloadingId }) => (
   <article className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -249,11 +472,40 @@ const TemplateEditor = ({
   form,
   onFormChange,
   onSave,
+  onSignatureImageDelete,
+  onSignatureImageUpload,
+  signatureImageUrl,
   loading,
   saving,
   canEdit,
 }) => {
   const updateField = (field, value) => onFormChange({ ...form, [field]: value });
+  const [copiedVariable, setCopiedVariable] = useState('');
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const letterPreview = useMemo(
+    () => buildLetterPreview(form, selectedType),
+    [form, selectedType],
+  );
+
+  const handleCopyVariable = async (token) => {
+    try {
+      await navigator.clipboard.writeText(token);
+      setCopiedVariable(token);
+      window.setTimeout(() => {
+        setCopiedVariable((current) => (current === token ? '' : current));
+      }, 1600);
+    } catch {
+      setCopiedVariable('');
+    }
+  };
+
+  const handleSignatureFileChange = (event) => {
+    const [file] = event.target.files || [];
+    event.target.value = '';
+    if (file) {
+      onSignatureImageUpload(file);
+    }
+  };
 
   return (
     <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -277,18 +529,67 @@ const TemplateEditor = ({
         </section>
 
         <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-black uppercase tracking-wide text-gray-500">
-            Variables disponibles
-          </h3>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {VARIABLES.map((variable) => (
-              <code
-                key={variable}
-                className="rounded-lg bg-gray-100 px-2 py-1 text-xs font-bold text-gray-700"
-              >
-                {variable}
-              </code>
-            ))}
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff0f6] text-[#d22864]">
+              <Braces size={20} />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wide text-gray-500">
+                Variables disponibles
+              </h3>
+              <p className="mt-1 text-sm leading-relaxed text-gray-500">
+                Se reemplazan automáticamente al generar el PDF. Mantén las llaves dobles.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 overflow-hidden rounded-xl border border-gray-100">
+            {TEMPLATE_VARIABLES.map((variable) => {
+              const Icon = variable.icon;
+              const isCopied = copiedVariable === variable.token;
+
+              return (
+                <div key={variable.token} className="border-b border-gray-100 bg-gray-50/70 p-3 last:border-b-0">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#d22864] ring-1 ring-gray-100">
+                      <Icon size={16} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-black text-gray-900">{variable.title}</p>
+                          <code className="mt-1 inline-block max-w-full rounded-lg bg-white px-2 py-1 text-xs font-black text-gray-700 ring-1 ring-gray-100">
+                            {variable.token}
+                          </code>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyVariable(variable.token)}
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs transition ${
+                            isCopied
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                              : 'border-gray-200 bg-white text-gray-500 hover:border-[#d22864] hover:text-[#d22864]'
+                          }`}
+                          aria-label={`Copiar ${variable.token}`}
+                          title={`Copiar ${variable.token}`}
+                        >
+                          {isCopied ? <Check size={15} /> : <Copy size={15} />}
+                        </button>
+                      </div>
+                      <p className="mt-2 text-xs leading-relaxed text-gray-600">
+                        {variable.description}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-gray-400">
+                        {variable.example}
+                      </p>
+                      <p className="mt-2 text-[11px] font-bold uppercase tracking-wide text-gray-500">
+                        Útil en: {variable.recommendedFields}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       </aside>
@@ -307,6 +608,21 @@ const TemplateEditor = ({
               onSave();
             }}
           >
+            <div className="flex flex-col gap-3 border-b border-gray-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-xl font-black text-gray-950">Edición de plantilla</h3>
+                <p className="mt-1 text-sm font-semibold text-gray-500">{selectedType}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPreviewOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-black text-white transition hover:bg-gray-800"
+              >
+                <Eye size={17} />
+                Previsualizar carta
+              </button>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <label className="text-sm font-bold text-gray-700">
                 Título
@@ -330,41 +646,32 @@ const TemplateEditor = ({
               </label>
             </div>
 
-            <label className="block text-sm font-bold text-gray-700">
-              Introducción/base
-              <textarea
-                rows={3}
-                value={form.base_intro}
-                onChange={(event) => updateField('base_intro', event.target.value)}
-                disabled={!canEdit}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-[#d22864] disabled:bg-gray-50"
-                required
-              />
-            </label>
+            <TemplateTextarea
+              label="Introducción/base"
+              rows={3}
+              value={form.base_intro}
+              onValueChange={(value) => updateField('base_intro', value)}
+              disabled={!canEdit}
+              required
+            />
 
-            <label className="block text-sm font-bold text-gray-700">
-              Presentación del estudiante
-              <textarea
-                rows={3}
-                value={form.student_presentation_template}
-                onChange={(event) => updateField('student_presentation_template', event.target.value)}
-                disabled={!canEdit}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-[#d22864] disabled:bg-gray-50"
-                required
-              />
-            </label>
+            <TemplateTextarea
+              label="Presentación del estudiante"
+              rows={3}
+              value={form.student_presentation_template}
+              onValueChange={(value) => updateField('student_presentation_template', value)}
+              disabled={!canEdit}
+              required
+            />
 
-            <label className="block text-sm font-bold text-gray-700">
-              Descripción específica de práctica
-              <textarea
-                rows={4}
-                value={form.practice_description}
-                onChange={(event) => updateField('practice_description', event.target.value)}
-                disabled={!canEdit}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-[#d22864] disabled:bg-gray-50"
-                required
-              />
-            </label>
+            <TemplateTextarea
+              label="Descripción específica de práctica"
+              rows={4}
+              value={form.practice_description}
+              onValueChange={(value) => updateField('practice_description', value)}
+              disabled={!canEdit}
+              required
+            />
 
             <div className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
               <label className="text-sm font-bold text-gray-700">
@@ -380,43 +687,34 @@ const TemplateEditor = ({
                   required
                 />
               </label>
-              <label className="text-sm font-bold text-gray-700">
-                Aprendizajes esperados
-                <textarea
-                  rows={5}
-                  value={form.learning_outcomes}
-                  onChange={(event) => updateField('learning_outcomes', event.target.value)}
-                  disabled={!canEdit}
-                  placeholder="Un aprendizaje por línea"
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-[#d22864] disabled:bg-gray-50"
-                  required
-                />
-              </label>
+              <TemplateTextarea
+                label="Aprendizajes esperados"
+                rows={5}
+                value={form.learning_outcomes}
+                onValueChange={(value) => updateField('learning_outcomes', value)}
+                disabled={!canEdit}
+                placeholder="Un aprendizaje por línea"
+                required
+              />
             </div>
 
-            <label className="block text-sm font-bold text-gray-700">
-              Cláusula de seguro
-              <textarea
-                rows={3}
-                value={form.insurance_clause}
-                onChange={(event) => updateField('insurance_clause', event.target.value)}
-                disabled={!canEdit}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-[#d22864] disabled:bg-gray-50"
-                required
-              />
-            </label>
+            <TemplateTextarea
+              label="Cláusula de seguro"
+              rows={3}
+              value={form.insurance_clause}
+              onValueChange={(value) => updateField('insurance_clause', value)}
+              disabled={!canEdit}
+              required
+            />
 
-            <label className="block text-sm font-bold text-gray-700">
-              Cierre
-              <textarea
-                rows={3}
-                value={form.closing_text}
-                onChange={(event) => updateField('closing_text', event.target.value)}
-                disabled={!canEdit}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-[#d22864] disabled:bg-gray-50"
-                required
-              />
-            </label>
+            <TemplateTextarea
+              label="Cierre"
+              rows={3}
+              value={form.closing_text}
+              onValueChange={(value) => updateField('closing_text', value)}
+              disabled={!canEdit}
+              required
+            />
 
             <div className="grid gap-4 md:grid-cols-3">
               <label className="text-sm font-bold text-gray-700">
@@ -451,6 +749,55 @@ const TemplateEditor = ({
               </label>
             </div>
 
+            <section className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h4 className="text-sm font-black uppercase tracking-wide text-gray-500">
+                    Imagen de firma
+                  </h4>
+                  <p className="mt-1 text-sm font-semibold text-gray-500">
+                    PNG o JPG, máximo 2 MB.
+                  </p>
+                </div>
+                {canEdit && (
+                  <div className="flex flex-wrap gap-2">
+                    <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-black text-gray-700 ring-1 ring-gray-200 transition hover:text-[#d22864] hover:ring-[#d22864]">
+                      <ImagePlus size={16} />
+                      {signatureImageUrl ? 'Reemplazar firma' : 'Subir firma'}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg"
+                        onChange={handleSignatureFileChange}
+                        className="sr-only"
+                      />
+                    </label>
+                    {signatureImageUrl && (
+                      <button
+                        type="button"
+                        onClick={onSignatureImageDelete}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-100 bg-white px-4 py-3 text-sm font-black text-red-600 transition hover:bg-red-50"
+                      >
+                        <Trash2 size={16} />
+                        Quitar firma
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex min-h-28 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white p-4">
+                {signatureImageUrl ? (
+                  <img
+                    src={signatureImageUrl}
+                    alt="Firma configurada"
+                    className="max-h-24 max-w-full object-contain"
+                  />
+                ) : (
+                  <p className="text-sm font-bold text-gray-400">Sin imagen de firma configurada</p>
+                )}
+              </div>
+            </section>
+
             {canEdit ? (
               <button
                 type="submit"
@@ -468,6 +815,111 @@ const TemplateEditor = ({
           </form>
         )}
       </section>
+
+      {isPreviewOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4 py-6">
+          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+                  Previsualización
+                </p>
+                <h2 className="mt-1 text-2xl font-black text-gray-950">
+                  Carta de presentación
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-gray-500">
+                  Vista referencial con datos de ejemplo.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPreviewOpen(false)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition hover:border-[#d22864] hover:text-[#d22864]"
+                aria-label="Cerrar previsualización"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto bg-gray-100 px-4 py-6 sm:px-8">
+              <article className="mx-auto min-h-[760px] max-w-3xl bg-white px-8 py-10 text-gray-900 shadow-sm ring-1 ring-gray-200 sm:px-12">
+                <p className="text-right text-sm font-semibold text-gray-600">
+                  {letterPreview.date}
+                </p>
+                <header className="mt-8 text-center">
+                  <h3 className="text-xl font-black uppercase tracking-wide text-gray-950">
+                    {letterPreview.title}
+                  </h3>
+                  <p className="mt-2 text-sm font-bold text-gray-600">
+                    {letterPreview.subtitle}
+                  </p>
+                </header>
+
+                <p className="mt-10 text-sm font-bold text-gray-800">
+                  A quien corresponda:
+                </p>
+
+                <div className="mt-5 space-y-4 text-sm leading-7 text-gray-700">
+                  {letterPreview.paragraphs.map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                  ))}
+                </div>
+
+                {letterPreview.learningOutcomes.length > 0 && (
+                  <div className="mt-5">
+                    <p className="text-sm font-black text-gray-800">Aprendizajes esperados</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-7 text-gray-700">
+                      {letterPreview.learningOutcomes.map((outcome) => (
+                        <li key={outcome}>{outcome}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="mt-5 space-y-4 text-sm leading-7 text-gray-700">
+                  {letterPreview.insuranceClause && (
+                    <p>{letterPreview.insuranceClause}</p>
+                  )}
+                  {letterPreview.closingText && (
+                    <p>{letterPreview.closingText}</p>
+                  )}
+                </div>
+
+                <footer className="mt-14 text-center text-sm text-gray-700">
+                  {signatureImageUrl ? (
+                    <img
+                      src={signatureImageUrl}
+                      alt="Firma configurada"
+                      className="mx-auto mb-3 max-h-20 max-w-56 object-contain"
+                    />
+                  ) : (
+                    <div className="mx-auto mb-3 h-px w-56 bg-gray-300" />
+                  )}
+                  <p className="font-black text-gray-950">
+                    {letterPreview.signatureName || 'Nombre de firma'}
+                  </p>
+                  <p className="font-semibold">
+                    {letterPreview.signatureRole || 'Cargo'}
+                  </p>
+                  <p className="font-semibold">
+                    {letterPreview.signatureInstitution || 'Institución'}
+                  </p>
+                </footer>
+              </article>
+            </div>
+
+            <div className="flex justify-end border-t border-gray-100 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setIsPreviewOpen(false)}
+                className="rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52]"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -487,6 +939,8 @@ export const PresentationLettersPanel = () => {
   const [templateForm, setTemplateForm] = useState(DEFAULT_TEMPLATE_FORM);
   const [templateLoading, setTemplateLoading] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [signatureImageUrl, setSignatureImageUrl] = useState('');
+  const signatureImageUrlRef = useRef('');
 
   const loadLetters = useCallback(async () => {
     if (!isStudent) return;
@@ -505,12 +959,39 @@ export const PresentationLettersPanel = () => {
     }
   }, [isStudent, showToast]);
 
+  const revokeSignatureImageUrl = useCallback(() => {
+    if (signatureImageUrlRef.current) {
+      window.URL.revokeObjectURL(signatureImageUrlRef.current);
+      signatureImageUrlRef.current = '';
+    }
+    setSignatureImageUrl('');
+  }, []);
+
+  const loadSignatureImagePreview = useCallback(async (template) => {
+    revokeSignatureImageUrl();
+    if (!template?.signature_image_uploaded) return;
+
+    try {
+      const blob = await presentationLetterService.getSignatureImage(selectedType);
+      const objectUrl = window.URL.createObjectURL(blob);
+      signatureImageUrlRef.current = objectUrl;
+      setSignatureImageUrl(objectUrl);
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'No se pudo cargar la firma',
+        message: getErrorMessage(error),
+      });
+    }
+  }, [revokeSignatureImageUrl, selectedType, showToast]);
+
   const loadTemplate = useCallback(async () => {
     if (!canReadTemplates) return;
     setTemplateLoading(true);
     try {
       const template = await presentationLetterService.getTemplate(selectedType);
       setTemplateForm(toTemplateForm(template));
+      await loadSignatureImagePreview(template);
     } catch (error) {
       showToast({
         type: 'error',
@@ -520,7 +1001,7 @@ export const PresentationLettersPanel = () => {
     } finally {
       setTemplateLoading(false);
     }
-  }, [canReadTemplates, selectedType, showToast]);
+  }, [canReadTemplates, loadSignatureImagePreview, selectedType, showToast]);
 
   useEffect(() => {
     loadLetters();
@@ -529,6 +1010,8 @@ export const PresentationLettersPanel = () => {
   useEffect(() => {
     loadTemplate();
   }, [loadTemplate]);
+
+  useEffect(() => () => revokeSignatureImageUrl(), [revokeSignatureImageUrl]);
 
   const handleGenerate = async (practiceType) => {
     setGenerating(true);
@@ -593,6 +1076,53 @@ export const PresentationLettersPanel = () => {
     }
   };
 
+  const handleSignatureImageUpload = async (file) => {
+    setSavingTemplate(true);
+    try {
+      const updated = await presentationLetterService.uploadSignatureImage(
+        selectedType,
+        file,
+      );
+      setTemplateForm(toTemplateForm(updated));
+      await loadSignatureImagePreview(updated);
+      showToast({
+        type: 'success',
+        title: 'Firma actualizada',
+        message: 'La imagen se usará en las próximas cartas generadas.',
+      });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'No se pudo subir la firma',
+        message: getErrorMessage(error),
+      });
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const handleSignatureImageDelete = async () => {
+    setSavingTemplate(true);
+    try {
+      const updated = await presentationLetterService.deleteSignatureImage(selectedType);
+      setTemplateForm(toTemplateForm(updated));
+      revokeSignatureImageUrl();
+      showToast({
+        type: 'success',
+        title: 'Firma eliminada',
+        message: 'La plantilla volverá a usar solo los datos escritos de firma.',
+      });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'No se pudo eliminar la firma',
+        message: getErrorMessage(error),
+      });
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
   return (
     <>
         <div className="mb-6">
@@ -625,6 +1155,9 @@ export const PresentationLettersPanel = () => {
             form={templateForm}
             onFormChange={setTemplateForm}
             onSave={handleSaveTemplate}
+            onSignatureImageDelete={handleSignatureImageDelete}
+            onSignatureImageUpload={handleSignatureImageUpload}
+            signatureImageUrl={signatureImageUrl}
             loading={templateLoading}
             saving={savingTemplate}
             canEdit={canEditTemplates}
