@@ -59,7 +59,7 @@ export const UserHeader = () => {
         active: isDashboardActive,
       },
       {
-        label: "Preguntas Frecuentes",
+        label: isAdminToggle ? null : "Preguntas Frecuentes",
         to: "/faq",
         active: location.pathname === "/faq",
       },
@@ -69,7 +69,7 @@ export const UserHeader = () => {
         active: location.pathname === "/cartas-presentacion",
       },
       {
-        label: "Requisitos",
+        label: isAdminToggle ? null : "Requisitos",
         to: "/requisitos",
         active: location.pathname === "/requisitos",
       },
