@@ -158,6 +158,7 @@ const businessWindowStart = (endDateStr, businessDays) => {
 
 const isSelfEvaluationAvailable = (internship) => {
   if (!internship || internship.is_cancelled) return false;
+  if (internship.status_id === 5) return false;
   if (SELF_EVALUATION_ENABLED_STATUSES.has(internship.completion_status)) return true;
   if (internship.status_id !== 4) return false;
 
@@ -289,11 +290,12 @@ const PracticeCard = ({ internship, lifecycle }) => {
             </button>
           ) : (
             <button
-              onClick={() => navigate(`/autoevaluacion/${internship.id}`)}
+              onClick={() => canSelfEvaluate ? navigate(`/autoevaluacion/${internship.id}`) : null}
+              disabled={!canSelfEvaluate}
               className={`w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border transition-all ${
                 canSelfEvaluate
                   ? 'border-[#d22864]/20 bg-[#fff0f6] text-[#d22864] hover:bg-[#ffe3ee]'
-                  : 'border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100'
+                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
               }`}
             >
               Autoevaluación
