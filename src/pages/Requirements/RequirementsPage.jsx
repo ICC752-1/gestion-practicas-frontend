@@ -120,7 +120,7 @@ export const RequirementsPage = () => {
                 La inducción se completa antes del formulario
               </h2>
               <p className="mt-4 text-base leading-relaxed text-gray-600">
-                Al iniciar una nueva práctica, el sistema abre primero la preinscripción. En esa etapa se muestran el estado de inducción, seguro escolar y otros bloqueos antes de permitir el registro formal.
+                Al iniciar una nueva práctica, el sistema abre primero la preinscripción. En esa etapa se muestran el estado de inducción, seguro escolar y otros requisitos antes de permitir el registro formal.
               </p>
             </div>
 
