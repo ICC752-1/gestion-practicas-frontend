@@ -18,6 +18,7 @@ import {
   Briefcase,
   Shield,
   Download,
+  Eye,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { UserHeader } from "../../components/Header/UserHeader";
@@ -279,7 +280,14 @@ const PracticeCard = ({ internship, lifecycle }) => {
 
       {/* Footer */}
       <div className="px-6 pb-6 pt-2">
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <button
+            onClick={() => navigate(`/seguimiento/${internship.id}`)}
+            className="w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border border-gray-200 bg-white text-gray-700 hover:border-[#d22864]/30 hover:bg-gray-50 hover:text-[#d22864] transition-all"
+          >
+            Ver seguimiento
+            <Eye size={18} />
+          </button>
           {lifecycle?.current_step === "Presentación final por agendar" ? (
             <button
               onClick={() => navigate(`/entrevistas?internshipId=${internship.id}&purpose=final_presentation`)}
