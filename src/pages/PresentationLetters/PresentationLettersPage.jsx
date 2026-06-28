@@ -33,6 +33,7 @@ import {
 const PRACTICE_TYPES = [
   'Práctica de Estudio I',
   'Práctica de Estudio II',
+  'Práctica Controlada',
 ];
 
 const TEMPLATE_VARIABLES = [
