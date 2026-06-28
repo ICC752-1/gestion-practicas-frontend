@@ -100,7 +100,7 @@ export const InductionAdminPage = () => {
   const [confirmAction, setConfirmAction] = useState(null);
 
   const selectedVersion = versions.find((version) => version.id === selectedVersionId);
-  const isEditingDraft = selectedVersion?.status === 'draft';
+  const isEditing = Boolean(selectedVersion);
   const activeVersion = versions.find((version) => version.is_active);
   const draftCount = countByStatus(versions, 'draft');
   const publishedCount = countByStatus(versions, 'published');
@@ -274,15 +274,15 @@ export const InductionAdminPage = () => {
     )),
   });
 
-  const saveCurrentDraft = async () => {
+  const saveCurrentVersion = async () => {
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
       throw new Error(validationErrors.join(' '));
     }
 
     const payload = buildPayload();
-    const saved = isEditingDraft
-      ? await inductionAdminService.updateDraft(selectedVersionId, payload)
+    const saved = isEditing
+      ? await inductionAdminService.updateVersion(selectedVersionId, payload)
       : await inductionAdminService.createDraft(payload);
 
     setSelectedVersionId(saved.id);
@@ -297,11 +297,11 @@ export const InductionAdminPage = () => {
     setSaving(true);
     setError('');
     setMessage('');
-    const wasEditingDraft = isEditingDraft;
+    const wasEditing = isEditing;
 
     try {
-      await saveCurrentDraft();
-      setMessage(wasEditingDraft ? 'Borrador actualizado.' : 'Borrador creado.');
+      await saveCurrentVersion();
+      setMessage(wasEditing ? 'Versión actualizada.' : 'Borrador creado.');
     } catch (err) {
       setError(getInductionAdminErrorMessage(err));
     } finally {
@@ -322,7 +322,7 @@ export const InductionAdminPage = () => {
       type: 'publish',
       title: 'Publicar inducción',
       message: selectedVersionId
-        ? 'Se guardarán los cambios del borrador y esta versión quedará activa para nuevos intentos.'
+        ? 'Se guardarán los cambios y esta versión quedará activa para nuevos intentos.'
         : 'Se creará un borrador con estos datos y quedará activo para nuevos intentos.',
       confirmLabel: 'Publicar y activar',
       tone: 'success',
@@ -342,15 +342,15 @@ export const InductionAdminPage = () => {
     });
   };
 
-  const requestDiscard = () => {
+  const requestDelete = () => {
     if (!selectedVersionId) return;
     setError('');
     setMessage('');
     setConfirmAction({
-      type: 'discard',
-      title: 'Descartar borrador',
-      message: 'Esta acción eliminará el borrador y sus videos y preguntas asociadas.',
-      confirmLabel: 'Descartar',
+      type: 'delete',
+      title: 'Eliminar versión',
+      message: 'Esta acción eliminará la versión y sus videos y preguntas asociadas.',
+      confirmLabel: 'Eliminar',
       tone: 'danger',
     });
   };
@@ -370,7 +370,7 @@ export const InductionAdminPage = () => {
 
     try {
       if (confirmAction.type === 'publish') {
-        const saved = await saveCurrentDraft();
+        const saved = await saveCurrentVersion();
         const published = await inductionAdminService.publish(saved.id);
         setSelectedVersionId(published.id);
         setForm(normalizeDetailToForm(published));
@@ -386,11 +386,11 @@ export const InductionAdminPage = () => {
         await loadVersions();
       }
 
-      if (confirmAction.type === 'discard') {
-        await inductionAdminService.discardDraft(selectedVersionId);
+      if (confirmAction.type === 'delete') {
+        await inductionAdminService.deleteVersion(selectedVersionId);
         setSelectedVersionId(null);
         setForm(initialForm);
-        setMessage('Borrador descartado.');
+        setMessage('Versión eliminada.');
         await loadVersions();
       }
     } catch (err) {
@@ -488,8 +488,7 @@ export const InductionAdminPage = () => {
           <form onSubmit={handleSave} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-xl font-black text-gray-900">{isEditingDraft ? 'Editar borrador' : selectedVersion ? 'Vista publicada' : 'Nuevo borrador'}</h2>
-                {selectedVersion && selectedVersion.status !== 'draft' && <p className="mt-1 text-sm text-gray-500">Las versiones publicadas no se editan. Crea un nuevo borrador para cambios.</p>}
+                <h2 className="text-xl font-black text-gray-900">{isEditing ? 'Editar versión' : 'Nuevo borrador'}</h2>
                 {selectedVersion && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${getVersionStatusMeta(selectedVersion).className}`}>
@@ -513,11 +512,11 @@ export const InductionAdminPage = () => {
                     Activar versión
                   </button>
                 )}
-                {isEditingDraft && <button type="button" onClick={requestDiscard} disabled={saving} className="rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-600 disabled:opacity-50">Descartar</button>}
+                {isEditing && <button type="button" onClick={requestDelete} disabled={saving} className="rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-600 disabled:opacity-50">Eliminar</button>}
               </div>
             </div>
 
-            <fieldset disabled={selectedVersion && selectedVersion.status !== 'draft'} className="mt-6 space-y-5 disabled:opacity-70">
+            <fieldset className="mt-6 space-y-5">
               <input name="title" value={form.title} onChange={handleFieldChange} required placeholder="Título" className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
               <textarea name="description" value={form.description} onChange={handleFieldChange} rows="3" placeholder="Descripción" className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
               <div className="grid gap-4 md:grid-cols-2">
@@ -627,16 +626,14 @@ export const InductionAdminPage = () => {
               </div>
             </fieldset>
 
-            {(!selectedVersion || selectedVersion.status === 'draft') && (
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <button type="submit" disabled={saving} className="flex-1 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white hover:bg-[#b01e52] disabled:opacity-50">
-                  {saving ? 'Guardando...' : isEditingDraft ? 'Guardar borrador' : 'Crear borrador'}
-                </button>
-                <button type="button" onClick={requestPublish} disabled={saving} className="flex-1 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-50">
-                  Publicar y activar
-                </button>
-              </div>
-            )}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button type="submit" disabled={saving} className="flex-1 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white hover:bg-[#b01e52] disabled:opacity-50">
+                {saving ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Crear borrador'}
+              </button>
+              <button type="button" onClick={requestPublish} disabled={saving} className="flex-1 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-50">
+                {isEditing ? 'Guardar y publicar' : 'Publicar y activar'}
+              </button>
+            </div>
           </form>
         </section>
       </main>

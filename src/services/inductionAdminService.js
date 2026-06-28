@@ -50,10 +50,7 @@ const MESSAGE_TRANSLATIONS = [
     ],
     message: 'El orden de las preguntas no puede repetirse.',
   },
-  {
-    matches: ['Published induction versions cannot be modified'],
-    message: 'Las versiones publicadas de inducción no se pueden modificar.',
-  },
+
   {
     matches: ['Induction version not found'],
     message: 'No se encontró la versión de inducción solicitada.',
@@ -118,12 +115,12 @@ export const inductionAdminService = {
     return response.data;
   },
 
-  async updateDraft(versionId, payload) {
+  async updateVersion(versionId, payload) {
     const response = await api.patch(`/induction/admin/versions/${versionId}`, payload);
     return response.data;
   },
 
-  async discardDraft(versionId) {
+  async deleteVersion(versionId) {
     await api.delete(`/induction/admin/versions/${versionId}`);
   },
 
