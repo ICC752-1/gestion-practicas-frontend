@@ -120,6 +120,42 @@ export const AppRoutes = () => {
           />
 
           <Route
+              path="/encargado/agenda"
+              element={
+                  <PrivateRoute allowedRoles={PRACTICE_MANAGER_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/encargado/cartas-presentacion"
+              element={
+                  <PrivateRoute allowedRoles={PRACTICE_MANAGER_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/encargado/induccion"
+              element={
+                  <PrivateRoute allowedRoles={PRACTICE_MANAGER_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/encargado/estudiantes"
+              element={
+                  <PrivateRoute allowedRoles={PRACTICE_MANAGER_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
               path="/encargado/practica/:id"
               element={
                   <PrivateRoute allowedRoles={DECISION_ADMIN_ROLES}>
@@ -130,6 +166,42 @@ export const AppRoutes = () => {
 
           <Route
               path="/director"
+              element={
+                  <PrivateRoute allowedRoles={CAREER_DIRECTOR_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/director/agenda"
+              element={
+                  <PrivateRoute allowedRoles={CAREER_DIRECTOR_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/director/cartas-presentacion"
+              element={
+                  <PrivateRoute allowedRoles={CAREER_DIRECTOR_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/director/induccion"
+              element={
+                  <PrivateRoute allowedRoles={CAREER_DIRECTOR_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/director/estudiantes"
               element={
                   <PrivateRoute allowedRoles={CAREER_DIRECTOR_ROLES}>
                       <CoordinatorDashboardPage />

@@ -472,7 +472,7 @@ const TemplateEditor = ({
   );
 };
 
-export const PresentationLettersPage = () => {
+export const PresentationLettersPanel = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const roleNames = useMemo(() => normalizeRoleNames(user?.roles), [user]);
@@ -594,10 +594,7 @@ export const PresentationLettersPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#FAFAFA]">
-      <UserHeader />
-
-      <main className="mx-auto w-full max-w-7xl flex-1 px-5 py-8 sm:px-8">
+    <>
         <div className="mb-6">
           <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
             Carta de presentación
@@ -633,11 +630,18 @@ export const PresentationLettersPage = () => {
             canEdit={canEditTemplates}
           />
         )}
-      </main>
-
-      <Footer />
-    </div>
+    </>
   );
 };
+
+export const PresentationLettersPage = () => (
+  <div className="flex min-h-screen flex-col bg-[#FAFAFA]">
+    <UserHeader />
+    <main className="mx-auto w-full max-w-7xl flex-1 px-5 py-8 sm:px-8">
+      <PresentationLettersPanel />
+    </main>
+    <Footer />
+  </div>
+);
 
 export default PresentationLettersPage;

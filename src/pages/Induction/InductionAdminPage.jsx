@@ -86,9 +86,8 @@ const nextOptionKey = (options) => {
   return `opcion_${keys.length + 1}`;
 };
 
-export const InductionAdminPage = () => {
+export const InductionAdminPanel = () => {
   const { user } = useAuth();
-  const userName = user ? `${user.first_name} ${user.last_name}` : 'Administrador';
   const userRole = getDisplayRoleForRoles(user?.roles);
   const [versions, setVersions] = useState([]);
   const [selectedVersionId, setSelectedVersionId] = useState(null);
@@ -349,7 +348,9 @@ export const InductionAdminPage = () => {
     setConfirmAction({
       type: 'delete',
       title: 'Eliminar versión',
-      message: 'Esta acción eliminará la versión y sus videos y preguntas asociadas.',
+      message: selectedVersion?.is_active
+        ? 'Esta acción eliminará la versión activa y sus videos y preguntas. Deberás activar otra versión para nuevos intentos.'
+        : 'Esta acción eliminará la versión y sus videos y preguntas asociadas.',
       confirmLabel: 'Eliminar',
       tone: 'danger',
     });
@@ -402,9 +403,7 @@ export const InductionAdminPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <UserHeader userName={userName} userRole={userRole} />
-      <main className="mx-auto w-full max-w-7xl flex-grow px-4 py-8">
+    <>
         <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
           <p className="text-sm font-black uppercase tracking-wide text-[#d22864]">Inducción</p>
           <h1 className="mt-3 text-3xl font-black text-gray-900">Administración de contenido</h1>
@@ -470,16 +469,26 @@ export const InductionAdminPage = () => {
                     <p className="mt-1 text-xs text-gray-500">Publicada: {formatDateTime(version.published_at)}</p>
                     <p className="mt-1 text-xs text-gray-500">Última modificación: {formatDateTime(version.updated_at || version.created_at)}</p>
                   </button>
-                  {canActivateVersion(version) && (
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                     <button
                       type="button"
-                      onClick={() => requestActivate(version)}
+                      onClick={() => handleSelectVersion(version)}
                       disabled={saving}
-                      className="mt-3 w-full rounded-xl border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-xs font-black text-gray-700 transition hover:border-[#d22864] hover:text-[#d22864] disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Activar versión
+                      Editar versión
                     </button>
-                  )}
+                    {canActivateVersion(version) && (
+                      <button
+                        type="button"
+                        onClick={() => requestActivate(version)}
+                        disabled={saving}
+                        className="flex-1 rounded-xl border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Activar versión
+                      </button>
+                    )}
+                  </div>
                 </article>
               ))}
             </div>
@@ -636,7 +645,6 @@ export const InductionAdminPage = () => {
             </div>
           </form>
         </section>
-      </main>
       <ConfirmDialog
         isOpen={Boolean(confirmAction)}
         title={confirmAction?.title}
@@ -647,9 +655,18 @@ export const InductionAdminPage = () => {
         onClose={() => setConfirmAction(null)}
         onConfirm={handleConfirmAction}
       />
-      <Footer />
-    </div>
+    </>
   );
 };
+
+export const InductionAdminPage = () => (
+  <div className="min-h-screen bg-gray-50 flex flex-col">
+    <UserHeader />
+    <main className="mx-auto w-full max-w-7xl flex-grow px-4 py-8">
+      <InductionAdminPanel />
+    </main>
+    <Footer />
+  </div>
+);
 
 export default InductionAdminPage;

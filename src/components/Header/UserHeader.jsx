@@ -59,29 +59,21 @@ export const UserHeader = () => {
         active: isDashboardActive,
       },
       {
-        label: isAdminToggle ? null : "Preguntas Frecuentes",
+        label: "Preguntas Frecuentes",
         to: "/faq",
         active: location.pathname === "/faq",
       },
       {
-        label: isSuperadmin ? null : "Carta de Presentación",
+        label: isSuperadmin || isAdminToggle ? null : "Carta de Presentación",
         to: "/cartas-presentacion",
         active: location.pathname === "/cartas-presentacion",
       },
       {
-        label: isAdminToggle ? null : "Requisitos",
+        label: "Requisitos",
         to: "/requisitos",
         active: location.pathname === "/requisitos",
       },
     ].filter((item) => item.label);
-
-    if (isAdminToggle) {
-      navItems.splice(1, 0, {
-        label: "Administrar inducción",
-        to: "/induccion/admin",
-        active: location.pathname === "/induccion/admin",
-      });
-    }
 
     const handleLogout = () => {
         logout();

@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Search, UserPlus, Users } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, UserPlus, Users } from 'lucide-react';
 
 import { Footer } from '../../components/Footer/Footer';
 import { UserHeader } from '../../components/Header/UserHeader';
-import { useAuth } from '../../context/useAuth';
-import { getAdminBasePathForRoles, getDisplayRoleForRoles } from '../../services/roleRouting';
 import { studentAccountService } from '../../services/studentAccountService';
 
 const PAGE_SIZE = 10;
@@ -78,12 +75,7 @@ const isValidRut = (value) => {
   return Boolean(number) && /^\d+$/.test(number) && calculateRutVerifier(number) === verifier;
 };
 
-export const StudentAccountsPage = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const userName = user ? `${user.first_name} ${user.last_name}` : 'Administracion';
-  const userRole = getDisplayRoleForRoles(user?.roles);
-  const dashboardPath = getAdminBasePathForRoles(user?.roles);
+export const StudentAccountsPanel = () => {
   const [students, setStudents] = useState([]);
   const [filters, setFilters] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
@@ -197,19 +189,7 @@ export const StudentAccountsPage = () => {
   const end = Math.min(offset + PAGE_SIZE, total);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <UserHeader userName={userName} userRole={userRole} />
-
-      <main className="flex-grow container mx-auto max-w-7xl px-4 py-8">
-        <button
-          type="button"
-          onClick={() => navigate(dashboardPath)}
-          className="mb-6 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 hover:border-[#d22864] hover:text-[#d22864]"
-        >
-          <ArrowLeft size={18} />
-          Volver al dashboard
-        </button>
-
+    <>
         <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d22864]">
@@ -388,11 +368,18 @@ export const StudentAccountsPage = () => {
             </div>
           </form>
         </section>
-      </main>
-
-      <Footer />
-    </div>
+    </>
   );
 };
+
+export const StudentAccountsPage = () => (
+  <div className="min-h-screen flex flex-col bg-gray-50">
+    <UserHeader />
+    <main className="flex-grow container mx-auto max-w-7xl px-4 py-8">
+      <StudentAccountsPanel />
+    </main>
+    <Footer />
+  </div>
+);
 
 export default StudentAccountsPage;
