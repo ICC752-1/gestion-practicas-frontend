@@ -23,6 +23,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Mail,
+  Info,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { UserHeader } from "../../components/Header/UserHeader";
@@ -587,11 +588,11 @@ export const StudentDashboardPage = () => {
       <main className="flex-grow">
         {/* Welcome Section */}
         <div className="bg-white border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="max-w-7xl mx-auto px-6 py-6">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex flex-col md:flex-row justify-between items-end md:items-center gap-6"
+              className="flex flex-col items-end justify-between gap-4 md:flex-row md:items-center"
             >
               <div>
                 <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-none mb-2">
@@ -603,33 +604,44 @@ export const StudentDashboardPage = () => {
                     : 'No tienes prácticas inscritas aún.'}
                 </p>
               </div>
-              <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-gray-50 p-5">
-                <div className="mb-3 flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-widest font-black text-gray-400">Progreso total</p>
-                    <p className="mt-1 text-sm font-bold text-gray-700">
-                      {overallProgress.completedCount} de {overallProgress.requiredCount} prácticas aprobadas
+              <div className="w-full max-w-md rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <p className="text-sm font-bold text-gray-700">
+                      <span className="mr-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        Progreso total
+                      </span>
+                      {overallProgress.completedCount} de {overallProgress.requiredCount} aprobadas
                     </p>
+                    <span
+                      className="group relative shrink-0"
+                      tabIndex={0}
+                      aria-describedby="overall-progress-tooltip"
+                    >
+                      <Info
+                        size={15}
+                        className="text-gray-400"
+                        aria-hidden="true"
+                      />
+                      <span
+                        id="overall-progress-tooltip"
+                        role="tooltip"
+                        className="pointer-events-none absolute right-0 top-full z-20 mt-2 hidden w-64 rounded-lg bg-gray-900 px-3 py-2 text-xs font-medium leading-5 text-white shadow-lg group-hover:block group-focus:block"
+                      >
+                        Solo las prácticas aprobadas o finalizadas aprobadas aportan al progreso total.
+                      </span>
+                    </span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-widest font-black text-gray-400">Prácticas</p>
-                    <span className="font-black text-3xl leading-none text-gray-900">{internships.length}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
-                    <div
-                      className="h-full rounded-full bg-[#d22864] transition-all duration-500"
-                      style={{ width: `${overallProgress.percentage}%` }}
-                    />
-                  </div>
-                  <span className="w-12 text-right text-sm font-black text-[#d22864]">
+                  <span className="shrink-0 text-sm font-black text-[#d22864]">
                     {overallProgress.percentage}%
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  Solo las prácticas aprobadas o finalizadas aprobadas aportan al progreso total.
-                </p>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-200">
+                  <div
+                    className="h-full rounded-full bg-[#d22864] transition-all duration-500"
+                    style={{ width: `${overallProgress.percentage}%` }}
+                  />
+                </div>
               </div>
             </motion.div>
           </div>
@@ -673,7 +685,7 @@ export const StudentDashboardPage = () => {
           </nav>
 
           {activeTab === 'summary' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
             {/* Practices List */}
             <div className="lg:col-span-2 space-y-8">
@@ -892,7 +904,7 @@ export const StudentDashboardPage = () => {
             </div>
 
             {/* Side Actions & Widgets */}
-            <div className="space-y-8">
+            <div className="space-y-6">
               <PersonalDataBlock
                 user={user}
                 onDownload={handleDataPortabilityDownload}
