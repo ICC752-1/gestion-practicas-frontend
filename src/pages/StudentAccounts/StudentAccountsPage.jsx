@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowDown, ArrowDownUp, ArrowUp, Search, UserPlus, Users } from 'lucide-react';
+import { ArrowDown, ArrowDownUp, ArrowUp, BarChart3, Search, UserPlus, Users } from 'lucide-react';
 
 import { Footer } from '../../components/Footer/Footer';
 import { UserHeader } from '../../components/Header/UserHeader';
@@ -68,6 +68,85 @@ const formatDateTime = (value) => {
   }).format(date);
 };
 
+const PRACTICE_PROGRESS_TEMPLATE = [
+  'Práctica de Estudio I',
+  'Práctica de Estudio II',
+  'Práctica Controlada',
+  'Tesis',
+].map((type) => ({
+  type,
+  requirement_status: 'Pendiente',
+  display_status: 'Pendiente',
+  internship_id: null,
+  request_status: null,
+  completion_status: null,
+  final_result: null,
+  is_current: false,
+  is_completed: false,
+}));
+
+const PRACTICE_TYPE_SHORT_LABELS = {
+  'Práctica de Estudio I': 'Práctica I',
+  'Práctica de Estudio II': 'Práctica II',
+  'Práctica Controlada': 'Controlada',
+  Tesis: 'Tesis',
+};
+
+const STATUS_PILL_STYLES = {
+  Aprobada: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+  Finalizada: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+  'En curso': 'border-blue-100 bg-blue-50 text-blue-700',
+  'Pendiente de evaluaciones': 'border-sky-100 bg-sky-50 text-sky-700',
+  'Pendiente de presentación': 'border-sky-100 bg-sky-50 text-sky-700',
+  'En revisión': 'border-amber-100 bg-amber-50 text-amber-700',
+  Habilitada: 'border-[#d22864]/15 bg-[#fff0f6] text-[#d22864]',
+  Pendiente: 'border-gray-200 bg-gray-50 text-gray-600',
+  Rechazada: 'border-red-100 bg-red-50 text-red-700',
+  Reprobada: 'border-red-100 bg-red-50 text-red-700',
+  Anulada: 'border-gray-200 bg-gray-100 text-gray-500',
+};
+
+const DEFAULT_STATUS_PILL_STYLE = 'border-gray-200 bg-gray-50 text-gray-600';
+
+const normalizeCount = (value, fallback) => {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : fallback;
+};
+
+const getShortPracticeType = (type) => PRACTICE_TYPE_SHORT_LABELS[type] || type;
+
+const getStatusPillClass = (status) => (
+  STATUS_PILL_STYLES[status] || DEFAULT_STATUS_PILL_STYLE
+);
+
+const getAcademicProgress = (student) => {
+  const progress = student?.academic_progress;
+  const items = Array.isArray(progress?.items) && progress.items.length > 0
+    ? progress.items
+    : PRACTICE_PROGRESS_TEMPLATE;
+  const completedCount = normalizeCount(
+    progress?.completed_count,
+    items.filter((item) => item.is_completed).length,
+  );
+  const totalCount = normalizeCount(progress?.total_count, items.length || 4);
+
+  return {
+    completed_count: completedCount,
+    total_count: totalCount,
+    current_type: progress?.current_type || null,
+    current_status: progress?.current_status || null,
+    items,
+  };
+};
+
+const getProgressPercent = (progress) => {
+  if (!progress.total_count) return 0;
+  return Math.min(
+    100,
+    Math.max(0, Math.round((progress.completed_count / progress.total_count) * 100)),
+  );
+};
+
 const SortHeader = ({ label, field, sort, onSort, align = 'left' }) => {
   const isActive = sort.sort_by === field;
   const Icon = isActive
@@ -104,6 +183,7 @@ export const StudentAccountsPanel = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [progressStudent, setProgressStudent] = useState(null);
 
   const loadStudents = useCallback(async () => {
     setLoading(true);
@@ -350,12 +430,13 @@ export const StudentAccountsPanel = () => {
             <div className="mt-6 overflow-hidden rounded-xl border border-gray-100">
               <table className="w-full table-fixed divide-y divide-gray-100 text-sm">
                 <colgroup>
-                  <col className="w-[30%]" />
-                  <col className="hidden w-[17%] lg:table-column" />
-                  <col className="w-[22%] sm:w-[18%]" />
-                  <col className="hidden w-[11%] md:table-column" />
-                  <col className="w-[24%] sm:w-[14%]" />
-                  <col className="w-[24%] sm:w-[10%]" />
+                  <col className="w-[32%] md:w-[27%] lg:w-[24%]" />
+                  <col className="hidden lg:table-column lg:w-[13%]" />
+                  <col className="w-[22%] md:w-[16%] lg:w-[14%]" />
+                  <col className="hidden md:table-column md:w-[9%] lg:w-[8%]" />
+                  <col className="w-[26%] md:w-[25%] lg:w-[20%]" />
+                  <col className="w-[10%] md:w-[12%] lg:w-[10%]" />
+                  <col className="w-[10%] md:w-[11%] lg:w-[11%]" />
                 </colgroup>
                 <thead>
                   <tr className="text-left text-xs font-black uppercase tracking-wide text-gray-500">
@@ -371,6 +452,7 @@ export const StudentAccountsPanel = () => {
                     <th className="hidden px-3 py-3 md:table-cell">
                       <SortHeader label="Ingreso" field="admission_year" sort={sort} onSort={handleSort} align="center" />
                     </th>
+                    <th className="px-3 py-3 text-center">Avance</th>
                     <th className="px-3 py-3">
                       <SortHeader label="Estado" field="is_active" sort={sort} onSort={handleSort} align="center" />
                     </th>
@@ -380,49 +462,82 @@ export const StudentAccountsPanel = () => {
                 <tbody className="divide-y divide-gray-100">
                   {loading && (
                     <tr>
-                      <td colSpan="6" className="px-3 py-8 text-center font-semibold text-gray-500">
+                      <td colSpan="7" className="px-3 py-8 text-center font-semibold text-gray-500">
                         Cargando estudiantes...
                       </td>
                     </tr>
                   )}
                   {!loading && students.length === 0 && (
                     <tr>
-                      <td colSpan="6" className="px-3 py-8 text-center font-semibold text-gray-500">
+                      <td colSpan="7" className="px-3 py-8 text-center font-semibold text-gray-500">
                         No hay estudiantes para los filtros seleccionados.
                       </td>
                     </tr>
                   )}
-                  {!loading && students.map((student) => (
-                    <tr key={student.id} className="align-top">
-                      <td className="min-w-0 px-3 py-4">
-                        <p className="truncate font-black text-gray-900">{student.first_name} {student.last_name}</p>
-                        <p className="truncate text-gray-500">{student.email}</p>
-                      </td>
-                      <td className="hidden px-3 py-4 text-center text-xs font-semibold text-gray-500 lg:table-cell">{formatDateTime(student.created_at)}</td>
-                      <td className="break-all px-3 py-4 text-gray-600">{student.enrollment || '-'}</td>
-                      <td className="hidden px-3 py-4 text-center text-gray-600 md:table-cell">{student.admission_year || '-'}</td>
-                      <td className="px-2 py-4 text-center">
-                        <span className={`inline-flex max-w-full justify-center rounded-full px-2 py-1 text-xs font-black ${student.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                          {student.is_active ? 'Activo' : 'Inactivo'}
-                        </span>
-                        {student.must_change_password && (
-                          <span className="mt-2 block truncate rounded-full bg-amber-50 px-2 py-1 text-xs font-black text-amber-700">
-                            Activacion pendiente
+                  {!loading && students.map((student) => {
+                    const progress = getAcademicProgress(student);
+                    const progressPercent = getProgressPercent(progress);
+
+                    return (
+                      <tr key={student.id} className="align-top">
+                        <td className="min-w-0 px-3 py-4">
+                          <p className="truncate font-black text-gray-900">{student.first_name} {student.last_name}</p>
+                          <p className="truncate text-gray-500">{student.email}</p>
+                        </td>
+                        <td className="hidden px-3 py-4 text-center text-xs font-semibold text-gray-500 lg:table-cell">{formatDateTime(student.created_at)}</td>
+                        <td className="break-all px-3 py-4 text-gray-600">{student.enrollment || '-'}</td>
+                        <td className="hidden px-3 py-4 text-center text-gray-600 md:table-cell">{student.admission_year || '-'}</td>
+                        <td className="px-2 py-4">
+                          <button
+                            type="button"
+                            onClick={() => setProgressStudent(student)}
+                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-left transition hover:border-[#d22864] hover:bg-[#fff0f6]"
+                            aria-label={`Ver avance académico de ${student.first_name} ${student.last_name}`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-black text-gray-900">
+                                {progress.completed_count}/{progress.total_count}
+                              </span>
+                              <span className="truncate text-[11px] font-black text-[#d22864]">
+                                Ver avance
+                              </span>
+                            </div>
+                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                              <div
+                                className="h-full rounded-full bg-[#d22864]"
+                                style={{ width: `${progressPercent}%` }}
+                              />
+                            </div>
+                            <p className="mt-1 truncate text-[11px] font-semibold text-gray-500">
+                              {progress.current_type
+                                ? `Actual: ${getShortPracticeType(progress.current_type)}`
+                                : 'Sin práctica activa'}
+                            </p>
+                          </button>
+                        </td>
+                        <td className="px-2 py-4 text-center">
+                          <span className={`inline-flex max-w-full justify-center rounded-full px-2 py-1 text-xs font-black ${student.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {student.is_active ? 'Activo' : 'Inactivo'}
                           </span>
-                        )}
-                      </td>
-                      <td className="px-2 py-4 text-center">
-                        <button
-                          type="button"
-                          disabled={saving}
-                          onClick={() => handleToggleStatus(student)}
-                          className="max-w-full rounded-xl border border-gray-200 px-2 py-2 text-xs font-black text-gray-700 hover:border-[#d22864] hover:text-[#d22864] disabled:opacity-50"
-                        >
-                          {student.is_active ? 'Desactivar' : 'Reactivar'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                          {student.must_change_password && (
+                            <span className="mt-2 block truncate rounded-full bg-amber-50 px-2 py-1 text-xs font-black text-amber-700">
+                              Activacion pendiente
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-2 py-4 text-center">
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() => handleToggleStatus(student)}
+                            className="max-w-full rounded-xl border border-gray-200 px-2 py-2 text-xs font-black text-gray-700 hover:border-[#d22864] hover:text-[#d22864] disabled:opacity-50"
+                          >
+                            {student.is_active ? 'Desactivar' : 'Reactivar'}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -533,6 +648,80 @@ export const StudentAccountsPanel = () => {
               </button>
             </div>
           </form>
+        </FormModal>
+
+        <FormModal
+          isOpen={Boolean(progressStudent)}
+          title="Avance académico"
+          description={progressStudent ? `${progressStudent.first_name} ${progressStudent.last_name}` : ''}
+          icon={BarChart3}
+          onClose={() => setProgressStudent(null)}
+        >
+          {progressStudent && (() => {
+            const progress = getAcademicProgress(progressStudent);
+            const progressPercent = getProgressPercent(progress);
+
+            return (
+              <div className="space-y-5">
+                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-black text-gray-900">
+                        {progress.completed_count} de {progress.total_count} prácticas completadas
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-gray-500">
+                        {progress.current_type
+                          ? `${getShortPracticeType(progress.current_type)} · ${progress.current_status}`
+                          : 'Sin práctica activa registrada'}
+                      </p>
+                    </div>
+                    <span className="text-2xl font-black text-[#d22864]">{progressPercent}%</span>
+                  </div>
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-white">
+                    <div
+                      className="h-full rounded-full bg-[#d22864]"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {progress.items.map((item) => (
+                    <div
+                      key={item.type}
+                      className={`rounded-xl border px-4 py-4 ${
+                        item.is_current
+                          ? 'border-[#d22864]/40 bg-[#fff0f6]'
+                          : 'border-gray-100 bg-white'
+                      }`}
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="font-black text-gray-900">{item.type}</p>
+                          <p className="mt-1 text-sm font-semibold text-gray-500">
+                            Requisito académico: {item.requirement_status}
+                          </p>
+                          {item.internship_id && (
+                            <p className="mt-1 text-sm font-semibold text-gray-500">
+                              Solicitud #{item.internship_id}
+                            </p>
+                          )}
+                        </div>
+                        <span className={`inline-flex shrink-0 rounded-full border px-3 py-1 text-xs font-black ${getStatusPillClass(item.display_status)}`}>
+                          {item.display_status}
+                        </span>
+                      </div>
+                      {item.is_current && (
+                        <p className="mt-3 text-xs font-black text-[#d22864]">
+                          Práctica actual o siguiente paso sugerido.
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </FormModal>
     </>
   );
