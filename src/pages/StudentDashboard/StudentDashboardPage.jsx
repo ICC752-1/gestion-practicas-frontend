@@ -975,7 +975,7 @@ export const StudentDashboardPage = () => {
           )}
 
           {activeTab === 'registration' && (
-            <div className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm">
+            <div>
               {location.pathname === REGISTRATION_FORM_PATH || location.pathname === `${REGISTRATION_FORM_PATH}/` ? (
                 <RegistrationPage embedded />
               ) : (

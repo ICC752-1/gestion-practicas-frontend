@@ -94,20 +94,45 @@ const normalizeOptions = (options) => {
 
 const StatusPanel = ({ icon: Icon, title, description, tone = 'gray' }) => {
   const tones = {
-    green: 'border-green-200 bg-green-50 text-green-700',
-    amber: 'border-amber-200 bg-amber-50 text-amber-700',
-    red: 'border-red-200 bg-red-50 text-red-700',
-    blue: 'border-blue-200 bg-blue-50 text-blue-700',
-    gray: 'border-gray-200 bg-white text-gray-700',
+    green: {
+      panel: 'border-emerald-200 bg-emerald-50/80',
+      icon: 'bg-white text-emerald-600 ring-emerald-200',
+      description: 'text-emerald-800',
+    },
+    amber: {
+      panel: 'border-amber-200 bg-amber-50/80',
+      icon: 'bg-white text-amber-600 ring-amber-200',
+      description: 'text-amber-800',
+    },
+    red: {
+      panel: 'border-red-200 bg-red-50/80',
+      icon: 'bg-white text-red-600 ring-red-200',
+      description: 'text-red-800',
+    },
+    blue: {
+      panel: 'border-sky-200 bg-sky-50/80',
+      icon: 'bg-white text-sky-600 ring-sky-200',
+      description: 'text-sky-800',
+    },
+    gray: {
+      panel: 'border-gray-200 bg-gray-50',
+      icon: 'bg-white text-gray-600 ring-gray-200',
+      description: 'text-gray-600',
+    },
   };
+  const toneStyles = tones[tone] ?? tones.gray;
 
   return (
-    <div className={`rounded-2xl border p-5 ${tones[tone]}`}>
+    <div className={`rounded-xl border p-4 ${toneStyles.panel}`}>
       <div className="flex items-start gap-3">
-        <Icon size={24} className="mt-1 flex-shrink-0" />
-        <div>
-          <h3 className="font-black text-gray-900">{title}</h3>
-          <p className="mt-1 text-sm leading-relaxed">{description}</p>
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg shadow-sm ring-1 ${toneStyles.icon}`}>
+          <Icon size={20} />
+        </div>
+        <div className="min-w-0">
+          <h3 className="text-sm font-black text-gray-900">{title}</h3>
+          <p className={`mt-1 text-xs font-medium leading-5 ${toneStyles.description}`}>
+            {description}
+          </p>
         </div>
       </div>
     </div>
@@ -348,9 +373,9 @@ export const PreRegistrationPage = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px]">
-            <section className="space-y-8">
-              <div className="rounded-2xl bg-white p-6 shadow-sm md:p-8">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+            <section className="space-y-6">
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
                 <div className="mb-6 flex items-start gap-4">
                   <div className="rounded-2xl bg-[#d22864]/10 p-3 text-[#d22864]">
                     <FileText size={28} />
@@ -372,7 +397,7 @@ export const PreRegistrationPage = ({
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-white p-6 shadow-sm md:p-8">
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
                 <div className="mb-6 flex items-start gap-4">
                   <div className="rounded-2xl bg-[#d22864]/10 p-3 text-[#d22864]">
                     <PlayCircle size={28} />
@@ -496,30 +521,44 @@ export const PreRegistrationPage = ({
               </div>
             </section>
 
-            <aside className="space-y-5">
-              <div className="rounded-2xl bg-white p-6 shadow-sm">
-                <h2 className="text-xl font-black text-gray-950">Estado institucional</h2>
-                <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                  Estos requisitos se validan para aprobar y formalizar la práctica.
-                </p>
+            <aside className="space-y-5 lg:sticky lg:top-24">
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700">
+                    <ShieldCheck size={21} />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-gray-950">Estado institucional</h2>
+                    <p className="mt-1 text-sm leading-6 text-gray-600">
+                      Requisitos considerados al formalizar la práctica.
+                    </p>
+                  </div>
+                </div>
 
-                <div className="mt-6 space-y-4">
+                <div className="mt-5 space-y-3">
                   <StatusPanel {...insuranceStatus} />
                   <StatusPanel {...inductionStatus} />
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-white p-6 shadow-sm">
-                <h2 className="text-xl font-black text-gray-950">Siguiente paso</h2>
-                <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                  {eligibility?.next_step || 'Puedes registrar la solicitud y completar los requisitos pendientes.'}
-                </p>
+              <div className="rounded-2xl border border-[#d22864]/20 bg-[#fff8fb] p-5 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#d22864] shadow-sm ring-1 ring-[#d22864]/15">
+                    <ArrowRight size={21} />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-gray-950">Siguiente paso</h2>
+                    <p className="mt-1 text-sm leading-6 text-gray-600">
+                      {eligibility?.next_step || 'Puedes registrar la solicitud y completar los requisitos pendientes.'}
+                    </p>
+                  </div>
+                </div>
 
                 <button
                   type="button"
                   onClick={handleContinue}
                   disabled={continuing || !canContinue}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-4 font-black text-white shadow-lg shadow-[#d22864]/20 hover:bg-[#b01e52] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3.5 font-black text-white shadow-lg shadow-[#d22864]/20 hover:bg-[#b01e52] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
                 >
                   {continuing ? <Loader2 className="animate-spin" size={20} /> : <ArrowRight size={20} />}
                   Continuar al formulario
