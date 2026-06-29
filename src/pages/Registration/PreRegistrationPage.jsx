@@ -37,6 +37,17 @@ const getApiErrorMessage = (error) => {
   return 'No se pudo cargar la información de preinscripción.';
 };
 
+const formatAttemptDate = (isoDate) => {
+  if (!isoDate) return '';
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/.test(isoDate);
+  const normalizedDate = hasTimezone ? isoDate : `${isoDate}Z`;
+
+  return new Date(normalizedDate).toLocaleString('es-CL', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+};
+
 const getEmbedUrl = (videoUrl) => {
   try {
     const url = new URL(videoUrl);
@@ -183,54 +194,103 @@ const QuestionList = ({
   answers,
   onAnswerChange,
   readOnly = false,
+  feedbackByQuestion = {},
 }) => (
   <div className="space-y-6">
-    {questions.map((question, index) => (
-      <fieldset key={question.id} className="rounded-2xl border border-gray-200 bg-white p-5">
-        <legend className="px-1 text-base font-black text-gray-950">
-          {index + 1}. {question.question_text}
-        </legend>
-        <div className="mt-4 space-y-3">
-          {normalizeOptions(question.options).map((option) => {
-            const isSelected = answers[question.id] === option.key;
+    {questions.map((question, index) => {
+      const feedback = feedbackByQuestion[String(question.id)];
+      const selectedAnswer = readOnly && feedback
+        ? feedback.selected_answer
+        : answers[question.id];
 
-            return (
-              <label
-                key={option.key}
-                className={`flex items-start gap-3 rounded-xl border p-4 transition-colors ${
-                  readOnly
-                    ? 'cursor-default border-gray-200 bg-gray-50'
-                    : isSelected
-                      ? 'cursor-pointer border-[#d22864] bg-[#fff0f6]'
-                      : 'cursor-pointer border-gray-200 bg-white hover:border-[#d22864]/40'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name={`question-${question.id}`}
-                  value={option.key}
-                  checked={isSelected}
-                  disabled={readOnly}
-                  onChange={() => onAnswerChange(question.id, option.key)}
-                  className="sr-only"
-                />
-                <span
-                  aria-hidden="true"
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                    isSelected
-                      ? 'border-[#d22864] bg-[#d22864]'
-                      : 'border-gray-300 bg-white'
-                  }`}
+      return (
+        <fieldset key={question.id} className="rounded-2xl border border-gray-200 bg-white p-5">
+          <legend className="px-1 text-base font-black text-gray-950">
+            {index + 1}. {question.question_text}
+          </legend>
+          <div className="mt-4 space-y-3">
+            {normalizeOptions(question.options).map((option) => {
+              const isSelected = selectedAnswer === option.key;
+              const isCorrectOption = readOnly
+                && feedback?.correct_answer === option.key;
+              const isCorrectSelection = isSelected && feedback?.is_correct;
+              const isIncorrectSelection = isSelected
+                && feedback
+                && !feedback.is_correct;
+
+              const optionStyle = readOnly
+                ? isCorrectSelection || isCorrectOption
+                  ? 'cursor-default border-emerald-300 bg-emerald-50'
+                  : isIncorrectSelection
+                    ? 'cursor-default border-red-300 bg-red-50'
+                    : 'cursor-default border-gray-200 bg-gray-50'
+                : isSelected
+                  ? 'cursor-pointer border-[#d22864] bg-[#fff0f6]'
+                  : 'cursor-pointer border-gray-200 bg-white hover:border-[#d22864]/40';
+
+              const indicatorStyle = isCorrectSelection
+                ? 'border-emerald-600 bg-emerald-600'
+                : isIncorrectSelection
+                  ? 'border-red-600 bg-red-600'
+                  : isSelected
+                    ? 'border-[#d22864] bg-[#d22864]'
+                    : 'border-gray-300 bg-white';
+
+              return (
+                <label
+                  key={option.key}
+                  className={`flex items-start gap-3 rounded-xl border p-4 transition-colors ${optionStyle}`}
                 >
-                  <span className={`h-2 w-2 rounded-full bg-white ${isSelected ? 'block' : 'hidden'}`} />
-                </span>
-                <span className="text-sm font-semibold text-gray-700">{option.label}</span>
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
-    ))}
+                  <input
+                    type="radio"
+                    name={`question-${question.id}`}
+                    value={option.key}
+                    checked={isSelected}
+                    disabled={readOnly}
+                    onChange={() => onAnswerChange(question.id, option.key)}
+                    className="sr-only"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${indicatorStyle}`}
+                  >
+                    <span className={`h-2 w-2 rounded-full bg-white ${isSelected ? 'block' : 'hidden'}`} />
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-gray-700">{option.label}</span>
+                    <span className="flex flex-wrap items-center gap-2">
+                      {isCorrectSelection && (
+                        <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-700">
+                          <CheckCircle2 size={14} />
+                          Tu respuesta correcta
+                        </span>
+                      )}
+                      {isIncorrectSelection && (
+                        <span className="inline-flex items-center gap-1 text-xs font-black text-red-700">
+                          <XCircle size={14} />
+                          Tu respuesta
+                        </span>
+                      )}
+                      {isCorrectOption && !isSelected && (
+                        <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-700">
+                          <CheckCircle2 size={14} />
+                          Respuesta correcta
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          {readOnly && feedback?.selected_answer == null && (
+            <p className="mt-3 text-xs font-bold text-amber-700">
+              No se registró una respuesta para esta pregunta.
+            </p>
+          )}
+        </fieldset>
+      );
+    })}
   </div>
 );
 
@@ -242,6 +302,7 @@ export const PreRegistrationPage = ({
   const location = useLocation();
   const [eligibility, setEligibility] = useState(null);
   const [induction, setInduction] = useState(null);
+  const [attemptFeedback, setAttemptFeedback] = useState(null);
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadingError, setLoadingError] = useState(null);
@@ -258,19 +319,30 @@ export const PreRegistrationPage = ({
     return [...(induction?.videos || [])].sort((a, b) => a.order - b.order);
   }, [induction]);
 
+  const feedbackByQuestion = useMemo(() => {
+    return Object.fromEntries(
+      (attemptFeedback?.answers || []).map((answer) => [
+        String(answer.question_id),
+        answer,
+      ]),
+    );
+  }, [attemptFeedback]);
+
   const loadPreRegistration = async () => {
     setLoading(true);
     setLoadingError(null);
     setAttemptError(null);
 
     try {
-      const [eligibilityData, inductionData] = await Promise.all([
+      const [eligibilityData, inductionData, feedbackData] = await Promise.all([
         internshipService.getRegistrationEligibility(),
         internshipService.getInductionContent(),
+        internshipService.getLatestPassedInductionFeedback().catch(() => null),
       ]);
 
       setEligibility(eligibilityData);
       setInduction(inductionData);
+      setAttemptFeedback(feedbackData);
     } catch (error) {
       setLoadingError(getApiErrorMessage(error));
     } finally {
@@ -309,8 +381,12 @@ export const PreRegistrationPage = ({
       setAttemptResult(result);
 
       if (result.passed) {
-        const eligibilityData = await internshipService.getRegistrationEligibility();
+        const [eligibilityData, feedbackData] = await Promise.all([
+          internshipService.getRegistrationEligibility(),
+          internshipService.getLatestPassedInductionFeedback(),
+        ]);
         setEligibility(eligibilityData);
+        setAttemptFeedback(feedbackData);
       }
     } catch (error) {
       setAttemptError(getApiErrorMessage(error));
@@ -505,7 +581,9 @@ export const PreRegistrationPage = ({
                           <div>
                             <h3 className="font-black text-gray-950">Cuestionario de inducción</h3>
                             <p className="mt-1 text-sm text-gray-600">
-                              Aprobado. Puedes desplegarlo para consultar sus preguntas.
+                              {attemptFeedback
+                                ? `Aprobado con ${attemptFeedback.score} de ${attemptFeedback.answers.length} respuestas correctas.`
+                                : 'Aprobado. Puedes desplegarlo para consultar sus preguntas.'}
                             </p>
                           </div>
                           <ChevronDown
@@ -514,12 +592,22 @@ export const PreRegistrationPage = ({
                           />
                         </summary>
                         <div className="border-t border-gray-200 p-5">
+                          {attemptFeedback ? (
+                            <p className="mb-5 text-xs font-bold text-gray-500">
+                              Intento realizado el {formatAttemptDate(attemptFeedback.attempted_at)}.
+                            </p>
+                          ) : (
+                            <p className="mb-5 text-sm font-medium text-gray-600">
+                              No hay respuestas guardadas para la versión activa de esta inducción.
+                            </p>
+                          )}
                           {questions.length > 0 ? (
                             <QuestionList
                               questions={questions}
                               answers={answers}
                               onAnswerChange={handleAnswerChange}
                               readOnly
+                              feedbackByQuestion={feedbackByQuestion}
                             />
                           ) : (
                             <p className="text-sm font-medium text-gray-600">
