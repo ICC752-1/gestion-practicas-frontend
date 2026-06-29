@@ -68,6 +68,12 @@ const normalizeText = (value) => (
     .replace(/[\u0300-\u036f]/g, "")
 );
 
+const getEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
+
 export const FAQPage = () => {
   const [openQuestionId, setOpenQuestionId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -97,30 +103,36 @@ export const FAQPage = () => {
       {isAuthenticated ? <UserHeader /> : <Header />}
       <main className="flex-grow flex flex-col w-full bg-white">
         <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           className="max-w-7xl mx-auto py-3 px-6 grow w-full"
+          {...getEntryMotion()}
         >
           <div className="mb-12">
-          <button
+          <motion.button
             type="button"
             onClick={() => navigate(backPath)}
             className="mb-8 inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-brand-medium transition hover:underline"
+            {...getEntryMotion()}
           >
             <ArrowLeft size={18} />
             Volver
-          </button>
+          </motion.button>
 
-          <div className="text-center">
+          <motion.div
+            className="text-center"
+            {...getEntryMotion(0.06)}
+          >
             <h2 className="text-4xl font-bold text-brand-medium mb-4">Preguntas Frecuentes</h2>
             <p className="text-lg text-brand-medium opacity-80">
               Encuentra respuestas a las preguntas más comunes sobre prácticas profesionales
             </p>
-          </div>
+          </motion.div>
           </div>
 
-          <div className="max-w-3xl mx-auto mb-12 relative">
+          <motion.div
+            className="max-w-3xl mx-auto mb-12 relative"
+            {...getEntryMotion(0.12)}
+          >
             <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
               <Search className="text-gray-400" size={24} />
             </div>
@@ -132,14 +144,18 @@ export const FAQPage = () => {
               aria-label="Buscar en preguntas frecuentes"
               className="w-full pl-14 pr-6 py-5 rounded-full border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-medium focus:border-transparent text-lg"
             />
-          </div>
+          </motion.div>
 
-          <div className="flex flex-wrap justify-center gap-3 mb-16">
-            {categories.map((cat) => (
-              <button 
+          <motion.div
+            className="flex flex-wrap justify-center gap-3 mb-16"
+            {...getEntryMotion(0.16)}
+          >
+            {categories.map((cat, index) => (
+              <motion.button
                 key={cat}
                 type="button"
                 onClick={() => handleCategoryClick(cat)}
+                {...getEntryMotion(0.18 + index * 0.03)}
                 className={`px-8 py-2.5 rounded-full font-semibold transition-colors shadow-sm cursor-pointer ${
                   activeCategory === cat
                   ? "bg-white text-brand-dark border border-brand-dark shadow-md"
@@ -147,13 +163,20 @@ export const FAQPage = () => {
                 }`}
               >
                 {cat}
-              </button>
+              </motion.button>
             ))}
-          </div>
+          </motion.div>
 
-          <div className="max-w-5xl mx-auto space-y-4 mb-24">
-            {filteredFaqs.map((item) => (
-              <div key={item.id} className="border border-gray-100 rounded-[2rem] overflow-hidden bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+          <motion.div
+            className="max-w-5xl mx-auto space-y-4 mb-24"
+            {...getEntryMotion(0.2)}
+          >
+            {filteredFaqs.map((item, index) => (
+              <motion.article
+                key={item.id}
+                className="border border-gray-100 rounded-[2rem] overflow-hidden bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
+                {...getEntryMotion(0.24 + index * 0.05)}
+              >
                 <button 
                   type="button"
                   onClick={() => setOpenQuestionId(openQuestionId === item.id ? null : item.id)}
@@ -188,17 +211,23 @@ export const FAQPage = () => {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.article>
             ))}
             {filteredFaqs.length === 0 && (
-              <div className="rounded-[2rem] border border-gray-100 bg-white px-10 py-12 text-center shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+              <motion.div
+                className="rounded-[2rem] border border-gray-100 bg-white px-10 py-12 text-center shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
+                {...getEntryMotion(0.24)}
+              >
                 <p className="text-xl font-bold text-brand-medium">No encontramos preguntas para tu búsqueda.</p>
                 <p className="mt-3 text-gray-600">Intenta con otra palabra clave o selecciona otra categoría.</p>
-              </div>
+              </motion.div>
             )}
-          </div>
+          </motion.div>
 
-          <div className="max-w-5xl mx-auto mb-12">
+          <motion.div
+            className="max-w-5xl mx-auto mb-12"
+            {...getEntryMotion(0.32)}
+          >
             <div className="bg-brand-medium text-white py-16 px-10 rounded-[2.5rem] text-center shadow-xl">
               <h3 className="text-3xl font-bold mb-4">¿No encontraste lo que buscabas?</h3>
               <p className="text-lg opacity-90 mb-6 italic">
@@ -213,7 +242,7 @@ export const FAQPage = () => {
                 Ir al soporte
               </a>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       </main>
       <Footer />

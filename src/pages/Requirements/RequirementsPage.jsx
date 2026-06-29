@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowRight,
@@ -47,6 +48,12 @@ const processSteps = [
   'Carga o corrige documentos cuando el flujo administrativo lo solicite.',
 ];
 
+const getEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
+
 export const RequirementsPage = () => {
   const { isAuthenticated, user } = useAuth();
   const primaryActionPath = isAuthenticated ? '/dashboard/inscripcion' : '/login';
@@ -62,7 +69,10 @@ export const RequirementsPage = () => {
 
       <main className="bg-white">
         {/* Botón volver */}
-          <div className="max-w-7xl mx-auto py-3 px-6 w-full">
+          <motion.div
+            className="max-w-7xl mx-auto py-3 px-6 w-full"
+            {...getEntryMotion()}
+          >
           <button
             type="button"
             onClick={() => navigate(backPath)}
@@ -71,9 +81,12 @@ export const RequirementsPage = () => {
             <ArrowLeft size={18} />
             Volver
           </button>
-        </div>
+        </motion.div>
 
-        <section className="mx-auto max-w-7xl px-6 py-6">
+        <motion.section
+          className="mx-auto max-w-7xl px-6 py-6"
+          {...getEntryMotion(0.06)}
+        >
           <div className="mx-auto max-w-4xl text-center">
             <p className="text-sm font-black uppercase tracking-wider text-[#d22864]">
               Antes de registrar tu práctica
@@ -102,23 +115,36 @@ export const RequirementsPage = () => {
               </Link>
             </div>
           </div>
-        </section>
+        </motion.section>
 
-        <section className="mx-auto grid max-w-7xl grid-cols-1 gap-5 px-6 pb-16 md:grid-cols-2 xl:grid-cols-4">
-          {requirementCards.map(({ icon: Icon, title, description }) => (
-            <article key={title} className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+        <motion.section
+          className="mx-auto grid max-w-7xl grid-cols-1 gap-5 px-6 pb-16 md:grid-cols-2 xl:grid-cols-4"
+          {...getEntryMotion(0.12)}
+        >
+          {requirementCards.map(({ icon: Icon, title, description }, index) => (
+            <motion.article
+              key={title}
+              className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.04)]"
+              {...getEntryMotion(0.16 + index * 0.05)}
+            >
               <div className="mb-5 inline-flex rounded-2xl bg-[#d22864]/10 p-3 text-[#d22864]">
                 <Icon size={28} />
               </div>
               <h2 className="text-xl font-black text-gray-800">{title}</h2>
               <p className="mt-3 text-sm leading-relaxed text-gray-600">{description}</p>
-            </article>
+            </motion.article>
           ))}
-        </section>
+        </motion.section>
 
-        <section className="mx-auto max-w-7xl px-6 pb-20">
-          <div className="grid grid-cols-1 gap-8 rounded-[2.5rem] bg-[#f8f8f8] p-6 md:p-10 lg:grid-cols-[0.9fr_1.1fr]">
-            <div>
+        <motion.section
+          className="mx-auto max-w-7xl px-6 pb-20"
+          {...getEntryMotion(0.22)}
+        >
+          <motion.div
+            className="grid grid-cols-1 gap-8 rounded-[2.5rem] bg-[#f8f8f8] p-6 md:p-10 lg:grid-cols-[0.9fr_1.1fr]"
+            {...getEntryMotion(0.24)}
+          >
+            <motion.div {...getEntryMotion(0.28)}>
               <p className="text-sm font-black uppercase tracking-wider text-[#d22864]">
                 Flujo esperado
               </p>
@@ -128,11 +154,15 @@ export const RequirementsPage = () => {
               <p className="mt-4 text-base leading-relaxed text-gray-600">
                 Al iniciar una nueva práctica, el sistema abre primero la preinscripción. En esa etapa se muestran el estado de inducción, seguro escolar y otros requisitos antes de permitir el registro formal.
               </p>
-            </div>
+            </motion.div>
 
             <ol className="space-y-4">
               {processSteps.map((step, index) => (
-                <li key={step} className="flex gap-4 rounded-2xl bg-white p-5 shadow-sm">
+                <motion.li
+                  key={step}
+                  className="flex gap-4 rounded-2xl bg-white p-5 shadow-sm"
+                  {...getEntryMotion(0.3 + index * 0.05)}
+                >
                   <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#d22864] text-sm font-black text-white">
                     {index + 1}
                   </span>
@@ -144,20 +174,23 @@ export const RequirementsPage = () => {
                       </p>
                     )}
                   </div>
-                </li>
+                </motion.li>
               ))}
             </ol>
-          </div>
+          </motion.div>
 
-          <div className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-5 text-green-800">
+          <motion.div
+            className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-5 text-green-800"
+            {...getEntryMotion(0.36)}
+          >
             <div className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 flex-shrink-0" size={24} />
               <p className="text-sm font-semibold leading-relaxed">
                 Completar estos pasos no aprueba automáticamente la práctica. La aprobación final depende de la revisión administrativa y académica correspondiente.
               </p>
             </div>
-          </div>
-        </section>
+          </motion.div>
+        </motion.section>
       </main>
 
       <Footer />
