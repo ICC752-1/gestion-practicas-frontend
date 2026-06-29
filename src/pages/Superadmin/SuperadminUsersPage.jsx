@@ -39,6 +39,8 @@ const initialForm = {
   last_name: '',
   rut: '',
   enrollment: '',
+  degree: 'Ingenieria Civil Informatica',
+  cod_degree: 'ICI',
   role_ids: [],
 };
 
@@ -335,7 +337,12 @@ export const SuperadminUsersPanel = () => {
           return;
         }
 
-        payload = { ...form, enrollment: undefined };
+        payload = {
+          ...form,
+          enrollment: undefined,
+          degree: undefined,
+          cod_degree: undefined,
+        };
       }
 
       await createUser(payload);
@@ -801,6 +808,20 @@ export const SuperadminUsersPanel = () => {
                     aria-label="Año de ingreso calculado"
                     placeholder="Año de ingreso"
                     className="cursor-not-allowed rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 outline-none"
+                  />
+                  <input
+                    name="degree"
+                    value={form.degree}
+                    onChange={handleFormChange}
+                    placeholder="Carrera"
+                    className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
+                  />
+                  <input
+                    name="cod_degree"
+                    value={form.cod_degree}
+                    onChange={handleFormChange}
+                    placeholder="Código de carrera"
+                    className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
                   />
                 </>
               ) : (
