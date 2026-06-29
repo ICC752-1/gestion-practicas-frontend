@@ -18,6 +18,12 @@ const initialFilters = {
   is_active: '',
 };
 
+const STATUS_FILTER_OPTIONS = [
+  { label: 'Todos', value: '' },
+  { label: 'Activos', value: 'true' },
+  { label: 'Inactivos', value: 'false' },
+];
+
 const initialSort = {
   sort_by: 'created_at',
   sort_dir: 'desc',
@@ -226,6 +232,13 @@ export const StudentAccountsPanel = () => {
     setAppliedFilters(filters);
   };
 
+  const handleStatusFilter = (value) => {
+    const nextFilters = { ...filters, is_active: value };
+    setFilters(nextFilters);
+    setOffset(0);
+    setAppliedFilters(nextFilters);
+  };
+
   const handleSort = (field) => {
     setOffset(0);
     setSort((current) => ({
@@ -364,7 +377,7 @@ export const StudentAccountsPanel = () => {
 
         <section className="mt-6">
           <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-            <form onSubmit={handleApplyFilters} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_140px]">
+            <form onSubmit={handleApplyFilters} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_300px_140px]">
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
@@ -375,16 +388,29 @@ export const StudentAccountsPanel = () => {
                   className="w-full rounded-xl border border-gray-200 py-3 pl-11 pr-4 text-sm outline-none focus:border-[#d22864]"
                 />
               </label>
-              <select
-                name="is_active"
-                value={filters.is_active}
-                onChange={handleFilterChange}
-                className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
+              <div
+                className="grid grid-cols-3 gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1"
+                aria-label="Filtrar estudiantes por estado"
               >
-                <option value="">Todos</option>
-                <option value="true">Activos</option>
-                <option value="false">Inactivos</option>
-              </select>
+                {STATUS_FILTER_OPTIONS.map((option) => {
+                  const isSelected = filters.is_active === option.value;
+
+                  return (
+                    <button
+                      key={option.value || 'all'}
+                      type="button"
+                      onClick={() => handleStatusFilter(option.value)}
+                      className={`rounded-lg px-3 py-2 text-xs font-black transition ${
+                        isSelected
+                          ? 'bg-[#d22864] text-white shadow-sm'
+                          : 'text-gray-600 hover:bg-white hover:text-[#d22864]'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
               <button type="submit" className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-bold text-white hover:bg-gray-800">
                 Filtrar
               </button>
