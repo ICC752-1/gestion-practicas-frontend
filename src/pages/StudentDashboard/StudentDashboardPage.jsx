@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   ClipboardCheck,
+  ClipboardList,
   Calendar,
   Building2,
   FileText,
@@ -35,6 +36,8 @@ import { dataPortabilityService } from "../../services/dataPortabilityService";
 import { PresentationLettersPanel } from "../PresentationLetters/PresentationLettersPage";
 import { InterviewSchedulingPage } from "../InterviewScheduling/InterviewSchedulingPage";
 import { SeguimientoPage } from "../Seguimiento/SeguimientoPage";
+import { PreRegistrationPage } from "../Registration/PreRegistrationPage";
+import { RegistrationPage } from "../Registration/RegistrationPage";
 import {
   getInternshipAdministrativeProgress,
   getOverallInternshipProgress,
@@ -131,7 +134,8 @@ const getUploadErrorMessage = (error) => {
   return detail?.message || error.message || 'No se pudo subir.';
 };
 
-const PRE_REGISTRATION_PATH = '/practicas/nueva/preinscripcion';
+const PRE_REGISTRATION_PATH = '/dashboard/inscripcion';
+const REGISTRATION_FORM_PATH = '/dashboard/inscripcion/formulario';
 const STUDENT_DASHBOARD_TABS = [
   {
     id: 'summary',
@@ -139,6 +143,14 @@ const STUDENT_DASHBOARD_TABS = [
     to: '/dashboard',
     icon: LayoutDashboard,
     match: (pathname) => pathname === '/dashboard',
+  },
+  {
+    id: 'registration',
+    label: 'Inscripción',
+    to: PRE_REGISTRATION_PATH,
+    icon: ClipboardList,
+    match: (pathname) => pathname === PRE_REGISTRATION_PATH
+      || pathname.startsWith(`${PRE_REGISTRATION_PATH}/`),
   },
   {
     id: 'tracking',
@@ -395,32 +407,6 @@ const PracticeCard = ({ internship, lifecycle }) => {
     </motion.div>
   );
 };
-
-const QuickAction = ({ icon: Icon, title, desc, onClick, primary, disabled, badge }) => (
-  <motion.button
-    whileHover={!disabled ? { y: -5, scale: 1.02 } : {}}
-    onClick={!disabled ? onClick : undefined}
-    className={`relative p-6 rounded-[2rem] text-left flex flex-col gap-4 transition-all duration-300 ${
-      disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' :
-      primary
-        ? 'bg-[#d22864] text-white shadow-xl shadow-[#d22864]/20'
-        : 'bg-white text-gray-900 shadow-lg shadow-gray-200/50 border border-gray-50 hover:border-[#d22864]/20'
-    }`}
-  >
-    {badge ? (
-      <span className="absolute top-4 right-4 min-w-[22px] h-[22px] px-1.5 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[11px] font-bold leading-none shadow-md">
-        {badge > 9 ? '9+' : badge}
-      </span>
-    ) : null}
-    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${primary && !disabled ? 'bg-white/20' : 'bg-[#d22864]/10 text-[#d22864]'}`}>
-      <Icon size={24} />
-    </div>
-    <div>
-      <h4 className="font-bold text-lg leading-tight">{title}</h4>
-      <p className={`text-sm mt-1 ${primary && !disabled ? 'text-white/70' : 'text-gray-400'}`}>{desc}</p>
-    </div>
-  </motion.button>
-);
 
 const PersonalDataBlock = ({ user, onDownload, downloading }) => {
   const rows = [
@@ -907,18 +893,6 @@ export const StudentDashboardPage = () => {
 
             {/* Side Actions & Widgets */}
             <div className="space-y-8">
-              <h3 className="text-xl font-bold text-gray-900">Acciones Rápidas</h3>
-
-              <div className="grid grid-cols-1 gap-4">
-                <QuickAction
-                  icon={Plus}
-                  title="Nueva Inscripción"
-                  desc="Comienza el proceso para tu próxima práctica"
-                  onClick={() => navigate(PRE_REGISTRATION_PATH)}
-                  primary={true}
-                />
-              </div>
-
               <PersonalDataBlock
                 user={user}
                 onDownload={handleDataPortabilityDownload}
@@ -986,6 +960,19 @@ export const StudentDashboardPage = () => {
                 </div>
               )}
             </>
+          )}
+
+          {activeTab === 'registration' && (
+            <div className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm">
+              {location.pathname === REGISTRATION_FORM_PATH || location.pathname === `${REGISTRATION_FORM_PATH}/` ? (
+                <RegistrationPage embedded />
+              ) : (
+                <PreRegistrationPage
+                  embedded
+                  formPath={REGISTRATION_FORM_PATH}
+                />
+              )}
+            </div>
           )}
 
           {activeTab === 'documents' && (

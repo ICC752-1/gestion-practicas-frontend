@@ -1,8 +1,6 @@
 import { Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { PrivateRoute } from '../components/PrivateRoute'
 import { Login } from '../components/Login/Login'
-import { RegistrationPage } from '../pages/Registration/RegistrationPage'
-import { PreRegistrationPage } from '../pages/Registration/PreRegistrationPage'
 import { LandingPage } from '../pages/Landing/LandingPage'
 import { FAQPage } from '../pages/FAQ/FAQPage'
 import { RequirementsPage } from '../pages/Requirements/RequirementsPage'
@@ -75,25 +73,17 @@ export const AppRoutes = () => {
           {/* Rutas protegidas */}
           <Route
               path="/inscripcion"
-              element={<Navigate to="/practicas/nueva/preinscripcion" replace />}
+              element={<Navigate to="/dashboard/inscripcion" replace />}
           />
 
           <Route
               path="/practicas/nueva/preinscripcion"
-              element={
-                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
-                      <PreRegistrationPage />
-                  </PrivateRoute>
-              }
+              element={<Navigate to="/dashboard/inscripcion" replace />}
           />
 
           <Route
               path="/practicas/nueva/formulario"
-              element={
-                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
-                      <RegistrationPage />
-                  </PrivateRoute>
-              }
+              element={<Navigate to="/dashboard/inscripcion/formulario" replace />}
           />
 
           <Route

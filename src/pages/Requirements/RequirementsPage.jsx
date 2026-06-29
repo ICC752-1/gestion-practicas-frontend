@@ -47,7 +47,7 @@ const processSteps = [
 
 export const RequirementsPage = () => {
   const { isAuthenticated } = useAuth();
-  const primaryActionPath = isAuthenticated ? '/practicas/nueva/preinscripcion' : '/login';
+  const primaryActionPath = isAuthenticated ? '/dashboard/inscripcion' : '/login';
   const primaryActionLabel = isAuthenticated ? 'Ir a preinscripción' : 'Iniciar sesión';
   const navigate = useNavigate();
 

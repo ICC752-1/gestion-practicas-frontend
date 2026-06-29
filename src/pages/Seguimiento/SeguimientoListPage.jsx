@@ -231,7 +231,7 @@ export const SeguimientoListPage = () => {
             <InboxIcon className="text-gray-300" size={48} />
             <p className="mt-4 text-gray-500 font-medium text-center">No tienes prácticas inscritas</p>
             <button
-              onClick={() => navigate('/inscripcion')}
+              onClick={() => navigate('/dashboard/inscripcion')}
               className="mt-4 bg-[#d22864] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#b01e52] transition-colors"
             >
               Inscribirte ahora

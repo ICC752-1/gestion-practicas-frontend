@@ -152,7 +152,10 @@ const VideoCard = ({ video }) => {
   );
 };
 
-export const PreRegistrationPage = () => {
+export const PreRegistrationPage = ({
+  embedded = false,
+  formPath = FORM_PATH,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [eligibility, setEligibility] = useState(null);
@@ -240,7 +243,7 @@ export const PreRegistrationPage = () => {
     }
 
     setContinuing(true);
-    navigate(FORM_PATH);
+    navigate(formPath);
   };
 
   const canContinue = eligibility?.has_induction === true
@@ -289,10 +292,10 @@ export const PreRegistrationPage = () => {
     };
 
   return (
-    <div className="min-h-screen bg-[#f3f3f3] font-sans">
-      <UserHeader />
+    <div className={embedded ? "font-sans" : "min-h-screen bg-[#f3f3f3] font-sans"}>
+      {!embedded && <UserHeader />}
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 md:px-6 md:py-10">
+      <main className={embedded ? "w-full" : "mx-auto w-full max-w-6xl px-4 py-8 md:px-6 md:py-10"}>
         <div className="mb-8">
           <p className="text-sm font-black uppercase tracking-wider text-[#d22864]">
             Nueva inscripción
@@ -359,7 +362,7 @@ export const PreRegistrationPage = () => {
                     </p>
                     <button
                       type="button"
-                      onClick={() => navigate('/cartas-presentacion')}
+                      onClick={() => navigate(embedded ? '/dashboard/cartas-presentacion' : '/cartas-presentacion')}
                       className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white transition hover:bg-[#b01e52]"
                     >
                       Gestionar carta
@@ -539,7 +542,7 @@ export const PreRegistrationPage = () => {
         )}
       </main>
 
-      <Footer />
+      {!embedded && <Footer />}
     </div>
   );
 };

@@ -127,7 +127,7 @@ const getApiErrorMessage = (error) => {
   return "Hubo un error al registrar la práctica. Por favor, intenta nuevamente.";
 };
 
-export const RegistrationPage = () => {
+export const RegistrationPage = ({ embedded = false }) => {
   const { showToast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
@@ -318,10 +318,10 @@ export const RegistrationPage = () => {
   const stepConfig = getStepConfig();
 
   return (
-    <div className="bg-[#f3f3f3] min-h-screen flex flex-col font-sans">
-      <UserHeader />
+    <div className={embedded ? "font-sans" : "bg-[#f3f3f3] min-h-screen flex flex-col font-sans"}>
+      {!embedded && <UserHeader />}
       
-      <main className="flex-grow container mx-auto px-4 py-8">
+      <main className={embedded ? "w-full" : "flex-grow container mx-auto px-4 py-8"}>
         {submitError && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-[20px] p-6 max-w-[600px] mx-auto">
             <p className="text-red-700 font-bold text-lg mb-2">Error al registrar</p>
@@ -376,7 +376,7 @@ export const RegistrationPage = () => {
         ) : null}
       </main>
 
-      <Footer />
+      {!embedded && <Footer />}
     </div>
   );
 };
