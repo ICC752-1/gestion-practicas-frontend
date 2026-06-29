@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ArrowDown, ArrowDownUp, ArrowUp, Inbox, Filter, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
@@ -44,6 +44,10 @@ const getStudentDegree = (internship) => (
   internship.student?.degree || internship.student?.cod_degree || ''
 );
 
+const getPracticeType = (internship) => (
+  internship.internship_type || internship.practice_type || ''
+);
+
 const getRequestDate = (internship) => (
   internship.upload_date || internship.created_at || ''
 );
@@ -78,6 +82,7 @@ export const StudentTable = ({ students = [] }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [degreeFilter, setDegreeFilter] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
+  const [practiceTypeFilter, setPracticeTypeFilter] = useState('');
   const [sort, setSort] = useState(initialSort);
   const [offset, setOffset] = useState(0);
   const [openingId, setOpeningId] = useState(null);
@@ -106,6 +111,10 @@ export const StudentTable = ({ students = [] }) => {
     return [...new Set(students.map(s => s.org_name).filter(Boolean))];
   }, [students]);
 
+  const uniquePracticeTypes = useMemo(() => {
+    return [...new Set(students.map(getPracticeType).filter(Boolean))];
+  }, [students]);
+
   const filteredStudents = useMemo(() => students.filter(s => {
     const name = normalizeText(getStudentName(s));
     const email = normalizeText(s.student?.email);
@@ -114,7 +123,8 @@ export const StudentTable = ({ students = [] }) => {
     const status = normalizeText(getNormalizedStatus(s).label);
     const city = normalizeText(s.city);
     const region = normalizeText(s.region);
-    const practiceType = normalizeText(s.modality || s.practice_type);
+    const practiceType = normalizeText(getPracticeType(s));
+    const modality = normalizeText(s.modality);
     const startDate = normalizeText(s.start_date);
     const endDate = normalizeText(s.end_date);
     const uploadDate = normalizeText(s.upload_date);
@@ -129,6 +139,7 @@ export const StudentTable = ({ students = [] }) => {
       city.includes(term) ||
       region.includes(term) ||
       practiceType.includes(term) ||
+      modality.includes(term) ||
       startDate.includes(term) ||
       endDate.includes(term) ||
       uploadDate.includes(term)
@@ -136,14 +147,16 @@ export const StudentTable = ({ students = [] }) => {
 
     const matchesDegree = degreeFilter === '' || getStudentDegree(s) === degreeFilter;
     const matchesCompany = companyFilter === '' || s.org_name === companyFilter;
+    const matchesPracticeType = practiceTypeFilter === '' || getPracticeType(s) === practiceTypeFilter;
 
-    return matchesSearch && matchesDegree && matchesCompany;
-  }), [students, searchTerm, degreeFilter, companyFilter]);
+    return matchesSearch && matchesDegree && matchesCompany && matchesPracticeType;
+  }), [students, searchTerm, degreeFilter, companyFilter, practiceTypeFilter]);
 
   const sortedStudents = useMemo(() => {
     const getSortValue = (student) => {
       if (sort.sort_by === 'student') return normalizeText(getStudentName(student));
       if (sort.sort_by === 'degree') return normalizeText(getStudentDegree(student));
+      if (sort.sort_by === 'internship_type') return normalizeText(getPracticeType(student));
       if (sort.sort_by === 'company') return normalizeText(student.org_name);
       if (sort.sort_by === 'status') return normalizeText(getNormalizedStatus(student).label);
       if (sort.sort_by === 'upload_date') {
@@ -164,15 +177,43 @@ export const StudentTable = ({ students = [] }) => {
   }, [filteredStudents, sort]);
 
   const total = sortedStudents.length;
-  const start = total === 0 ? 0 : offset + 1;
-  const end = Math.min(offset + PAGE_SIZE, total);
-  const currentPage = total === 0 ? 0 : Math.floor(offset / PAGE_SIZE) + 1;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const paginatedStudents = sortedStudents.slice(offset, offset + PAGE_SIZE);
+  const pageOffset = total === 0 ? 0 : Math.min(offset, (totalPages - 1) * PAGE_SIZE);
+  const start = total === 0 ? 0 : pageOffset + 1;
+  const end = Math.min(pageOffset + PAGE_SIZE, total);
+  const currentPage = total === 0 ? 0 : Math.floor(pageOffset / PAGE_SIZE) + 1;
+  const paginatedStudents = sortedStudents.slice(pageOffset, pageOffset + PAGE_SIZE);
 
-  useEffect(() => {
+  const resetPagination = () => {
     setOffset(0);
-  }, [students, searchTerm, degreeFilter, companyFilter, sort]);
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+    resetPagination();
+  };
+
+  const handleDegreeFilterChange = (event) => {
+    setDegreeFilter(event.target.value);
+    resetPagination();
+  };
+
+  const handleCompanyFilterChange = (event) => {
+    setCompanyFilter(event.target.value);
+    resetPagination();
+  };
+
+  const handlePracticeTypeFilterChange = (nextPracticeType) => {
+    setPracticeTypeFilter(nextPracticeType);
+    resetPagination();
+  };
+
+  const clearFilters = () => {
+    setDegreeFilter('');
+    setCompanyFilter('');
+    setPracticeTypeFilter('');
+    resetPagination();
+  };
 
   const handleSort = (field) => {
     setOffset(0);
@@ -187,7 +228,7 @@ export const StudentTable = ({ students = [] }) => {
     setSort({ sort_by: 'upload_date', sort_dir: direction });
   };
 
-  const gridLayoutClass = "grid grid-cols-[1.35fr_0.95fr_0.95fr_1.15fr_0.9fr_0.8fr] items-center gap-3 px-4 py-4 w-full";
+  const gridLayoutClass = "grid grid-cols-[1.25fr_0.85fr_0.95fr_1fr_1.05fr_0.85fr_0.75fr] items-center gap-3 px-4 py-4 w-full";
 
   const handleOpenDetails = async (internship) => {
     setOpeningId(internship.id);
@@ -228,9 +269,9 @@ export const StudentTable = ({ students = [] }) => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Buscar estudiante, empresa o estado..."
+              placeholder="Buscar estudiante, empresa, tipo o estado..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="w-full h-10 pl-9 pr-4 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] transition-all"
             />
           </div>
@@ -245,7 +286,7 @@ export const StudentTable = ({ students = [] }) => {
 
           <select 
             value={degreeFilter}
-            onChange={(e) => setDegreeFilter(e.target.value)}
+            onChange={handleDegreeFilterChange}
             className="h-9 px-2 bg-white border border-gray-200 rounded-lg outline-none text-xs font-medium focus:border-[#d22864] max-w-[160px] truncate cursor-pointer"
           >
             <option value="">Todas las Carreras</option>
@@ -256,7 +297,7 @@ export const StudentTable = ({ students = [] }) => {
 
           <select 
             value={companyFilter}
-            onChange={(e) => setCompanyFilter(e.target.value)}
+            onChange={handleCompanyFilterChange}
             className="h-9 px-2 bg-white border border-gray-200 rounded-lg outline-none text-xs font-medium focus:border-[#d22864] max-w-[160px] truncate cursor-pointer"
           >
             <option value="">Todas las Empresas</option>
@@ -265,14 +306,45 @@ export const StudentTable = ({ students = [] }) => {
             ))}
           </select>
           
-          {(degreeFilter || companyFilter) && (
+          {(degreeFilter || companyFilter || practiceTypeFilter) && (
             <button 
-              onClick={() => { setDegreeFilter(''); setCompanyFilter(''); }}
+              onClick={clearFilters}
               className="text-xs text-[#d22864] font-bold hover:underline sm:ml-auto flex-shrink-0"
             >
               Limpiar filtros
             </button>
           )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-100 bg-white p-3 text-sm text-gray-600">
+          <span className="mr-1 text-xs font-black uppercase tracking-wide text-gray-500">
+            Tipo de práctica:
+          </span>
+          <button
+            type="button"
+            onClick={() => handlePracticeTypeFilterChange('')}
+            className={`rounded-lg border px-3 py-2 text-xs font-black transition ${
+              practiceTypeFilter === ''
+                ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-[#d22864] hover:text-[#d22864]'
+            }`}
+          >
+            Todas
+          </button>
+          {uniquePracticeTypes.map((practiceType) => (
+            <button
+              key={practiceType}
+              type="button"
+              onClick={() => handlePracticeTypeFilterChange(practiceType)}
+              className={`rounded-lg border px-3 py-2 text-xs font-black transition ${
+                practiceTypeFilter === practiceType
+                  ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-[#d22864] hover:text-[#d22864]'
+              }`}
+            >
+              {practiceType}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -322,6 +394,7 @@ export const StudentTable = ({ students = [] }) => {
             <SortHeader label="Estudiante" field="student" sort={sort} onSort={handleSort} />
             <SortHeader label="Solicitud" field="upload_date" sort={sort} onSort={handleSort} align="center" />
             <SortHeader label="Carrera" field="degree" sort={sort} onSort={handleSort} />
+            <SortHeader label="Tipo" field="internship_type" sort={sort} onSort={handleSort} />
             <SortHeader label="Empresa" field="company" sort={sort} onSort={handleSort} />
             <SortHeader label="Estado" field="status" sort={sort} onSort={handleSort} align="center" />
             <div className="text-center">Acciones</div>
@@ -353,6 +426,13 @@ export const StudentTable = ({ students = [] }) => {
                     <div className="min-w-0">
                       <p className="text-sm text-gray-600 font-medium truncate">
                         {student.student?.degree || student.student?.cod_degree || 'N/A'}
+                      </p>
+                    </div>
+
+                    {/* Tipo de práctica */}
+                    <div className="min-w-0">
+                      <p className="text-sm text-gray-600 font-medium truncate" title={getPracticeType(student)}>
+                        {getPracticeType(student) || 'N/A'}
                       </p>
                     </div>
 
@@ -417,7 +497,7 @@ export const StudentTable = ({ students = [] }) => {
           </button>
           <button
             type="button"
-            disabled={offset + PAGE_SIZE >= total}
+            disabled={pageOffset + PAGE_SIZE >= total}
             onClick={() => setOffset((current) => current + PAGE_SIZE)}
             className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40"
           >
@@ -425,7 +505,7 @@ export const StudentTable = ({ students = [] }) => {
           </button>
           <button
             type="button"
-            disabled={offset + PAGE_SIZE >= total}
+            disabled={pageOffset + PAGE_SIZE >= total}
             onClick={() => setOffset((totalPages - 1) * PAGE_SIZE)}
             className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40"
           >
