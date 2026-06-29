@@ -189,7 +189,7 @@ const parsePreferredDates = (dates) => {
     return [];
 };
 
-export const InterviewSchedulingPage = () => {
+export const InterviewSchedulingPage = ({ embedded = false }) => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { showToast } = useToast();
@@ -836,17 +836,19 @@ export const InterviewSchedulingPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-ufro-bg flex flex-col font-sans">
-            <UserHeader />
+        <div className={embedded ? 'font-sans' : 'min-h-screen bg-ufro-bg flex flex-col font-sans'}>
+            {!embedded && <UserHeader />}
 
-            <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 py-8 sm:px-8">
-                <button
-                    onClick={() => navigate(getRedirectPathForRoles(user?.roles))}
-                    className="mb-6 flex w-fit items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition"
-                >
-                    <ArrowLeft size={16} />
-                    Volver al Dashboard
-                </button>
+            <main className={embedded ? 'flex w-full flex-col' : 'mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 py-8 sm:px-8'}>
+                {!embedded && (
+                    <button
+                        onClick={() => navigate(getRedirectPathForRoles(user?.roles))}
+                        className="mb-6 flex w-fit items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition"
+                    >
+                        <ArrowLeft size={16} />
+                        Volver al Dashboard
+                    </button>
+                )}
                 {/* Headers */}
                 <div className="mb-8 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
@@ -1959,7 +1961,7 @@ export const InterviewSchedulingPage = () => {
                 </div>
             )}
 
-            <Footer />
+            {!embedded && <Footer />}
         </div>
     );
 };

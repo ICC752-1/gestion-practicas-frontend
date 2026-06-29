@@ -7,6 +7,23 @@ import { authService } from "../../services/authService";
 
 const STUDENT_ROLE_NAME = "Estudiante";
 
+const getActivationErrorMessage = (error, fallback) => {
+    const detail = error.response?.data?.detail;
+
+    if (typeof detail === "string") {
+        return detail;
+    }
+    if (Array.isArray(detail) && detail.length > 0) {
+        const field = detail[0]?.loc?.at(-1);
+        if (field === "phone") {
+            return "Ingresa un teléfono válido de 9 dígitos.";
+        }
+        return detail[0]?.msg?.replace(/^Value error,\s*/i, "") || fallback;
+    }
+
+    return fallback;
+};
+
 export default function ActivateAccountPage() {
     const [searchParams] = useSearchParams();
     const token = searchParams.get("token") || "";
@@ -14,7 +31,8 @@ export default function ActivateAccountPage() {
     const [loadingAccount, setLoadingAccount] = useState(Boolean(token));
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [admissionYear, setAdmissionYear] = useState("");
+    const [phone, setPhone] = useState("");
+    const [gender, setGender] = useState("");
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -36,14 +54,15 @@ export default function ActivateAccountPage() {
                 const info = await authService.getActivationInfo(token);
                 if (!ignore) {
                     setAccountInfo(info);
-                    setAdmissionYear(info.admission_year ? String(info.admission_year) : "");
+                    setPhone(info.phone || "");
+                    setGender(info.sexo === "No definido" ? "" : (info.sexo || ""));
                 }
             } catch (err) {
                 if (!ignore) {
-                    setError(
-                        err.response?.data?.detail
-                        || "No se pudo validar el enlace de activación."
-                    );
+                    setError(getActivationErrorMessage(
+                        err,
+                        "No se pudo validar el enlace de activación.",
+                    ));
                 }
             } finally {
                 if (!ignore) {
@@ -74,35 +93,24 @@ export default function ActivateAccountPage() {
             return;
         }
 
-        const parsedAdmissionYear = admissionYear ? Number(admissionYear) : null;
-        if (
-            isStudent
-            && admissionYear
-            && (
-                Number.isNaN(parsedAdmissionYear)
-                || parsedAdmissionYear < 1900
-                || parsedAdmissionYear > 2100
-            )
-        ) {
-            setError("El año de ingreso debe estar entre 1900 y 2100.");
-            return;
-        }
-
         setLoading(true);
         try {
             await authService.activateAccount(
                 token,
                 newPassword,
-                isStudent ? parsedAdmissionYear : undefined,
+                {
+                    phone: phone.trim() || undefined,
+                    sexo: gender || undefined,
+                },
             );
             setMessage("Cuenta activada. Ya puedes iniciar sesión con tu nueva contraseña.");
             setNewPassword("");
             setConfirmPassword("");
         } catch (err) {
-            setError(
-                err.response?.data?.detail
-                || "No se pudo activar la cuenta. El enlace puede estar vencido o ya usado."
-            );
+            setError(getActivationErrorMessage(
+                err,
+                "No se pudo activar la cuenta. El enlace puede estar vencido o ya usado.",
+            ));
         } finally {
             setLoading(false);
         }
@@ -133,6 +141,16 @@ export default function ActivateAccountPage() {
                                 {accountInfo.first_name} {accountInfo.last_name}
                             </p>
                             <p>{accountInfo.email}</p>
+                            {isStudent && accountInfo.enrollment && (
+                                <p className="mt-2 font-semibold text-gray-700">
+                                    Matrícula: {accountInfo.enrollment}
+                                </p>
+                            )}
+                            {isStudent && accountInfo.admission_year && (
+                                <p className="font-semibold text-gray-700">
+                                    Año de ingreso: {accountInfo.admission_year}
+                                </p>
+                            )}
                         </div>
                     )}
 
@@ -193,29 +211,52 @@ export default function ActivateAccountPage() {
                             />
                         </div>
 
-                        {isStudent && (
-                            <div>
-                                <label
-                                    htmlFor="activation-admission-year"
-                                    className="mb-2 block text-lg font-bold text-gray-900"
-                                >
-                                    Año de ingreso
-                                </label>
-                                <input
-                                    id="activation-admission-year"
-                                    type="number"
-                                    min="1900"
-                                    max="2100"
-                                    value={admissionYear}
-                                    onChange={(event) => setAdmissionYear(event.target.value)}
-                                    className="h-14 w-full rounded-2xl border border-gray-300 px-4 text-lg outline-none focus:border-[#d22864]"
-                                    placeholder="Ej: 2023"
-                                />
-                                <p className="mt-2 text-sm font-semibold text-gray-500">
-                                    Revisa este dato. Se usa para calcular tu matrícula en exportaciones administrativas.
-                                </p>
+                        <div className="border-t border-gray-100 pt-6">
+                            <h2 className="text-lg font-bold text-gray-900">
+                                Datos personales opcionales
+                            </h2>
+                            <p className="mt-1 text-sm text-gray-500">
+                                Puedes completarlos ahora o actualizarlos más adelante.
+                            </p>
+                            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label
+                                        htmlFor="activation-phone"
+                                        className="mb-2 block text-sm font-bold text-gray-800"
+                                    >
+                                        Teléfono
+                                    </label>
+                                    <input
+                                        id="activation-phone"
+                                        type="tel"
+                                        value={phone}
+                                        onChange={(event) => setPhone(event.target.value)}
+                                        className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none focus:border-[#d22864]"
+                                        placeholder="Ej: 912345678"
+                                    />
+                                </div>
+                                <div>
+                                    <label
+                                        htmlFor="activation-gender"
+                                        className="mb-2 block text-sm font-bold text-gray-800"
+                                    >
+                                        Género
+                                    </label>
+                                    <select
+                                        id="activation-gender"
+                                        value={gender}
+                                        onChange={(event) => setGender(event.target.value)}
+                                        className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 outline-none focus:border-[#d22864]"
+                                    >
+                                        <option value="">Prefiero completarlo después</option>
+                                        <option value="Femenino">Femenino</option>
+                                        <option value="Masculino">Masculino</option>
+                                        <option value="Otro">Otro</option>
+                                        <option value="No definido">No definido</option>
+                                    </select>
+                                </div>
                             </div>
-                        )}
+                        </div>
 
                         <button
                             type="submit"

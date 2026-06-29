@@ -84,7 +84,7 @@ const PracticeSummaryCard = ({ internship, index }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] transition-all duration-500 cursor-pointer group"
-      onClick={() => navigate(`/seguimiento/${internship.id}`)}
+      onClick={() => navigate(`/dashboard/seguimiento/${internship.id}`)}
     >
       <div className="p-6 md:p-8">
         {/* Header */}
@@ -231,7 +231,7 @@ export const SeguimientoListPage = () => {
             <InboxIcon className="text-gray-300" size={48} />
             <p className="mt-4 text-gray-500 font-medium text-center">No tienes prácticas inscritas</p>
             <button
-              onClick={() => navigate('/inscripcion')}
+              onClick={() => navigate('/dashboard/inscripcion')}
               className="mt-4 bg-[#d22864] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#b01e52] transition-colors"
             >
               Inscribirte ahora

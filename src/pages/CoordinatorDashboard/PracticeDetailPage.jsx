@@ -466,7 +466,6 @@ export const PracticeDetailPage = () => {
                     <DetailItem icon={MapPin} label="Dirección de práctica" value={practice.internship_address} />
                     <DetailItem icon={FileText} label="Fecha de registro" value={formatDateTime(practice.upload_date)} />
                     <DetailItem icon={ShieldAlert} label="Seguro escolar declarado" value={practice.has_school_insurance ? 'Sí' : 'No'} />
-                    <DetailItem icon={FileText} label="Estado DIRAE" value={practice.dirae_status} />
                   </div>
               {/* Sección de Práctica */}
              {practice.act_description && (
@@ -521,39 +520,6 @@ export const PracticeDetailPage = () => {
                   </div>
                 </DetailSection>
 
-                <DetailSection
-                  icon={Building}
-                  title="Organización"
-                  summary={companyAddress || practice.org_name || 'Datos de la organización'}
-                  isOpen={expandedSections.organization}
-                  onToggle={() => toggleSection('organization')}
-                >
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <DetailItem icon={Building} label="Nombre" value={practice.org_name} />
-                    <DetailItem icon={Briefcase} label="Rubro" value={practice.sector} />
-                    <DetailItem icon={MapPin} label="Dirección casa matriz" value={practice.address} />
-                    <DetailItem icon={MapPin} label="Ciudad" value={practice.city} />
-                    <DetailItem icon={Phone} label="Teléfono" value={practice.org_phone} />
-                    <DetailItem icon={Globe2} label="Página web" value={practice.web} />
-                  </div>
-                </DetailSection>
-
-                <DetailSection
-                  icon={User}
-                  title="Supervisor/a"
-                  summary={practice.supervisor_email || 'Datos del supervisor externo'}
-                  isOpen={expandedSections.supervisor}
-                  onToggle={() => toggleSection('supervisor')}
-                >
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <DetailItem icon={User} label="Nombre" value={practice.supervisor_name} />
-                    <DetailItem icon={Briefcase} label="Profesión" value={practice.supervisor_profession} />
-                    <DetailItem icon={Briefcase} label="Cargo" value={practice.supervisor_position} />
-                    <DetailItem icon={Building} label="Departamento" value={practice.supervisor_department} />
-                    <DetailItem icon={Mail} label="Correo" value={practice.supervisor_email} />
-                    <DetailItem icon={Phone} label="Teléfono" value={practice.supervisor_phone} />
-                  </div>
-                </DetailSection>
               </div>
 
               {/* Seguro escolar */}

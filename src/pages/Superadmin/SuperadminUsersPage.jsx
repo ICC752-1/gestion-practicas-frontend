@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
+import { FormModal } from '../../components/common/FormModal';
 import { useAuth } from '../../context/useAuth';
 import { getDisplayRoleForRoles } from '../../services/roleRouting';
-import { Search, Filter, Inbox } from 'lucide-react'; // Íconos para dar consistencia
+import { ArrowDown, ArrowDownUp, ArrowUp, Inbox, UserPlus } from 'lucide-react';
 import {
   assignUserRole,
   createUser,
@@ -12,6 +13,11 @@ import {
   removeUserRole,
   updateUser,
 } from '../../services/superadminService';
+import {
+  analyzeEnrollment,
+  cleanEnrollment,
+  getEnrollmentError,
+} from '../../utils/enrollment';
 
 const PAGE_SIZE = 10;
 const STUDENT_ROLE_NAME = 'Estudiante';
@@ -22,18 +28,27 @@ const initialFilters = {
   is_active: '',
 };
 
+const initialSort = {
+  sort_by: 'created_at',
+  sort_dir: 'desc',
+};
+
 const initialForm = {
   email: '',
   first_name: '',
   last_name: '',
   rut: '',
-  admission_year: '',
+  enrollment: '',
+  degree: 'Ingenieria Civil Informatica',
+  cod_degree: 'ICI',
   role_ids: [],
 };
 
 const ERROR_TRANSLATIONS = {
   'Email already exists': 'El correo ya existe.',
   'RUT already exists': 'El RUT ya existe.',
+  'Enrollment already exists': 'La matrícula ya está registrada.',
+  'Enrollment is required for student accounts': 'La matrícula es obligatoria para estudiantes.',
   'User not found': 'No se encontró el usuario.',
   'Role not found': 'No se encontró el rol.',
 };
@@ -112,14 +127,47 @@ const isValidRut = (value) => {
   return calculateRutVerifier(number) === verifier;
 };
 
-export const SuperadminUsersPage = () => {
-  const { user } = useAuth();
-  const userName = user ? `${user.first_name} ${user.last_name}` : 'Superadmin';
-  const userRole = getDisplayRoleForRoles(user?.roles);
+const formatDateTime = (value) => {
+  if (!value) return '-';
+
+  return new Intl.DateTimeFormat('es-CL', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value.endsWith?.('Z') ? value : `${value}Z`));
+};
+
+const SortHeader = ({ label, field, sort, onSort, align = 'left' }) => {
+  const isActive = sort.sort_by === field;
+  const Icon = isActive
+    ? (sort.sort_dir === 'asc' ? ArrowUp : ArrowDown)
+    : ArrowDownUp;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(field)}
+      className={[
+        'inline-flex w-full items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-black uppercase tracking-wider transition-colors',
+        align === 'center' ? 'justify-center text-center' : 'justify-start text-left',
+        isActive ? 'text-[#d22864]' : 'text-gray-500 hover:bg-white hover:text-[#d22864]',
+      ].join(' ')}
+      aria-sort={isActive ? (sort.sort_dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <span>{label}</span>
+      <Icon size={14} strokeWidth={2.6} />
+    </button>
+  );
+};
+
+export const SuperadminUsersPanel = () => {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [filters, setFilters] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
+  const [sort, setSort] = useState(initialSort);
   const [form, setForm] = useState(initialForm);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
@@ -127,6 +175,7 @@ export const SuperadminUsersPage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [statusConfirmationUser, setStatusConfirmationUser] = useState(null);
   const [roleRemovalConfirmation, setRoleRemovalConfirmation] = useState(null);
   const selectedRoleNames = roles
@@ -142,6 +191,8 @@ export const SuperadminUsersPage = () => {
       const params = {
         limit: PAGE_SIZE,
         offset,
+        sort_by: sort.sort_by,
+        sort_dir: sort.sort_dir,
       };
 
       if (appliedFilters.search) {
@@ -162,7 +213,7 @@ export const SuperadminUsersPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [appliedFilters, offset]);
+  }, [appliedFilters, offset, sort]);
 
   useEffect(() => {
     let ignore = false;
@@ -208,6 +259,32 @@ export const SuperadminUsersPage = () => {
     setAppliedFilters(filters);
   };
 
+  const handleSort = (field) => {
+    setOffset(0);
+    setSort((current) => ({
+      sort_by: field,
+      sort_dir: current.sort_by === field && current.sort_dir === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  const applyRecentSort = (direction) => {
+    setOffset(0);
+    setSort({ sort_by: 'created_at', sort_dir: direction });
+  };
+
+  const openCreateModal = () => {
+    setError('');
+    setMessage('');
+    setIsCreateModalOpen(true);
+  };
+
+  const closeCreateModal = () => {
+    if (saving) return;
+    setIsCreateModalOpen(false);
+    setForm(initialForm);
+    setError('');
+  };
+
   const handleFormChange = (event) => {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
@@ -216,6 +293,13 @@ export const SuperadminUsersPage = () => {
   const handleRutChange = (event) => {
     const formattedRut = formatRut(event.target.value);
     setForm((current) => ({ ...current, rut: formattedRut }));
+  };
+
+  const handleEnrollmentChange = (event) => {
+    setForm((current) => ({
+      ...current,
+      enrollment: cleanEnrollment(event.target.value),
+    }));
   };
 
   const handleRoleToggle = (roleId) => {
@@ -237,21 +321,33 @@ export const SuperadminUsersPage = () => {
     setMessage('');
 
     try {
-      if (!isValidRut(form.rut)) {
-        setError('Ingresa un RUT válido con dígito verificador correcto.');
-        return;
-      }
+      let payload;
 
-      const payload = {
-        ...form,
-        admission_year:
-          isStudentSelected && form.admission_year
-            ? Number(form.admission_year)
-            : undefined,
-      };
+      if (isStudentSelected) {
+        const enrollmentError = getEnrollmentError(form.enrollment);
+        if (enrollmentError) {
+          setError(enrollmentError);
+          return;
+        }
+
+        payload = { ...form, rut: undefined };
+      } else {
+        if (!isValidRut(form.rut)) {
+          setError('Ingresa un RUT válido con dígito verificador correcto.');
+          return;
+        }
+
+        payload = {
+          ...form,
+          enrollment: undefined,
+          degree: undefined,
+          cod_degree: undefined,
+        };
+      }
 
       await createUser(payload);
       setForm(initialForm);
+      setIsCreateModalOpen(false);
       setMessage('Usuario creado correctamente. Se envió el enlace de activación al correo registrado.');
       setOffset(0);
       await loadUsers();
@@ -360,23 +456,35 @@ export const SuperadminUsersPage = () => {
 
   const start = total === 0 ? 0 : offset + 1;
   const end = Math.min(offset + PAGE_SIZE, total);
+  const currentPage = total === 0 ? 0 : Math.floor(offset / PAGE_SIZE) + 1;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const enrollmentDetails = analyzeEnrollment(form.enrollment);
 
   // CLASE DE REJILLA UNIFICADA: Controla anchos y espaciados de la tabla de forma fluida
-  const gridLayoutClass = "grid grid-cols-[1.5fr_1fr_1.1fr_1.3fr_0.9fr] items-center gap-4 px-6 py-4 w-full";
+  const gridLayoutClass = "grid grid-cols-[1.6fr_1fr_0.9fr_0.9fr_1.3fr_0.85fr] items-center gap-4 px-6 py-4 w-full";
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <UserHeader userName={userName} userRole={userRole} />
-      <main className="flex-grow container mx-auto max-w-7xl px-4 py-8">
-        
+    <>
         {/* Cabecera / Banner */}
         <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
-          <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Superadmin</p>
-          <h1 className="mt-2 text-3xl font-black text-gray-900">Administración de usuarios</h1>
-          <p className="mt-3 text-gray-600 text-sm leading-relaxed">
-            Gestiona cuentas y roles técnicos sin conceder permisos académicos implícitos.
-            Las cuentas nuevas reciben un enlace de activación de un solo uso para definir su contraseña.
-          </p>
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Superadmin</p>
+              <h1 className="mt-2 text-3xl font-black text-gray-900">Administración de usuarios</h1>
+              <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                Gestiona cuentas y roles técnicos sin conceder permisos académicos implícitos.
+                Las cuentas nuevas reciben un enlace de activación de un solo uso para definir su contraseña.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52]"
+            >
+              <UserPlus size={18} />
+              Crear usuario
+            </button>
+          </div>
         </section>
 
         {error && (
@@ -390,9 +498,9 @@ export const SuperadminUsersPage = () => {
           </div>
         )}
 
-        {/* Sección de Tabla de datos + Formulario */}
-        <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm flex flex-col justify-between">
+        {/* Sección de tabla */}
+        <section className="mt-6">
+          <div className="flex flex-col justify-between rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
             
             {/* Barra de Filtros */}
             <form onSubmit={handleApplyFilters} className="grid gap-3 md:grid-cols-4">
@@ -401,7 +509,7 @@ export const SuperadminUsersPage = () => {
                   name="search"
                   value={filters.search}
                   onChange={handleFilterChange}
-                  placeholder="Nombre, correo o RUT"
+                  placeholder="Nombre, correo, RUT o matrícula"
                   className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
                 />
               </div>
@@ -434,15 +542,53 @@ export const SuperadminUsersPage = () => {
               </button>
             </form>
 
+            <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 text-sm font-semibold text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-black text-gray-900">
+                  {total} {total === 1 ? 'resultado' : 'resultados'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Mostrando {start}-{end} · Página {currentPage} de {totalPages}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyRecentSort('desc')}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+                    sort.sort_by === 'created_at' && sort.sort_dir === 'desc'
+                      ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
+                  }`}
+                >
+                  <ArrowDown size={14} />
+                  Más recientes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyRecentSort('asc')}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+                    sort.sort_by === 'created_at' && sort.sort_dir === 'asc'
+                      ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
+                  }`}
+                >
+                  <ArrowUp size={14} />
+                  Más antiguos
+                </button>
+              </div>
+            </div>
+
             {/* Contenedor de Tabla Fluid / Responsive sin Scroll Horizontal */}
             <div className="w-full mt-6 rounded-xl border border-gray-100 overflow-hidden bg-white">
               <div className="w-full table-layout-fixed">
                 
                 {/* Cabecera Grid de la Tabla */}
                 <div className={`${gridLayoutClass} bg-gray-50/70 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider`}>
-                  <div>Usuario</div>
-                  <div className="text-center">RUT</div>
-                  <div className="text-center">Estado</div>
+                  <SortHeader label="Usuario" field="last_name" sort={sort} onSort={handleSort} />
+                  <SortHeader label="Registro" field="created_at" sort={sort} onSort={handleSort} align="center" />
+                  <SortHeader label="Identificación" field="rut" sort={sort} onSort={handleSort} align="center" />
+                  <SortHeader label="Estado" field="is_active" sort={sort} onSort={handleSort} align="center" />
                   <div className="text-center">Roles</div>
                   <div className="text-center">Acciones</div>
                 </div>
@@ -471,9 +617,16 @@ export const SuperadminUsersPage = () => {
                         <span className="text-xs text-gray-400 font-medium truncate mt-0.5">{item.email}</span>
                       </div>
 
-                      {/* Celda: RUT (Centrado) */}
+                      {/* Celda: Registro (Centrado) */}
+                      <div className="text-center text-xs text-gray-500 font-semibold min-w-0">
+                        {formatDateTime(item.created_at)}
+                      </div>
+
+                      {/* Celda: identificación (Centrado) */}
                       <div className="text-center text-sm text-gray-600 font-medium truncate min-w-0">
-                        {item.rut || 'N/A'}
+                        {item.roles?.includes(STUDENT_ROLE_NAME) && item.enrollment
+                          ? item.enrollment
+                          : (item.rut || 'N/A')}
                       </div>
 
                       {/* Celda: Estado (Centrado) */}
@@ -547,8 +700,18 @@ export const SuperadminUsersPage = () => {
 
             {/* Paginación */}
             <div className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between">
-              <span>Mostrando {start}-{end} de {total}</span>
+              <span>
+                Mostrando {start}-{end} de {total} · Página {currentPage} de {totalPages}
+              </span>
               <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={offset === 0 || loading}
+                  onClick={() => setOffset(0)}
+                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40 cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  Inicio
+                </button>
                 <button
                   type="button"
                   disabled={offset === 0 || loading}
@@ -565,17 +728,35 @@ export const SuperadminUsersPage = () => {
                 >
                   Siguiente
                 </button>
+                <button
+                  type="button"
+                  disabled={offset + PAGE_SIZE >= total || loading}
+                  onClick={() => setOffset((totalPages - 1) * PAGE_SIZE)}
+                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40 cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  Última
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Formulario Lateral: Crear Usuario */}
-          <form onSubmit={handleCreateUser} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm h-fit">
-            <h2 className="text-xl font-black text-gray-900">Crear usuario</h2>
-            <p className="mt-2 text-sm text-gray-500 leading-relaxed">
-              El sistema enviará un enlace de activación al correo indicado. El usuario definirá su contraseña desde ese enlace.
-            </p>
-            <div className="mt-5 grid gap-3">
+        </section>
+
+        <FormModal
+          isOpen={isCreateModalOpen}
+          title="Crear usuario"
+          description="El sistema enviará un enlace de activación para que el usuario defina su contraseña."
+          icon={UserPlus}
+          isBusy={saving}
+          onClose={closeCreateModal}
+        >
+          <form onSubmit={handleCreateUser}>
+            {error && (
+              <div className="mb-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                {error}
+              </div>
+            )}
+            <div className="grid gap-3">
               <input 
                 name="email" 
                 type="email" 
@@ -590,43 +771,85 @@ export const SuperadminUsersPage = () => {
                 <input name="last_name" required value={form.last_name} onChange={handleFormChange} placeholder="Apellidos" className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]" />
               </div>
               
-              <div>
-                <input
-                  name="rut"
-                  required
-                  value={form.rut}
-                  onChange={handleRutChange}
-                  placeholder="RUT"
-                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-[#d22864] ${
-                    form.rut && !isValidRut(form.rut)
-                      ? 'border-red-200 bg-red-50'
-                      : 'border-gray-200'
-                  }`}
-                />
-                <p
-                  className={`mt-1 text-xs font-semibold ${
-                    form.rut && !isValidRut(form.rut)
-                      ? 'text-red-600'
-                      : 'text-gray-400'
-                  }`}
-                >
-                  {form.rut && !isValidRut(form.rut)
-                    ? 'RUT inválido o dígito verificador incorrecto.'
-                    : 'Formato automático: 12.345.678-5'}
-                </p>
-              </div>
-
-              {isStudentSelected && (
-                <input
-                  name="admission_year"
-                  type="number"
-                  min="1900"
-                  max="2100"
-                  value={form.admission_year}
-                  onChange={handleFormChange}
-                  placeholder="Año de ingreso (opcional)"
-                  className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
-                />
+              {isStudentSelected ? (
+                <>
+                  <div>
+                    <input
+                      name="enrollment"
+                      required
+                      inputMode="numeric"
+                      value={form.enrollment}
+                      onChange={handleEnrollmentChange}
+                      placeholder="Matrícula, ej: 12345678523"
+                      className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-[#d22864] ${
+                        form.enrollment && !enrollmentDetails.isValid
+                          ? 'border-red-200 bg-red-50'
+                          : 'border-gray-200'
+                      }`}
+                    />
+                    <p className={`mt-1 text-xs font-semibold ${
+                      form.enrollment && !enrollmentDetails.isRutValid
+                        ? 'text-red-600'
+                        : 'text-gray-500'
+                    }`}>
+                      RUT asociado: {enrollmentDetails.rut || 'se calculará automáticamente'}
+                    </p>
+                    <p className={`mt-1 text-xs font-semibold ${
+                      form.enrollment && !enrollmentDetails.isAdmissionYearValid
+                        ? 'text-red-600'
+                        : 'text-gray-500'
+                    }`}>
+                      Año de ingreso: {enrollmentDetails.admissionYear || 'se calculará automáticamente'}
+                    </p>
+                  </div>
+                  <input
+                    value={enrollmentDetails.admissionYear || ''}
+                    readOnly
+                    aria-label="Año de ingreso calculado"
+                    placeholder="Año de ingreso"
+                    className="cursor-not-allowed rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 outline-none"
+                  />
+                  <input
+                    name="degree"
+                    value={form.degree}
+                    onChange={handleFormChange}
+                    placeholder="Carrera"
+                    className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
+                  />
+                  <input
+                    name="cod_degree"
+                    value={form.cod_degree}
+                    onChange={handleFormChange}
+                    placeholder="Código de carrera"
+                    className="rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[#d22864]"
+                  />
+                </>
+              ) : (
+                <div>
+                  <input
+                    name="rut"
+                    required
+                    value={form.rut}
+                    onChange={handleRutChange}
+                    placeholder="RUT"
+                    className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:border-[#d22864] ${
+                      form.rut && !isValidRut(form.rut)
+                        ? 'border-red-200 bg-red-50'
+                        : 'border-gray-200'
+                    }`}
+                  />
+                  <p
+                    className={`mt-1 text-xs font-semibold ${
+                      form.rut && !isValidRut(form.rut)
+                        ? 'text-red-600'
+                        : 'text-gray-400'
+                    }`}
+                  >
+                    {form.rut && !isValidRut(form.rut)
+                      ? 'RUT inválido o dígito verificador incorrecto.'
+                      : 'Formato automático: 12.345.678-5'}
+                  </p>
+                </div>
               )}
 
               <div className="rounded-2xl border border-gray-100 p-4 bg-gray-50/50">
@@ -677,8 +900,7 @@ export const SuperadminUsersPage = () => {
               </button>
             </div>
           </form>
-        </section>
-      </main>
+        </FormModal>
 
       {statusConfirmationUser && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4 py-6">
@@ -773,6 +995,21 @@ export const SuperadminUsersPage = () => {
         </div>
       )}
 
+    </>
+  );
+};
+
+export const SuperadminUsersPage = () => {
+  const { user } = useAuth();
+  const userName = user ? `${user.first_name} ${user.last_name}` : 'Superadmin';
+  const userRole = getDisplayRoleForRoles(user?.roles);
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <UserHeader userName={userName} userRole={userRole} />
+      <main className="flex-grow container mx-auto max-w-7xl px-4 py-8">
+        <SuperadminUsersPanel />
+      </main>
       <Footer />
     </div>
   );

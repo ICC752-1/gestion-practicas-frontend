@@ -21,6 +21,11 @@ export const internshipService = {
     return response.data;
   },
 
+  async getLatestPassedInductionFeedback() {
+    const response = await api.get('/internships/induction/attempts/latest-passed');
+    return response.data;
+  },
+
   async getInternships() {
     const response = await api.get('/internships');
     return response.data;

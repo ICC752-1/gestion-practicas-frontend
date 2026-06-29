@@ -14,7 +14,6 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
   };
 
   const [formData, setFormData] = useState({
-    enrollment: initialData.enrollment || '',
     careerCode: initialData.careerCode || '3095',
     careerName: initialData.careerName || careerOptions[initialData.careerCode || '3095'] || '',
     internship_period: initialData.internship_period || 'Semestre',
@@ -53,17 +52,6 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    const enrollment = formData.enrollment.trim();
-    const validEnrollmentPattern = /^[0-9]*[kK]?[0-9]*$/;
-
-    if (!enrollment) {
-      newErrors.enrollment = 'La matrícula es obligatoria.';
-    } else if (enrollment.length < 9) {
-      newErrors.enrollment = 'La matrícula está incompleta.';
-    } else if (!validEnrollmentPattern.test(enrollment)) {
-      newErrors.enrollment = 'La matrícula solo puede contener números y una sola K.';
-    }
-
     if (!formData.careerName) {
       newErrors.careerName = 'Seleccione una carrera.';
     }
@@ -122,7 +110,7 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
       setCheckingEligibility(false);
     }
 
-    onNext?.(formData);
+    onNext?.({ ...formData, enrollment: user?.enrollment || '' });
   };
 
   return (
@@ -144,12 +132,14 @@ export const StudentInfoForm = ({ onNext, initialData = {} }) => {
           <input
             type="text"
             name="enrollment"
-            value={formData.enrollment}
-            onChange={handleChange}
-            placeholder="Ej: 123456789"
-            className={`w-full h-13 px-5 bg-white rounded-2xl text-base text-gray-700 focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] outline-none transition-all ${errors.enrollment ? 'border border-red-500' : 'border border-gray-300'}`}
+            value={user?.enrollment || ''}
+            readOnly
+            placeholder="Matrícula no disponible"
+            className="h-13 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-5 text-base text-gray-500 outline-none"
           />
-          {errors.enrollment && <p className="text-xs text-red-600">{errors.enrollment}</p>}
+          <p className="text-xs font-semibold text-gray-500">
+            Este dato proviene de tu cuenta y no se puede modificar en esta solicitud.
+          </p>
         </div>
 
         <div className="space-y-2">

@@ -37,6 +37,35 @@ export const presentationLetterService = {
     );
     return response.data;
   },
+
+  async uploadSignatureImage(practiceType, file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post(
+      `/presentation-letters/templates/${encodeURIComponent(practiceType)}/signature-image`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      },
+    );
+    return response.data;
+  },
+
+  async deleteSignatureImage(practiceType) {
+    const response = await api.delete(
+      `/presentation-letters/templates/${encodeURIComponent(practiceType)}/signature-image`,
+    );
+    return response.data;
+  },
+
+  async getSignatureImage(practiceType) {
+    const response = await api.get(
+      `/presentation-letters/templates/${encodeURIComponent(practiceType)}/signature-image`,
+      { responseType: 'blob' },
+    );
+    return response.data;
+  },
 };
 
 export const downloadPresentationLetterBlob = (blob, filename = 'carta-presentacion.pdf') => {

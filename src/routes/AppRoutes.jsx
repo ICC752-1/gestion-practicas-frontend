@@ -1,15 +1,12 @@
 import { Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { PrivateRoute } from '../components/PrivateRoute'
 import { Login } from '../components/Login/Login'
-import { RegistrationPage } from '../pages/Registration/RegistrationPage'
-import { PreRegistrationPage } from '../pages/Registration/PreRegistrationPage'
 import { LandingPage } from '../pages/Landing/LandingPage'
 import { FAQPage } from '../pages/FAQ/FAQPage'
 import { RequirementsPage } from '../pages/Requirements/RequirementsPage'
 import { StudentDashboardPage } from '../pages/StudentDashboard/StudentDashboardPage'
 import { CoordinatorDashboardPage } from '../pages/CoordinatorDashboard/CoordinatorDashboardPage'
 import { PracticeDetailPage } from '../pages/CoordinatorDashboard/PracticeDetailPage'
-import { SeguimientoPage } from '../pages/Seguimiento/SeguimientoPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
 import { SupervisorEvaluationPage } from '../pages/Supervisor/SupervisorEvaluationPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
@@ -20,7 +17,7 @@ import { PresentationLettersPage } from '../pages/PresentationLetters/Presentati
 import ActivateAccountPage from '../pages/Auth/ActivateAccountPage'
 import AuthCallbackPage from '../pages/Auth/AuthCallbackPage'
 import { FicaDashboardPage } from '../pages/Fica/FicaDashboardPage'
-import { SuperadminUsersPage } from '../pages/Superadmin/SuperadminUsersPage'
+import { SuperadminDashboardPage } from '../pages/Superadmin/SuperadminDashboardPage'
 import { SecretaryDashboardPage } from '../pages/Secretary/SecretaryDashboardPage'
 import {
     CAREER_DIRECTOR_ROLE,
@@ -48,6 +45,12 @@ const LegacyCoordinatorDetailRedirect = () => {
     return <Navigate to={`/encargado/practica/${id}`} replace />
 }
 
+const LegacyStudentTrackingRedirect = () => {
+    const { internshipId } = useParams()
+
+    return <Navigate to={`/dashboard/seguimiento/${internshipId}`} replace />
+}
+
 export const AppRoutes = () => {
   return (
       <Routes>
@@ -70,29 +73,21 @@ export const AppRoutes = () => {
           {/* Rutas protegidas */}
           <Route
               path="/inscripcion"
-              element={<Navigate to="/practicas/nueva/preinscripcion" replace />}
+              element={<Navigate to="/dashboard/inscripcion" replace />}
           />
 
           <Route
               path="/practicas/nueva/preinscripcion"
-              element={
-                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
-                      <PreRegistrationPage />
-                  </PrivateRoute>
-              }
+              element={<Navigate to="/dashboard/inscripcion" replace />}
           />
 
           <Route
               path="/practicas/nueva/formulario"
-              element={
-                  <PrivateRoute allowedRoles={STUDENT_ROLES}>
-                      <RegistrationPage />
-                  </PrivateRoute>
-              }
+              element={<Navigate to="/dashboard/inscripcion/formulario" replace />}
           />
 
           <Route
-              path="/dashboard"
+              path="/dashboard/*"
               element={
                   <PrivateRoute allowedRoles={STUDENT_ROLES}>
                       <StudentDashboardPage />
@@ -120,6 +115,42 @@ export const AppRoutes = () => {
           />
 
           <Route
+              path="/encargado/agenda"
+              element={
+                  <PrivateRoute allowedRoles={PRACTICE_MANAGER_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/encargado/cartas-presentacion"
+              element={
+                  <PrivateRoute allowedRoles={PRACTICE_MANAGER_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/encargado/induccion"
+              element={
+                  <PrivateRoute allowedRoles={PRACTICE_MANAGER_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/encargado/estudiantes"
+              element={
+                  <PrivateRoute allowedRoles={PRACTICE_MANAGER_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
               path="/encargado/practica/:id"
               element={
                   <PrivateRoute allowedRoles={DECISION_ADMIN_ROLES}>
@@ -130,6 +161,42 @@ export const AppRoutes = () => {
 
           <Route
               path="/director"
+              element={
+                  <PrivateRoute allowedRoles={CAREER_DIRECTOR_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/director/agenda"
+              element={
+                  <PrivateRoute allowedRoles={CAREER_DIRECTOR_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/director/cartas-presentacion"
+              element={
+                  <PrivateRoute allowedRoles={CAREER_DIRECTOR_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/director/induccion"
+              element={
+                  <PrivateRoute allowedRoles={CAREER_DIRECTOR_ROLES}>
+                      <CoordinatorDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/director/estudiantes"
               element={
                   <PrivateRoute allowedRoles={CAREER_DIRECTOR_ROLES}>
                       <CoordinatorDashboardPage />
@@ -184,14 +251,14 @@ export const AppRoutes = () => {
 
           <Route
               path="/seguimiento"
-              element={<Navigate to="/dashboard" replace />}
+              element={<Navigate to="/dashboard/seguimiento" replace />}
           />
 
           <Route
               path="/seguimiento/:internshipId"
               element={
                   <PrivateRoute allowedRoles={STUDENT_ROLES}>
-                      <SeguimientoPage />
+                      <LegacyStudentTrackingRedirect />
                   </PrivateRoute>
               }
           />
@@ -247,10 +314,24 @@ export const AppRoutes = () => {
           />
 
           <Route
+              path="/superadmin"
+              element={<Navigate to="/superadmin/usuarios" replace />}
+          />
+
+          <Route
               path="/superadmin/usuarios"
               element={
                   <PrivateRoute allowedRoles={SUPERADMIN_ROLES}>
-                      <SuperadminUsersPage />
+                      <SuperadminDashboardPage />
+                  </PrivateRoute>
+              }
+          />
+
+          <Route
+              path="/superadmin/auditoria"
+              element={
+                  <PrivateRoute allowedRoles={SUPERADMIN_ROLES}>
+                      <SuperadminDashboardPage />
                   </PrivateRoute>
               }
           />

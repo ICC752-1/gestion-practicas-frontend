@@ -10,6 +10,8 @@ import {
   getDisplayRoleForRoles,
   getRedirectPathForRoles,
   normalizeRoleNames,
+  STUDENT_ROLE,
+  SUPERADMIN_ROLE,
 } from "../../services/roleRouting";
 
 const ADMIN_TOGGLE_ROLES = new Set([
@@ -34,6 +36,14 @@ export const UserHeader = () => {
 
     const isAdminToggle = roleNames.some((role) => ADMIN_TOGGLE_ROLES.has(role));
     const isDirector = roleNames.includes(DIRECTOR_ROLE);
+    const isSuperadmin = roleNames.includes(SUPERADMIN_ROLE);
+    const isStudent = roleNames.includes(STUDENT_ROLE);
+    const isDashboardActive = location.pathname === dashboardPath
+        || location.pathname.startsWith(`${dashboardPath}/`)
+        || (
+            dashboardPath.startsWith("/superadmin")
+            && location.pathname.startsWith("/superadmin")
+        );
 
     const [configOpen, setConfigOpen] = useState(false);
     const [config, setConfig] = useState({
@@ -48,8 +58,7 @@ export const UserHeader = () => {
       {
         label: "Dashboard",
         to: dashboardPath,
-        active: location.pathname === dashboardPath
-          || location.pathname.startsWith(`${dashboardPath}/`),
+        active: isDashboardActive,
       },
       {
         label: "Preguntas Frecuentes",
@@ -57,7 +66,7 @@ export const UserHeader = () => {
         active: location.pathname === "/faq",
       },
       {
-        label: "Carta de Presentación",
+        label: isSuperadmin || isAdminToggle || isStudent ? null : "Carta de Presentación",
         to: "/cartas-presentacion",
         active: location.pathname === "/cartas-presentacion",
       },
@@ -66,15 +75,7 @@ export const UserHeader = () => {
         to: "/requisitos",
         active: location.pathname === "/requisitos",
       },
-    ];
-
-    if (isAdminToggle) {
-      navItems.splice(1, 0, {
-        label: "Administrar inducción",
-        to: "/induccion/admin",
-        active: location.pathname === "/induccion/admin",
-      });
-    }
+    ].filter((item) => item.label);
 
     const handleLogout = () => {
         logout();
