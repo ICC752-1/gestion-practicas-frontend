@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   Braces,
   CalendarDays,
@@ -35,6 +36,11 @@ const PRACTICE_TYPES = [
   'Práctica de Estudio II',
   'Práctica Controlada',
 ];
+const getPracticeCardEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
 
 const TEMPLATE_VARIABLES = [
   {
@@ -330,7 +336,10 @@ const TemplateTextarea = ({
 };
 
 const StudentLetterCard = ({ letter, onDownload, downloadingId }) => (
-  <article className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+  <motion.article
+    className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+    {...getPracticeCardEntryMotion()}
+  >
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
         <div className="flex flex-wrap items-center gap-2">
@@ -359,7 +368,7 @@ const StudentLetterCard = ({ letter, onDownload, downloadingId }) => (
         Descargar
       </button>
     </div>
-  </article>
+  </motion.article>
 );
 
 const StudentView = ({
@@ -374,9 +383,18 @@ const StudentView = ({
   const [practiceType, setPracticeType] = useState(PRACTICE_TYPES[0]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-      <aside className="space-y-5">
-        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+    <motion.div
+      className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]"
+      {...getPracticeCardEntryMotion()}
+    >
+      <motion.aside
+        className="space-y-5"
+        {...getPracticeCardEntryMotion(0.08)}
+      >
+        <motion.section
+          className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+          {...getPracticeCardEntryMotion(0.12)}
+        >
           <div className="mb-5 flex items-start gap-3">
             <div className="rounded-2xl bg-[#d22864]/10 p-3 text-[#d22864]">
               <FileText size={24} />
@@ -413,18 +431,24 @@ const StudentView = ({
             {generating ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
             Generar carta de presentación
           </button>
-        </section>
+        </motion.section>
 
-        <section className="rounded-2xl border border-[#d22864]/10 bg-[#fff0f6] p-5 text-sm text-[#8B1D46]">
+        <motion.section
+          className="rounded-2xl border border-[#d22864]/10 bg-[#fff0f6] p-5 text-sm text-[#8B1D46]"
+          {...getPracticeCardEntryMotion(0.18)}
+        >
           <h3 className="font-black">Regla de uso</h3>
           <p className="mt-2 leading-relaxed">
             La carta es opcional. No bloquea inducción, inscripción, aprobación,
             agenda ni seguimiento de práctica.
           </p>
-        </section>
-      </aside>
+        </motion.section>
+      </motion.aside>
 
-      <section className="min-w-0 space-y-4">
+      <motion.section
+        className="min-w-0 space-y-4"
+        {...getPracticeCardEntryMotion(0.16)}
+      >
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xl font-black text-gray-950">Mis cartas generadas</h2>
           <button
@@ -438,12 +462,18 @@ const StudentView = ({
         </div>
 
         {loading ? (
-          <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl bg-white shadow-sm">
+          <motion.div
+            className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl bg-white shadow-sm"
+            {...getPracticeCardEntryMotion(0.2)}
+          >
             <Loader2 className="animate-spin text-[#d22864]" size={42} />
             <p className="mt-4 text-sm font-bold text-gray-500">Cargando cartas...</p>
-          </div>
+          </motion.div>
         ) : letters.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center">
+          <motion.div
+            className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center"
+            {...getPracticeCardEntryMotion(0.2)}
+          >
             <Mail className="mx-auto text-gray-300" size={44} />
             <h3 className="mt-4 text-lg font-black text-gray-900">
               Aún no tienes cartas generadas
@@ -451,7 +481,7 @@ const StudentView = ({
             <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
               Cuando generes una carta, quedará disponible para descarga desde esta sección.
             </p>
-          </div>
+          </motion.div>
         ) : (
           letters.map((letter) => (
             <StudentLetterCard
@@ -462,8 +492,8 @@ const StudentView = ({
             />
           ))
         )}
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 };
 
@@ -1126,7 +1156,10 @@ export const PresentationLettersPanel = () => {
 
   return (
     <>
-        <div className="mb-6">
+        <motion.div
+          className="mb-6"
+          {...getPracticeCardEntryMotion()}
+        >
           <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
             Carta de presentación
           </p>
@@ -1137,7 +1170,7 @@ export const PresentationLettersPanel = () => {
             El Director administra plantillas por tipo de práctica. El estudiante
             genera automáticamente su PDF con datos reales y puede descargarlo desde esta página.
           </p>
-        </div>
+        </motion.div>
 
         {isStudent ? (
           <StudentView
@@ -1150,19 +1183,21 @@ export const PresentationLettersPanel = () => {
             downloadingId={downloadingId}
           />
         ) : (
-          <TemplateEditor
-            selectedType={selectedType}
-            onSelectedTypeChange={setSelectedType}
-            form={templateForm}
-            onFormChange={setTemplateForm}
-            onSave={handleSaveTemplate}
-            onSignatureImageDelete={handleSignatureImageDelete}
-            onSignatureImageUpload={handleSignatureImageUpload}
-            signatureImageUrl={signatureImageUrl}
-            loading={templateLoading}
-            saving={savingTemplate}
-            canEdit={canEditTemplates}
-          />
+          <motion.div {...getPracticeCardEntryMotion(0.08)}>
+            <TemplateEditor
+              selectedType={selectedType}
+              onSelectedTypeChange={setSelectedType}
+              form={templateForm}
+              onFormChange={setTemplateForm}
+              onSave={handleSaveTemplate}
+              onSignatureImageDelete={handleSignatureImageDelete}
+              onSignatureImageUpload={handleSignatureImageUpload}
+              signatureImageUrl={signatureImageUrl}
+              loading={templateLoading}
+              saving={savingTemplate}
+              canEdit={canEditTemplates}
+            />
+          </motion.div>
         )}
     </>
   );

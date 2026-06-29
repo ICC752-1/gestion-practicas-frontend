@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
@@ -19,6 +20,11 @@ import { Footer } from '../../components/Footer/Footer';
 import { internshipService } from '../../services/internshipService';
 
 const FORM_PATH = '/practicas/nueva/formulario';
+const getPracticeCardEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
 
 const getApiErrorMessage = (error) => {
   if (!error.response) {
@@ -454,7 +460,10 @@ export const PreRegistrationPage = ({
       {!embedded && <UserHeader />}
 
       <main className={embedded ? "w-full" : "mx-auto w-full max-w-6xl px-4 py-8 md:px-6 md:py-10"}>
-        <div className="mb-8">
+        <motion.div
+          className="mb-8"
+          {...getPracticeCardEntryMotion()}
+        >
           <p className="text-sm font-black uppercase tracking-wider text-[#d22864]">
             Nueva inscripción
           </p>
@@ -472,10 +481,13 @@ export const PreRegistrationPage = ({
             Ver explicación de requisitos e inducción
             <ExternalLink size={15} />
           </Link>
-        </div>
+        </motion.div>
 
         {location.state?.reason === 'eligibility-blocked' && (
-          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-800">
+          <motion.div
+            className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-800"
+            {...getPracticeCardEntryMotion(0.08)}
+          >
             <div className="flex items-start gap-3">
               <AlertCircle className="mt-0.5 flex-shrink-0" size={22} />
               <p className="text-sm font-semibold">
@@ -483,16 +495,22 @@ export const PreRegistrationPage = ({
                 al formulario.
               </p>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {loading ? (
-          <div className="flex min-h-[420px] flex-col items-center justify-center rounded-2xl bg-white shadow-sm">
+          <motion.div
+            className="flex min-h-[420px] flex-col items-center justify-center rounded-2xl bg-white shadow-sm"
+            {...getPracticeCardEntryMotion(0.08)}
+          >
             <Loader2 className="animate-spin text-[#d22864]" size={44} />
             <p className="mt-4 font-semibold text-gray-600">Cargando preinscripción...</p>
-          </div>
+          </motion.div>
         ) : loadingError ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+          <motion.div
+            className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center"
+            {...getPracticeCardEntryMotion(0.08)}
+          >
             <AlertCircle className="mx-auto text-red-500" size={48} />
             <h2 className="mt-4 text-2xl font-black text-red-900">No se pudo validar la preinscripción</h2>
             <p className="mx-auto mt-3 max-w-2xl text-red-700">{loadingError}</p>
@@ -504,11 +522,14 @@ export const PreRegistrationPage = ({
               <RefreshCw size={18} />
               Reintentar
             </button>
-          </div>
+          </motion.div>
         ) : (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
             <section className="space-y-6">
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+              <motion.div
+                className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8"
+                {...getPracticeCardEntryMotion()}
+              >
                 <div className="mb-6 flex items-start gap-4">
                   <div className="rounded-2xl bg-[#d22864]/10 p-3 text-[#d22864]">
                     <FileText size={28} />
@@ -528,9 +549,12 @@ export const PreRegistrationPage = ({
                     </button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+              <motion.div
+                className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8"
+                {...getPracticeCardEntryMotion(0.12)}
+              >
                 <div className="mb-6 flex items-start gap-4">
                   <div className="rounded-2xl bg-[#d22864]/10 p-3 text-[#d22864]">
                     <PlayCircle size={28} />
@@ -670,11 +694,14 @@ export const PreRegistrationPage = ({
                     </div>
                   </div>
                 )}
-              </div>
+              </motion.div>
             </section>
 
             <aside className="space-y-5 lg:sticky lg:top-24">
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <motion.div
+                className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+                {...getPracticeCardEntryMotion(0.2)}
+              >
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700">
                     <ShieldCheck size={21} />
@@ -691,9 +718,12 @@ export const PreRegistrationPage = ({
                   <StatusPanel {...insuranceStatus} />
                   <StatusPanel {...inductionStatus} />
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="rounded-2xl border border-[#d22864]/20 bg-[#fff8fb] p-5 shadow-sm">
+              <motion.div
+                className="rounded-2xl border border-[#d22864]/20 bg-[#fff8fb] p-5 shadow-sm"
+                {...getPracticeCardEntryMotion(0.28)}
+              >
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#d22864] shadow-sm ring-1 ring-[#d22864]/15">
                     <ArrowRight size={21} />
@@ -727,7 +757,7 @@ export const PreRegistrationPage = ({
                     Los bloqueos informados se aplicarán al aprobar o formalizar la práctica.
                   </p>
                 )}
-              </div>
+              </motion.div>
             </aside>
           </div>
         )}
