@@ -4,6 +4,7 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
+  ChevronDown,
   ClipboardList,
   ExternalLink,
   FileText,
@@ -176,6 +177,62 @@ const VideoCard = ({ video }) => {
     </div>
   );
 };
+
+const QuestionList = ({
+  questions,
+  answers,
+  onAnswerChange,
+  readOnly = false,
+}) => (
+  <div className="space-y-6">
+    {questions.map((question, index) => (
+      <fieldset key={question.id} className="rounded-2xl border border-gray-200 bg-white p-5">
+        <legend className="px-1 text-base font-black text-gray-950">
+          {index + 1}. {question.question_text}
+        </legend>
+        <div className="mt-4 space-y-3">
+          {normalizeOptions(question.options).map((option) => {
+            const isSelected = answers[question.id] === option.key;
+
+            return (
+              <label
+                key={option.key}
+                className={`flex items-start gap-3 rounded-xl border p-4 transition-colors ${
+                  readOnly
+                    ? 'cursor-default border-gray-200 bg-gray-50'
+                    : isSelected
+                      ? 'cursor-pointer border-[#d22864] bg-[#fff0f6]'
+                      : 'cursor-pointer border-gray-200 bg-white hover:border-[#d22864]/40'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name={`question-${question.id}`}
+                  value={option.key}
+                  checked={isSelected}
+                  disabled={readOnly}
+                  onChange={() => onAnswerChange(question.id, option.key)}
+                  className="sr-only"
+                />
+                <span
+                  aria-hidden="true"
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                    isSelected
+                      ? 'border-[#d22864] bg-[#d22864]'
+                      : 'border-gray-300 bg-white'
+                  }`}
+                >
+                  <span className={`h-2 w-2 rounded-full bg-white ${isSelected ? 'block' : 'hidden'}`} />
+                </span>
+                <span className="text-sm font-semibold text-gray-700">{option.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+    ))}
+  </div>
+);
 
 export const PreRegistrationPage = ({
   embedded = false,
@@ -412,100 +469,107 @@ export const PreRegistrationPage = ({
                   </div>
                 </div>
 
-                {eligibility?.has_induction ? (
-                  <div className="rounded-2xl border border-green-200 bg-green-50 p-5 text-green-800">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle2 className="mt-0.5 flex-shrink-0" size={24} />
-                      <div>
-                        <p className="font-black">Cuestionario aprobado</p>
-                        <p className="mt-1 text-sm">La inducción figura como cumplida en el registro institucional.</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : induction ? (
+                {induction ? (
                   <div className="space-y-8">
-                    {videos.length > 0 && (
-                      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                        {videos.map((video) => (
-                          <VideoCard key={video.id} video={video} />
-                        ))}
+                    {eligibility?.has_induction && (
+                      <div className="rounded-2xl border border-green-200 bg-green-50 p-5 text-green-800">
+                        <div className="flex items-start gap-3">
+                          <CheckCircle2 className="mt-0.5 flex-shrink-0" size={24} />
+                          <div>
+                            <p className="font-black">Inducción aprobada</p>
+                            <p className="mt-1 text-sm">La inducción figura como cumplida en el registro institucional.</p>
+                          </div>
+                        </div>
                       </div>
                     )}
 
-                    <form className="space-y-6" onSubmit={handleSubmitAttempt}>
+                    {videos.length > 0 && (
                       <div>
-                        <h3 className="text-xl font-black text-gray-950">Cuestionario</h3>
-                        <p className="mt-1 text-sm text-gray-600">
-                          Puntaje mínimo de aprobación: {induction.min_score} respuesta{induction.min_score === 1 ? '' : 's'} correcta{induction.min_score === 1 ? '' : 's'}.
-                        </p>
+                        <div className="mb-4">
+                          <h3 className="text-xl font-black text-gray-950">Videos de inducción</h3>
+                          <p className="mt-1 text-sm text-gray-600">
+                            El material permanece disponible para volver a consultarlo.
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                          {videos.map((video) => (
+                            <VideoCard key={video.id} video={video} />
+                          ))}
+                        </div>
                       </div>
+                    )}
 
-                      {questions.map((question, index) => (
-                        <fieldset key={question.id} className="rounded-2xl border border-gray-200 p-5">
-                          <legend className="px-1 text-base font-black text-gray-950">
-                            {index + 1}. {question.question_text}
-                          </legend>
-                          <div className="mt-4 space-y-3">
-                            {normalizeOptions(question.options).map((option) => (
-                              <label
-                                key={option.key}
-                                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
-                                  answers[question.id] === option.key
-                                    ? 'border-[#d22864] bg-[#fff0f6]'
-                                    : 'border-gray-200 bg-white hover:border-[#d22864]/40'
-                                }`}
-                              >
-                                <input
-                                  type="radio"
-                                  name={`question-${question.id}`}
-                                  value={option.key}
-                                  checked={answers[question.id] === option.key}
-                                  onChange={() => handleAnswerChange(question.id, option.key)}
-                                  className="sr-only"
-                                />
-                                <span
-                                  aria-hidden="true"
-                                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                                    answers[question.id] === option.key
-                                      ? 'border-[#d22864] bg-[#d22864]'
-                                      : 'border-gray-300 bg-white'
-                                  }`}
-                                >
-                                  <span className={`h-2 w-2 rounded-full bg-white ${answers[question.id] === option.key ? 'block' : 'hidden'}`} />
-                                </span>
-                                <span className="text-sm font-semibold text-gray-700">{option.label}</span>
-                              </label>
-                            ))}
+                    {eligibility?.has_induction ? (
+                      <details className="group rounded-2xl border border-gray-200 bg-gray-50">
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
+                          <div>
+                            <h3 className="font-black text-gray-950">Cuestionario de inducción</h3>
+                            <p className="mt-1 text-sm text-gray-600">
+                              Aprobado. Puedes desplegarlo para consultar sus preguntas.
+                            </p>
                           </div>
-                        </fieldset>
-                      ))}
-
-                      {attemptError && (
-                        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
-                          {attemptError}
+                          <ChevronDown
+                            size={20}
+                            className="shrink-0 text-gray-500 transition-transform group-open:rotate-180"
+                          />
+                        </summary>
+                        <div className="border-t border-gray-200 p-5">
+                          {questions.length > 0 ? (
+                            <QuestionList
+                              questions={questions}
+                              answers={answers}
+                              onAnswerChange={handleAnswerChange}
+                              readOnly
+                            />
+                          ) : (
+                            <p className="text-sm font-medium text-gray-600">
+                              Esta versión no tiene preguntas disponibles para consulta.
+                            </p>
+                          )}
                         </div>
-                      )}
+                      </details>
+                    ) : (
+                      <form className="space-y-6" onSubmit={handleSubmitAttempt}>
+                        <div>
+                          <h3 className="text-xl font-black text-gray-950">Cuestionario</h3>
+                          <p className="mt-1 text-sm text-gray-600">
+                            Puntaje mínimo de aprobación: {induction.min_score} respuesta{induction.min_score === 1 ? '' : 's'} correcta{induction.min_score === 1 ? '' : 's'}.
+                          </p>
+                        </div>
 
-                      {attemptResult && (
-                        <div className={`rounded-xl border p-4 text-sm font-semibold ${
-                          attemptResult.passed
-                            ? 'border-green-200 bg-green-50 text-green-700'
-                            : 'border-amber-200 bg-amber-50 text-amber-700'
-                        }`}
+                        <QuestionList
+                          questions={questions}
+                          answers={answers}
+                          onAnswerChange={handleAnswerChange}
+                        />
+
+                        {attemptError && (
+                          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
+                            {attemptError}
+                          </div>
+                        )}
+
+                        {attemptResult && (
+                          <div className={`rounded-xl border p-4 text-sm font-semibold ${
+                            attemptResult.passed
+                              ? 'border-green-200 bg-green-50 text-green-700'
+                              : 'border-amber-200 bg-amber-50 text-amber-700'
+                          }`}
+                          >
+                            Puntaje obtenido: {attemptResult.score}. {attemptResult.passed ? 'Inducción aprobada.' : 'Debes intentarlo nuevamente.'}
+                          </div>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={submittingAttempt || questions.length === 0}
+                          className="inline-flex items-center gap-2 rounded-xl bg-[#d22864] px-6 py-3 font-bold text-white hover:bg-[#b01e52] disabled:cursor-not-allowed disabled:bg-gray-300"
                         >
-                          Puntaje obtenido: {attemptResult.score}. {attemptResult.passed ? 'Inducción aprobada.' : 'Debes intentarlo nuevamente.'}
-                        </div>
-                      )}
-
-                      <button
-                        type="submit"
-                        disabled={submittingAttempt || questions.length === 0}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#d22864] px-6 py-3 font-bold text-white hover:bg-[#b01e52] disabled:cursor-not-allowed disabled:bg-gray-300"
-                      >
-                        {submittingAttempt ? <Loader2 className="animate-spin" size={18} /> : <ClipboardList size={18} />}
-                        Enviar cuestionario
-                      </button>
-                    </form>
+                          {submittingAttempt ? <Loader2 className="animate-spin" size={18} /> : <ClipboardList size={18} />}
+                          Enviar cuestionario
+                        </button>
+                      </form>
+                    )}
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-800">
