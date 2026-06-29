@@ -20,6 +20,7 @@ import {
   Download,
   Eye,
   LayoutDashboard,
+  ListChecks,
   Mail,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -33,6 +34,7 @@ import { canUploadDocuments, documentService } from "../../services/documentServ
 import { dataPortabilityService } from "../../services/dataPortabilityService";
 import { PresentationLettersPanel } from "../PresentationLetters/PresentationLettersPage";
 import { InterviewSchedulingPage } from "../InterviewScheduling/InterviewSchedulingPage";
+import { SeguimientoPage } from "../Seguimiento/SeguimientoPage";
 import {
   getInternshipAdministrativeProgress,
   getOverallInternshipProgress,
@@ -139,6 +141,14 @@ const STUDENT_DASHBOARD_TABS = [
     match: (pathname) => pathname === '/dashboard',
   },
   {
+    id: 'tracking',
+    label: 'Seguimiento',
+    to: '/dashboard/seguimiento',
+    icon: ListChecks,
+    match: (pathname) => pathname === '/dashboard/seguimiento'
+      || pathname.startsWith('/dashboard/seguimiento/'),
+  },
+  {
     id: 'agenda',
     label: 'Agenda y consultas',
     to: '/dashboard/agenda',
@@ -206,6 +216,42 @@ const isSelfEvaluationAvailable = (internship) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return today >= start;
+};
+
+const getTrackingProgressScore = (internship, lifecycle) => {
+  if (lifecycle?.progress_percentage !== undefined) {
+    return Number(lifecycle.progress_percentage) || 0;
+  }
+
+  return getInternshipAdministrativeProgress(internship).percentage;
+};
+
+const getDefaultTrackingInternship = (internships, lifecyclesById) => {
+  const availableInternships = internships.filter((internship) => !internship.is_cancelled);
+  const activeInternships = availableInternships.filter((internship) => (
+    internship.completion_status
+    && internship.completion_status !== 'not_started'
+    && internship.completion_status !== 'finalized'
+  ));
+  const candidates = activeInternships.length > 0
+    ? activeInternships
+    : availableInternships;
+
+  return [...candidates].sort((first, second) => {
+    const secondScore = getTrackingProgressScore(second, lifecyclesById[second.id]);
+    const firstScore = getTrackingProgressScore(first, lifecyclesById[first.id]);
+
+    if (secondScore !== firstScore) {
+      return secondScore - firstScore;
+    }
+
+    return Number(second.id) - Number(first.id);
+  })[0] || null;
+};
+
+const getTrackingInternshipIdFromPath = (pathname) => {
+  const match = pathname.match(/^\/dashboard\/seguimiento\/([^/]+)\/?$/);
+  return match?.[1] || null;
 };
 
 // --- Sub-components ---
@@ -316,7 +362,7 @@ const PracticeCard = ({ internship, lifecycle }) => {
       <div className="px-6 pb-6 pt-2">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <button
-            onClick={() => navigate(`/seguimiento/${internship.id}`)}
+            onClick={() => navigate(`/dashboard/seguimiento/${internship.id}`)}
             className="w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border border-gray-200 bg-white text-gray-700 hover:border-[#d22864]/30 hover:bg-gray-50 hover:text-[#d22864] transition-all"
           >
             Ver seguimiento
@@ -537,6 +583,10 @@ export const StudentDashboardPage = () => {
     : "Estudiante";
   const activeTab = STUDENT_DASHBOARD_TABS.find((tab) => tab.match(location.pathname))?.id || 'summary';
   const overallProgress = getOverallInternshipProgress(internships);
+  const defaultTrackingInternship = getDefaultTrackingInternship(internships, lifecyclesById);
+  const selectedTrackingInternshipId = getTrackingInternshipIdFromPath(location.pathname)
+    || defaultTrackingInternship?.id
+    || null;
 
   const uploadableInternshipsCount = internships.filter((internship) => canUploadDocuments(internship)).length;
 
@@ -904,6 +954,38 @@ export const StudentDashboardPage = () => {
             <div className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm">
               <InterviewSchedulingPage embedded />
             </div>
+          )}
+
+          {activeTab === 'tracking' && (
+            <>
+              {loading ? (
+                <div className="flex flex-col items-center justify-center rounded-[2rem] border border-gray-100 bg-white py-24 shadow-sm">
+                  <Loader2 size={42} className="animate-spin text-[#d22864]" />
+                  <p className="mt-4 text-sm font-bold text-gray-500">Preparando seguimiento...</p>
+                </div>
+              ) : selectedTrackingInternshipId ? (
+                <SeguimientoPage
+                  embedded
+                  internshipIdOverride={selectedTrackingInternshipId}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-gray-200 bg-white px-8 py-24 text-center">
+                  <Briefcase size={46} className="text-gray-300" />
+                  <h3 className="mt-5 text-2xl font-black text-gray-900">Sin prácticas para seguimiento</h3>
+                  <p className="mt-2 max-w-md text-sm font-semibold leading-relaxed text-gray-500">
+                    Cuando registres una práctica, esta pestaña mostrará automáticamente la solicitud activa con mayor avance.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => navigate(PRE_REGISTRATION_PATH)}
+                    className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-[#d22864] px-6 py-3 text-sm font-black text-white transition hover:bg-[#b01e52]"
+                  >
+                    <Plus size={18} />
+                    Inscribir nueva práctica
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
           {activeTab === 'documents' && (

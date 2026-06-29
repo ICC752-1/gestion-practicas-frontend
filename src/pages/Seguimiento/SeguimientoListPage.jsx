@@ -84,7 +84,7 @@ const PracticeSummaryCard = ({ internship, index }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] transition-all duration-500 cursor-pointer group"
-      onClick={() => navigate(`/seguimiento/${internship.id}`)}
+      onClick={() => navigate(`/dashboard/seguimiento/${internship.id}`)}
     >
       <div className="p-6 md:p-8">
         {/* Header */}

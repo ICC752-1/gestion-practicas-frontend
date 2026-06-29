@@ -171,9 +171,13 @@ const InfoRow = ({ icon: Icon, label, value }) => (
   </div>
 );
 
-export const SeguimientoPage = () => {
+export const SeguimientoPage = ({
+  embedded = false,
+  internshipIdOverride = null,
+}) => {
   const navigate = useNavigate();
-  const { internshipId } = useParams();
+  const { internshipId: routeInternshipId } = useParams();
+  const internshipId = internshipIdOverride || routeInternshipId;
   const { user } = useAuth();
 
   const [internship, setInternship] = useState(null);
@@ -217,7 +221,19 @@ export const SeguimientoPage = () => {
   }, [internshipId]);
 
   useEffect(() => {
-    if (internshipId) fetchData();
+    if (internshipId) {
+      fetchData();
+      return;
+    }
+
+    setLoading(false);
+    setError(null);
+    setDocsError(null);
+    setInternship(null);
+    setTracking([]);
+    setLifecycle(null);
+    setDocuments([]);
+    setStudentActions(null);
   }, [fetchData, internshipId]);
 
   const timelineSource = lifecycle?.events?.length ? lifecycle.events : tracking;
@@ -272,7 +288,7 @@ export const SeguimientoPage = () => {
       setDocsError(null);
       const data = await documentService.getInternshipDocuments(internshipId);
       setDocuments(data);
-    } catch (err) {
+    } catch {
       setDocsError('No se pudieron cargar los documentos. Intenta de nuevo.');
     } finally {
       setLoadingDocs(false);
@@ -306,11 +322,11 @@ export const SeguimientoPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex flex-col">
-      <UserHeader />
+    <div className={embedded ? "font-sans text-gray-900" : "min-h-screen bg-gray-50 font-sans text-gray-900 flex flex-col"}>
+      {!embedded && <UserHeader />}
 
-      <main className="max-w-5xl mx-auto w-full py-10 px-6 flex-grow">
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
+      <main className={embedded ? "w-full" : "max-w-5xl mx-auto w-full py-10 px-6 flex-grow"}>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={embedded ? "mb-6" : "mb-10"}>
           <h2 className="text-[#d22864] text-2xl md:text-3xl font-bold tracking-tight">
             Seguimiento de Práctica
           </h2>
@@ -569,15 +585,15 @@ export const SeguimientoPage = () => {
         {/* Back Button */}
         <div className="flex justify-center mt-6 mb-5">
           <button
-            onClick={() => navigate("/seguimiento")}
+            onClick={() => navigate(embedded ? "/dashboard" : "/dashboard/seguimiento")}
             className="bg-[#d22864] text-white px-10 py-3 rounded-full font-bold hover:opacity-90 transition-all transform hover:scale-105 active:scale-95 shadow-lg"
           >
-            Volver a mis prácticas
+            {embedded ? 'Volver al resumen' : 'Volver a mis prácticas'}
           </button>
         </div>
       </main>
 
-      <Footer />
+      {!embedded && <Footer />}
 
       <DocumentUploadModal
         isOpen={isUploadModalOpen}

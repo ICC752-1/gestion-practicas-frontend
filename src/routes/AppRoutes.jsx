@@ -9,7 +9,6 @@ import { RequirementsPage } from '../pages/Requirements/RequirementsPage'
 import { StudentDashboardPage } from '../pages/StudentDashboard/StudentDashboardPage'
 import { CoordinatorDashboardPage } from '../pages/CoordinatorDashboard/CoordinatorDashboardPage'
 import { PracticeDetailPage } from '../pages/CoordinatorDashboard/PracticeDetailPage'
-import { SeguimientoPage } from '../pages/Seguimiento/SeguimientoPage'
 import { SupervisorPage } from '../pages/Supervisor/SupervisorPage'
 import { SupervisorEvaluationPage } from '../pages/Supervisor/SupervisorEvaluationPage'
 import { SelfEvaluationPage } from '../pages/SelfEvaluation/SelfEvaluationPage'
@@ -46,6 +45,12 @@ const LegacyCoordinatorDetailRedirect = () => {
     const { id } = useParams()
 
     return <Navigate to={`/encargado/practica/${id}`} replace />
+}
+
+const LegacyStudentTrackingRedirect = () => {
+    const { internshipId } = useParams()
+
+    return <Navigate to={`/dashboard/seguimiento/${internshipId}`} replace />
 }
 
 export const AppRoutes = () => {
@@ -256,14 +261,14 @@ export const AppRoutes = () => {
 
           <Route
               path="/seguimiento"
-              element={<Navigate to="/dashboard" replace />}
+              element={<Navigate to="/dashboard/seguimiento" replace />}
           />
 
           <Route
               path="/seguimiento/:internshipId"
               element={
                   <PrivateRoute allowedRoles={STUDENT_ROLES}>
-                      <SeguimientoPage />
+                      <LegacyStudentTrackingRedirect />
                   </PrivateRoute>
               }
           />
