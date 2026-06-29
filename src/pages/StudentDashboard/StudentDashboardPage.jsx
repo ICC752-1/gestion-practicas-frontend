@@ -32,6 +32,7 @@ import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
 import { schedulingService } from "../../services/schedulingService";
 import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
+import { DataPortabilityModal } from "../../components/DataPortability/DataPortabilityModal";
 import { canUploadDocuments, documentService } from "../../services/documentService";
 import { dataPortabilityService } from "../../services/dataPortabilityService";
 import { PresentationLettersPanel } from "../PresentationLetters/PresentationLettersPage";
@@ -494,6 +495,7 @@ export const StudentDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [downloadingData, setDownloadingData] = useState(false);
+  const [isPortabilityModalOpen, setIsPortabilityModalOpen] = useState(false);
 
   const fetchInternships = async () => {
     try {
@@ -529,12 +531,15 @@ export const StudentDashboardPage = () => {
     fetchInternships();
   };
 
-  const handleDataPortabilityDownload = async () => {
+  const handleDataPortabilityDownload = async ({
+    format = 'zip',
+    includeDocuments = true,
+  } = {}) => {
     try {
       setDownloadingData(true);
       const { blob, filename } = await dataPortabilityService.downloadMyData({
-        format: 'zip',
-        includeDocuments: true,
+        format,
+        includeDocuments,
       });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -547,8 +552,13 @@ export const StudentDashboardPage = () => {
       showToast({
         type: 'success',
         title: 'Descarga iniciada',
-        message: 'Se generó tu copia estructurada de datos y documentos.',
+        message: format === 'pdf'
+          ? 'Se generó tu informe de datos en PDF.'
+          : format === 'json'
+            ? 'Se generó tu copia estructurada de datos.'
+            : 'Se generó tu paquete de datos y documentos.',
       });
+      setIsPortabilityModalOpen(false);
     } catch (err) {
       showToast({
         type: 'error',
@@ -907,7 +917,7 @@ export const StudentDashboardPage = () => {
             <div className="space-y-6">
               <PersonalDataBlock
                 user={user}
-                onDownload={handleDataPortabilityDownload}
+                onDownload={() => setIsPortabilityModalOpen(true)}
                 downloading={downloadingData}
               />
 
@@ -1014,7 +1024,7 @@ export const StudentDashboardPage = () => {
 
                 <PersonalDataBlock
                   user={user}
-                  onDownload={handleDataPortabilityDownload}
+                  onDownload={() => setIsPortabilityModalOpen(true)}
                   downloading={downloadingData}
                 />
               </aside>
@@ -1022,6 +1032,13 @@ export const StudentDashboardPage = () => {
           )}
         </div>
       </main>
+
+      <DataPortabilityModal
+        isOpen={isPortabilityModalOpen}
+        isDownloading={downloadingData}
+        onClose={() => setIsPortabilityModalOpen(false)}
+        onDownload={handleDataPortabilityDownload}
+      />
 
       <Footer />
     </div>
