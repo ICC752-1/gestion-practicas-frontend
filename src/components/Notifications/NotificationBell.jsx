@@ -77,7 +77,7 @@ export const NotificationBell = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="absolute right-0 mt-3 w-[360px] bg-white rounded-[20px] shadow-xl border border-gray-100 overflow-hidden z-50"
+            className="absolute right-0 mt-3 w-[min(360px,calc(100vw-2rem))] bg-white rounded-[20px] shadow-xl border border-gray-100 overflow-hidden z-50"
           >
             <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100">
               <div>
@@ -142,7 +142,9 @@ export const NotificationBell = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">{meta.label}</p>
-                      <p className="text-sm text-gray-800 font-semibold truncate">{notification.subject}</p>
+                      <p className="mt-0.5 whitespace-normal break-words text-sm font-semibold leading-5 text-gray-800 [overflow-wrap:anywhere]">
+                        {notification.subject}
+                      </p>
                       <p className="text-xs text-gray-400 mt-0.5">{formatDate(notification.created_at)}</p>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-2">
