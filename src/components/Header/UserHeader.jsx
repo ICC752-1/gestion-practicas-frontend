@@ -10,6 +10,7 @@ import {
   getDisplayRoleForRoles,
   getRedirectPathForRoles,
   normalizeRoleNames,
+  STUDENT_ROLE,
   SUPERADMIN_ROLE,
 } from "../../services/roleRouting";
 
@@ -36,6 +37,7 @@ export const UserHeader = () => {
     const isAdminToggle = roleNames.some((role) => ADMIN_TOGGLE_ROLES.has(role));
     const isDirector = roleNames.includes(DIRECTOR_ROLE);
     const isSuperadmin = roleNames.includes(SUPERADMIN_ROLE);
+    const isStudent = roleNames.includes(STUDENT_ROLE);
     const isDashboardActive = location.pathname === dashboardPath
         || location.pathname.startsWith(`${dashboardPath}/`)
         || (
@@ -64,7 +66,7 @@ export const UserHeader = () => {
         active: location.pathname === "/faq",
       },
       {
-        label: isSuperadmin || isAdminToggle ? null : "Carta de Presentación",
+        label: isSuperadmin || isAdminToggle || isStudent ? null : "Carta de Presentación",
         to: "/cartas-presentacion",
         active: location.pathname === "/cartas-presentacion",
       },

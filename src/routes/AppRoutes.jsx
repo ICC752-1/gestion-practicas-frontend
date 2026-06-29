@@ -92,7 +92,7 @@ export const AppRoutes = () => {
           />
 
           <Route
-              path="/dashboard"
+              path="/dashboard/*"
               element={
                   <PrivateRoute allowedRoles={STUDENT_ROLES}>
                       <StudentDashboardPage />
