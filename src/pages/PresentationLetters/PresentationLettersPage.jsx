@@ -110,8 +110,9 @@ const StudentLetterCard = ({ letter, onDownload, downloadingId }) => (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-lg font-black text-gray-950">{letter.practice_type}</h3>
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-black text-green-700">
+          {/* Suavizado a font-bold y text-gray-900 */}
+          <h3 className="text-lg font-bold text-gray-900">{letter.practice_type}</h3>
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
             <CheckCircle2 size={13} />
             Generada
           </span>
@@ -129,7 +130,7 @@ const StudentLetterCard = ({ letter, onDownload, downloadingId }) => (
         type="button"
         disabled={downloadingId === letter.id}
         onClick={() => onDownload(letter)}
-        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] disabled:opacity-60"
+        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#b01e52] disabled:opacity-60"
       >
         {downloadingId === letter.id ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
         Descargar
@@ -158,7 +159,8 @@ const StudentView = ({
               <FileText size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-black text-gray-950">Generar carta</h3>
+              {/* Ajustado de font-black a font-bold y text-gray-900 */}
+              <h3 className="text-xl font-bold text-gray-900">Generar carta</h3>
               <p className="mt-1 text-sm text-gray-500">
                 Selecciona el tipo de práctica. El sistema genera el PDF y registra el envío a tu correo.
               </p>
@@ -184,7 +186,7 @@ const StudentView = ({
             type="button"
             disabled={generating}
             onClick={() => onGenerate(practiceType)}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 font-black text-white transition hover:bg-[#b01e52] disabled:opacity-60"
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 font-semibold text-white transition hover:bg-[#b01e52] disabled:opacity-60"
           >
             {generating ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
             Generar carta de presentación
@@ -192,7 +194,8 @@ const StudentView = ({
         </section>
 
         <section className="rounded-2xl border border-[#d22864]/10 bg-[#fff0f6] p-5 text-sm text-[#8B1D46]">
-          <h3 className="font-black">Regla de uso</h3>
+          {/* Ajustado a font-bold */}
+          <h3 className="font-bold">Regla de uso</h3>
           <p className="mt-2 leading-relaxed">
             La carta es opcional. No bloquea inducción, inscripción, aprobación,
             agenda ni seguimiento de práctica.
@@ -202,11 +205,12 @@ const StudentView = ({
 
       <section className="min-w-0 space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-black text-gray-950">Mis cartas generadas</h2>
+          {/* Ajustado a font-bold */}
+          <h2 className="text-xl font-bold text-gray-900">Mis cartas generadas</h2>
           <button
             type="button"
             onClick={onRefresh}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-black text-gray-700 shadow-sm ring-1 ring-gray-100 transition hover:bg-gray-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-gray-100 transition hover:bg-gray-50"
           >
             <RefreshCw size={16} />
             Actualizar
@@ -221,7 +225,8 @@ const StudentView = ({
         ) : letters.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center">
             <Mail className="mx-auto text-gray-300" size={44} />
-            <h3 className="mt-4 text-lg font-black text-gray-900">
+            {/* Ajustado a font-bold */}
+            <h3 className="mt-4 text-lg font-bold text-gray-900">
               Aún no tienes cartas generadas
             </h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
@@ -259,7 +264,8 @@ const TemplateEditor = ({
     <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
       <aside className="space-y-5">
         <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <h3 className="text-lg font-black text-gray-950">Plantilla por práctica</h3>
+          {/* Ajustado a font-bold */}
+          <h3 className="text-lg font-bold text-gray-900">Plantilla por práctica</h3>
           <label className="mt-4 block text-sm font-bold text-gray-700">
             Tipo de práctica
             <select
@@ -277,7 +283,8 @@ const TemplateEditor = ({
         </section>
 
         <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-black uppercase tracking-wide text-gray-500">
+          {/* Ajustado a font-semibold para variables secundarias */}
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
             Variables disponibles
           </h3>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -455,7 +462,7 @@ const TemplateEditor = ({
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#b01e52] disabled:opacity-60"
               >
                 {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
                 Guardar plantilla
@@ -563,7 +570,7 @@ export const PresentationLettersPage = () => {
         type: 'error',
         title: 'No se pudo descargar la carta',
         message: getErrorMessage(error),
-      });
+          });
     } finally {
       setDownloadingId(null);
     }
@@ -599,13 +606,14 @@ export const PresentationLettersPage = () => {
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-5 py-8 sm:px-8">
         <div className="mb-6">
-          <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#d22864]">
             Carta de presentación
           </p>
-          <h1 className="mt-2 text-3xl font-black text-gray-950">
+          {/* Suavizado H1 principal */}
+          <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight">
             {isStudent ? 'Mis cartas de presentación' : 'Plantillas de carta de presentación'}
           </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-500">
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600">
             El Director administra plantillas por tipo de práctica. El estudiante
             genera automáticamente su PDF con datos reales y puede descargarlo desde esta página.
           </p>

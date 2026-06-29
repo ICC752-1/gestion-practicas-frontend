@@ -19,9 +19,8 @@ const Dashboard = ({
   pendingRequestsCount = 0,
 }) => {
   const navigate = useNavigate();
-  const { user } = useAuth(); // Extraemos el usuario para obtener su nombre
+  const { user } = useAuth();
 
-  // Construimos el nombre completo de forma segura
   const userName = user 
     ? `${user.first_name} ${user.last_name}`
     : "Coordinador/a";
@@ -72,21 +71,23 @@ const Dashboard = ({
           Icon={StatCard.Icon || CheckCircle} 
           variant="success"
         />
-       </div>
+      </div>
     
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
+      {/* Action Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => document.getElementById('management-section')?.scrollIntoView({ behavior: 'smooth' })}
-          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group hover:cursor-pointer"
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-4 text-left group hover:cursor-pointer w-full"
         >
-          <div className="w-16 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors flex-shrink-0">
+          <div className="w-14 h-14 shrink-0 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
             <FileText className="w-6 h-6 text-[#B5305F] group-hover:text-white transition-colors" />
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800 leading-tight">Gestión de solicitudes de práctica</h3>
-            <p className="text-sm text-gray-400 mt-0.5">Administra solicitudes y sus estados administrativos</p>
+          <div className="min-w-0">
+            <h3 className="text-base font-bold text-gray-800 leading-tight break-words">Gestión de solicitudes de práctica</h3>
+            <p className="text-sm text-gray-400 mt-0.5 break-words">Administra solicitudes y sus estados administrativos</p>
           </div>
         </motion.button>
 
@@ -94,19 +95,19 @@ const Dashboard = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/entrevistas')}
-          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group relative hover:cursor-pointer"
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-4 text-left group relative hover:cursor-pointer w-full"
         >
           {pendingRequestsCount > 0 && (
             <span className="absolute top-4 right-4 min-w-[22px] h-[22px] px-1.5 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[11px] font-bold leading-none shadow-md">
               {pendingRequestsCount}
             </span>
           )}
-          <div className="w-16 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors flex-shrink-0">
+          <div className="w-14 h-14 shrink-0 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
             <Calendar className="w-6 h-6 text-[#B5305F] group-hover:text-white transition-colors" />
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800 leading-tight">Agenda y Consultas</h3>
-            <p className="text-sm text-gray-400 mt-0.5">Revisa solicitudes de estudiantes, agenda citas directas y califica presentaciones</p>
+          <div className="min-w-0">
+            <h3 className="text-base font-bold text-gray-800 leading-tight break-words">Agenda y Consultas</h3>
+            <p className="text-sm text-gray-400 mt-0.5 break-words">Revisa solicitudes de estudiantes, agenda citas directas y califica presentaciones</p>
           </div>
         </motion.button>
 
@@ -114,14 +115,14 @@ const Dashboard = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/cartas-presentacion')}
-          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group hover:cursor-pointer"
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-4 text-left group hover:cursor-pointer w-full"
         >
-          <div className="w-16 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors flex-shrink-0">
+          <div className="w-14 h-14 shrink-0 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
             <Mail className="w-6 h-6 text-[#B5305F] group-hover:text-white transition-colors" />
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800 leading-tight">Cartas de Presentación</h3>
-            <p className="text-sm text-gray-400 mt-0.5">Administra plantillas por tipo de práctica</p>
+          <div className="min-w-0">
+            <h3 className="text-base font-bold text-gray-800 leading-tight break-words">Cartas de Presentación</h3>
+            <p className="text-sm text-gray-400 mt-0.5 break-words">Administra plantillas por tipo de práctica</p>
           </div>
         </motion.button>
 
@@ -129,14 +130,14 @@ const Dashboard = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/induccion/admin')}
-          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-4 text-left group w-full"
         >
-          <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
-            <PlayCircle className="w-7 h-7 text-[#B5305F] group-hover:text-white transition-colors" />
+          <div className="w-14 h-14 shrink-0 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
+            <PlayCircle className="w-6 h-6 text-[#B5305F] group-hover:text-white transition-colors" />
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800">Administrar inducción</h3>
-            <p className="text-sm text-gray-400">Gestiona videos, preguntas y versiones publicadas</p>
+          <div className="min-w-0">
+            <h3 className="text-base font-bold text-gray-800 leading-tight break-words">Administrar inducción</h3>
+            <p className="text-sm text-gray-400 mt-0.5 break-words">Gestiona videos, preguntas y versiones publicadas</p>
           </div>
         </motion.button>
 
@@ -144,19 +145,20 @@ const Dashboard = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/estudiantes/admin')}
-          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-6 text-left group"
+          className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex items-center gap-4 text-left group w-full"
         >
-          <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
-            <UserPlus className="w-7 h-7 text-[#B5305F] group-hover:text-white transition-colors" />
+          <div className="w-14 h-14 shrink-0 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 group-hover:bg-[#B5305F] transition-colors">
+            <UserPlus className="w-6 h-6 text-[#B5305F] group-hover:text-white transition-colors" />
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800">Vinculación de estudiantes</h3>
-            <p className="text-sm text-gray-400">Crea cuentas estudiante y envía enlaces de activación</p>
+          <div className="min-w-0">
+            <h3 className="text-base font-bold text-gray-800 leading-tight break-words">Vinculación de estudiantes</h3>
+            <p className="text-sm text-gray-400 mt-0.5 break-words">Crea cuentas estudiante y envía enlaces de activación</p>
           </div>
         </motion.button>
+
       </div>
       
-      {/* Sección de la Tabla envuelta con el id correspondiente para el scroll automático */}
+      {/* Sección de la Tabla */}
       <div id="management-section">
         <Management
           students={students}

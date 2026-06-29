@@ -142,8 +142,7 @@ export const NotificationBell = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">{meta.label}</p>
-                      <p className="text-sm text-gray-800 font-semibold truncate">{notification.subject}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{formatDate(notification.created_at)}</p>
+                      <p className="text-sm text-gray-800 font-semibold line-clamp-2">{notification.subject}</p>                      <p className="text-xs text-gray-400 mt-0.5">{formatDate(notification.created_at)}</p>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-2">
                       {notification.status === 'failed' && (

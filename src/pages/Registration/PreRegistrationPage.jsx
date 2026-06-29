@@ -348,7 +348,7 @@ export const PreRegistrationPage = () => {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px]">
             <section className="space-y-8">
               <div className="rounded-2xl bg-white p-6 shadow-sm md:p-8">
-                <div className="mb-6 flex items-start gap-4">
+                <div className="flex items-start gap-4">
                   <div className="rounded-2xl bg-[#d22864]/10 p-3 text-[#d22864]">
                     <FileText size={28} />
                   </div>
@@ -360,7 +360,7 @@ export const PreRegistrationPage = () => {
                     <button
                       type="button"
                       onClick={() => navigate('/cartas-presentacion')}
-                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white transition hover:bg-[#b01e52]"
+                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#b01e52]"
                     >
                       Gestionar carta
                       <ExternalLink size={16} />

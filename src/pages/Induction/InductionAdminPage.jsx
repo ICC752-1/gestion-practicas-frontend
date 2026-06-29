@@ -358,19 +358,19 @@ export const InductionAdminPage = () => {
           <div className="mt-6 grid gap-3 md:grid-cols-4">
             <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Acceso actual</p>
-              <p className="mt-2 text-sm font-black text-gray-900">{userRole}</p>
+              <p className="mt-2 text-sm font-bold text-gray-900">{userRole}</p>
             </div>
             <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Borradores</p>
-              <p className="mt-2 text-2xl font-black text-gray-900">{draftCount}</p>
+              <p className="mt-2 text-2xl font-bold text-gray-900">{draftCount}</p>
             </div>
             <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Publicadas</p>
-              <p className="mt-2 text-2xl font-black text-gray-900">{publishedCount}</p>
+              <p className="mt-2 text-2xl font-bold text-gray-900">{publishedCount}</p>
             </div>
             <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Repetición activa</p>
-              <p className="mt-2 text-sm font-black text-gray-900">
+              <p className="mt-2 text-sm font-bold text-gray-900">
                 {activeVersion?.requires_retake ? 'Sí, estudiantes deben repetir' : 'No exigida'}
               </p>
             </div>
@@ -381,7 +381,7 @@ export const InductionAdminPage = () => {
         {message && <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">{message}</div>}
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <aside className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <aside className="rounded-3xl border border-gray-100 bg-white p-9 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-black text-gray-900">Versiones</h2>
               <button type="button" onClick={() => { setSelectedVersionId(null); setForm(initialForm); }} className="rounded-xl bg-gray-900 px-3 py-2 text-xs font-bold text-white">
@@ -539,7 +539,7 @@ export const InductionAdminPage = () => {
             </fieldset>
 
             {(!selectedVersion || selectedVersion.status === 'draft') && (
-              <button type="submit" disabled={saving} className="mt-6 w-full rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white hover:bg-[#b01e52] disabled:opacity-50">
+              <button type="submit" disabled={saving} className="mt-6 w-full rounded-xl bg-[#d22864] px-5 py-3 text-sm font-bold text-white hover:bg-[#b01e52] disabled:opacity-50">
                 {saving ? 'Guardando...' : isEditingDraft ? 'Guardar borrador' : 'Crear borrador'}
               </button>
             )}

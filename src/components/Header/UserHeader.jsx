@@ -204,7 +204,7 @@ export const UserHeader = () => {
         </div>
 
         {/* Center: Nav — visible desde lg */}
-        <nav aria-label="Principal" className="hidden lg:flex items-center justify-center gap-1 xl:gap-2">
+        <nav aria-label="Principal" className="hidden lg:flex items-center justify-center gap-1 xl:gap-1">
           {navItems.map((item) => (
             <Link
               key={item.label}

@@ -126,8 +126,8 @@ export const RequirementsPage = () => {
 
             <ol className="space-y-4">
               {processSteps.map((step, index) => (
-                <li key={step} className="flex gap-4 rounded-2xl bg-white p-5 shadow-sm">
-                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#d22864] text-sm font-black text-white">
+                <li key={step} className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm">
+                  <span className="flex h-9 w-9 flex-shrink-0 self-center items-center justify-center rounded-full bg-[#d22864] text-sm font-black text-white">
                     {index + 1}
                   </span>
                   <div>

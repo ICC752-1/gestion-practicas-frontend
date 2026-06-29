@@ -156,9 +156,12 @@ const businessWindowStart = (endDateStr, businessDays) => {
   return cursor;
 };
 
-const isSelfEvaluationAvailable = (internship) => {
+const isSelfEvaluationAvailable = (internship, lifecycle) => {
   if (!internship || internship.is_cancelled) return false;
   if (internship.status_id === 5) return false;
+
+  if (lifecycle?.self_evaluation_submitted) return false;
+
   if (SELF_EVALUATION_ENABLED_STATUSES.has(internship.completion_status)) return true;
   if (internship.status_id !== 4) return false;
 
@@ -206,7 +209,7 @@ const PracticeCard = ({ internship, lifecycle }) => {
         color: lifecycle.progress_percentage >= 100 ? 'bg-green-500' : 'bg-[#d22864]',
       }
     : getInternshipAdministrativeProgress(internship);
-  const canSelfEvaluate = isSelfEvaluationAvailable(internship);
+  const canSelfEvaluate = isSelfEvaluationAvailable(internship, lifecycle);
 
   return (
     <motion.div
@@ -216,7 +219,7 @@ const PracticeCard = ({ internship, lifecycle }) => {
     >
       {/* Header */}
       <div className="bg-gradient-to-r from-[#fff0f6] to-white p-6 pb-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div className="flex flex-row justify-between items-center gap-4">
           <div className="space-y-1 flex-1 min-w-0">
             <h3 className="text-xl font-black text-gray-900 tracking-tight truncate">
               {internship.internship_type}
@@ -233,7 +236,7 @@ const PracticeCard = ({ internship, lifecycle }) => {
       {/* Body */}
       <div className="px-6 py-4 space-y-4">
         {/* Org + Supervisor row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div className="flex items-center gap-3 bg-gray-50/80 p-3 rounded-2xl border border-gray-100/50">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#d22864] shadow-sm flex-shrink-0">
               <Building2 size={18} />
@@ -466,55 +469,58 @@ export const StudentDashboardPage = () => {
 
       <main className="flex-grow">
         {/* Welcome Section */}
-        <div className="bg-white border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex flex-col md:flex-row justify-between items-end md:items-center gap-6"
-            >
-              <div>
-                <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-none mb-2">
-                  Hola, {userName} <span className="inline-block animate-bounce-slow">👋</span>
-                </h2>
-                <p className="text-gray-500 font-medium text-base">
-                  {internships.length > 0
-                    ? `Tienes ${internships.length} práctica${internships.length > 1 ? 's' : ''} registrada${internships.length > 1 ? 's' : ''}.`
-                    : 'No tienes prácticas inscritas aún.'}
-                </p>
-              </div>
-              <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-gray-50 p-5">
-                <div className="mb-3 flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-widest font-black text-gray-400">Progreso total</p>
-                    <p className="mt-1 text-sm font-bold text-gray-700">
-                      {overallProgress.completedCount} de {overallProgress.requiredCount} prácticas aprobadas
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-widest font-black text-gray-400">Prácticas</p>
-                    <span className="font-black text-3xl leading-none text-gray-900">{internships.length}</span>
-                  </div>
+        <div className="bg-white border-b border-gray-100 w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full min-w-0"
+          >
+            <div className="min-w-0">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight mb-2">
+                Hola, {userName} <span className="inline-block animate-bounce-slow">👋</span>
+              </h2>
+              <p className="text-gray-500 font-medium text-base">
+                {internships.length > 0
+                  ? `Tienes ${internships.length} práctica${internships.length > 1 ? 's' : ''} registrada${internships.length > 1 ? 's' : ''}.`
+                  : 'No tienes prácticas inscritas aún.'}
+              </p>
+            </div>
+
+            <div className="w-full md:w-auto md:max-w-[440px] min-w-0 rounded-2xl border border-gray-100 bg-gray-50 p-5">
+              <div className="mb-3 flex items-start justify-between gap-4 min-w-0">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Progreso total</p>
+                  <p className="mt-1 text-sm font-bold text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap">
+                    {overallProgress.completedCount} de {overallProgress.requiredCount} prácticas aprobadas
+                  </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
-                    <div
-                      className="h-full rounded-full bg-[#d22864] transition-all duration-500"
-                      style={{ width: `${overallProgress.percentage}%` }}
-                    />
-                  </div>
-                  <span className="w-12 text-right text-sm font-black text-[#d22864]">
-                    {overallProgress.percentage}%
-                  </span>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Prácticas</p>
+                  <span className="font-extrabold text-3xl leading-none text-gray-950">{internships.length}</span>
                 </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  Solo las prácticas aprobadas o finalizadas aprobadas aportan al progreso total.
-                </p>
               </div>
-            </motion.div>
-          </div>
-    
+              
+              <div className="flex items-center gap-3">
+                <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
+                  <div
+                    className="h-full rounded-full bg-[#d22864] transition-all duration-500"
+                    style={{ width: `${overallProgress.percentage}%` }}
+                  />
+                </div>
+                <span className="w-12 text-right text-sm font-bold text-[#d22864] flex-shrink-0">
+                  {overallProgress.percentage}%
+                </span>
+              </div>
+              
+              <p className="mt-2 text-xs text-gray-500">
+                Solo las prácticas aprobadas o finalizadas aprobadas aportan al progreso total.
+              </p>
+            </div>
+          </motion.div>
         </div>
+      </div>
+    
         <div className="max-w-7xl mx-auto px-6 pt-6 pb-12">
          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
 
