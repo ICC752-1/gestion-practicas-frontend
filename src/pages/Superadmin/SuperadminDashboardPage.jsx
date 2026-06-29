@@ -45,7 +45,7 @@ export const SuperadminDashboardPage = () => {
       <main className="flex-grow container mx-auto max-w-7xl px-4 py-8">
         <nav
           aria-label="Panel Superadmin"
-          className="mb-6 flex flex-wrap justify-center gap-2 rounded-3xl border border-gray-100 bg-white p-2 shadow-sm"
+          className="mb-6 grid grid-cols-2 gap-2 rounded-3xl border border-gray-100 bg-white p-2 shadow-sm sm:mx-auto sm:flex sm:w-fit sm:flex-wrap sm:justify-center"
         >
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -57,7 +57,7 @@ export const SuperadminDashboardPage = () => {
                 to={tab.to}
                 aria-current={isActive ? 'page' : undefined}
                 className={[
-                  'inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition-colors',
+                  'inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition-colors',
                   isActive
                     ? 'bg-[#d22864] text-white shadow-sm'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-[#d22864]',

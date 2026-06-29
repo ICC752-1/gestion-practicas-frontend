@@ -169,6 +169,105 @@ const SortHeader = ({ label, field, sort, onSort, align = 'left' }) => {
   );
 };
 
+const SuperadminUserMobileCard = ({
+  item,
+  index,
+  roles,
+  saving,
+  onAddRole,
+  onRequestRemoveRole,
+  onRequestToggleUserStatus,
+}) => {
+  const userRoles = item.roles || [];
+  const identification = userRoles.includes(STUDENT_ROLE_NAME) && item.enrollment
+    ? item.enrollment
+    : (item.rut || 'N/A');
+
+  return (
+    <motion.article
+      className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
+      {...getEntryMotion(0.3 + index * 0.025)}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-base font-black text-gray-900">
+            {item.first_name} {item.last_name}
+          </h3>
+          <p className="mt-1 break-words text-xs font-semibold text-gray-500">{item.email}</p>
+        </div>
+        <span className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-bold shadow-sm ${item.is_active ? 'border border-emerald-100 bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+          {item.is_active ? 'Activo' : 'Inactivo'}
+        </span>
+      </div>
+
+      {item.must_change_password && (
+        <span className="mt-3 inline-flex rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-[10px] font-bold text-amber-700">
+          Contraseña temporal
+        </span>
+      )}
+
+      <div className="mt-4 grid gap-3 rounded-2xl bg-gray-50 p-3 text-sm sm:grid-cols-2">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">Registro</p>
+          <p className="mt-1 font-bold text-gray-700">{formatDateTime(item.created_at)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">Identificación</p>
+          <p className="mt-1 font-bold text-gray-700">{identification}</p>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">Roles</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {userRoles.length === 0 && (
+            <span className="text-xs font-semibold text-gray-400">Sin roles asignados</span>
+          )}
+          {userRoles.map((role) => (
+            <button
+              key={role}
+              type="button"
+              disabled={saving}
+              onClick={() => onRequestRemoveRole(item, role)}
+              className="rounded-full border border-gray-100 bg-gray-50 px-2.5 py-1 text-[10px] font-bold text-gray-600 transition-all hover:border-red-200 hover:text-red-600 disabled:opacity-50"
+              title="Retirar rol"
+            >
+              {role}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+        <select
+          defaultValue=""
+          disabled={saving}
+          onChange={(event) => {
+            onAddRole(item, event.target.value);
+            event.target.value = '';
+          }}
+          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-[#d22864]"
+        >
+          <option value="">Asignar rol</option>
+          {roles
+            .filter((role) => !userRoles.includes(role.name))
+            .map((role) => (
+              <option key={role.id} value={role.id}>{role.name}</option>
+            ))}
+        </select>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => onRequestToggleUserStatus(item)}
+          className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-black text-gray-700 transition-all hover:border-[#d22864] hover:text-[#d22864] disabled:opacity-50"
+        >
+          {item.is_active ? 'Desactivar' : 'Reactivar'}
+        </button>
+      </div>
+    </motion.article>
+  );
+};
+
 export const SuperadminUsersPanel = () => {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -474,13 +573,13 @@ export const SuperadminUsersPanel = () => {
     <>
         {/* Cabecera / Banner */}
         <motion.section
-          className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm"
+          className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8"
           {...getEntryMotion()}
         >
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Superadmin</p>
-              <h1 className="mt-2 text-3xl font-black text-gray-900">Administración de usuarios</h1>
+              <h1 className="mt-2 text-2xl font-black text-gray-900 sm:text-3xl">Administración de usuarios</h1>
               <p className="mt-3 text-sm leading-relaxed text-gray-600">
                 Gestiona cuentas y roles técnicos sin conceder permisos académicos implícitos.
                 Las cuentas nuevas reciben un enlace de activación de un solo uso para definir su contraseña.
@@ -519,12 +618,12 @@ export const SuperadminUsersPanel = () => {
           className="mt-6"
           {...getEntryMotion(0.12)}
         >
-          <div className="flex flex-col justify-between rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="flex flex-col justify-between rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
             
             {/* Barra de Filtros */}
             <motion.form
               onSubmit={handleApplyFilters}
-              className="grid gap-3 md:grid-cols-4"
+              className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
               {...getEntryMotion(0.16)}
             >
               <div className="relative flex items-center">
@@ -577,11 +676,11 @@ export const SuperadminUsersPanel = () => {
                   Mostrando {start}-{end} · Página {currentPage} de {totalPages}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <button
                   type="button"
                   onClick={() => applyRecentSort('desc')}
-                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
                     sort.sort_by === 'created_at' && sort.sort_dir === 'desc'
                       ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
@@ -593,7 +692,7 @@ export const SuperadminUsersPanel = () => {
                 <button
                   type="button"
                   onClick={() => applyRecentSort('asc')}
-                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
                     sort.sort_by === 'created_at' && sort.sort_dir === 'asc'
                       ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
@@ -607,7 +706,7 @@ export const SuperadminUsersPanel = () => {
 
             {/* Contenedor de Tabla Fluid / Responsive sin Scroll Horizontal */}
             <motion.div
-              className="w-full mt-6 min-h-[560px] rounded-xl border border-gray-100 overflow-hidden bg-white"
+              className="mt-6 hidden w-full min-h-[560px] overflow-hidden rounded-xl border border-gray-100 bg-white lg:block"
               {...getEntryMotion(0.28)}
             >
               <div className="w-full table-layout-fixed">
@@ -731,6 +830,38 @@ export const SuperadminUsersPanel = () => {
               </div>
             </motion.div>
 
+            <div className="mt-6 min-h-[560px] lg:hidden">
+              {loading && (
+                <div className="flex h-[480px] items-center justify-center rounded-2xl border border-gray-100 bg-white p-12 text-center text-sm font-semibold text-gray-500">
+                  Cargando usuarios...
+                </div>
+              )}
+
+              {!loading && users.length === 0 && (
+                <div className="flex h-[480px] flex-col items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white p-12 text-center text-sm font-semibold text-gray-500">
+                  <Inbox className="h-8 w-8 text-gray-300" />
+                  <span>No hay usuarios para los filtros seleccionados.</span>
+                </div>
+              )}
+
+              {!loading && users.length > 0 && (
+                <div className="grid gap-3">
+                  {users.map((item, index) => (
+                    <SuperadminUserMobileCard
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      roles={roles}
+                      saving={saving}
+                      onAddRole={handleAddRole}
+                      onRequestRemoveRole={handleRequestRemoveRole}
+                      onRequestToggleUserStatus={handleRequestToggleUserStatus}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Paginación */}
             <motion.div
               className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between"
@@ -739,12 +870,12 @@ export const SuperadminUsersPanel = () => {
               <span>
                 Mostrando {start}-{end} de {total} · Página {currentPage} de {totalPages}
               </span>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:flex">
                 <button
                   type="button"
                   disabled={offset === 0 || loading}
                   onClick={() => setOffset(0)}
-                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40"
                 >
                   Inicio
                 </button>
@@ -752,7 +883,7 @@ export const SuperadminUsersPanel = () => {
                   type="button"
                   disabled={offset === 0 || loading}
                   onClick={() => setOffset((current) => Math.max(0, current - PAGE_SIZE))}
-                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40"
                 >
                   Anterior
                 </button>
@@ -760,7 +891,7 @@ export const SuperadminUsersPanel = () => {
                   type="button"
                   disabled={offset + PAGE_SIZE >= total || loading}
                   onClick={() => setOffset((current) => current + PAGE_SIZE)}
-                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40"
                 >
                   Siguiente
                 </button>
@@ -768,7 +899,7 @@ export const SuperadminUsersPanel = () => {
                   type="button"
                   disabled={offset + PAGE_SIZE >= total || loading}
                   onClick={() => setOffset((totalPages - 1) * PAGE_SIZE)}
-                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 disabled:opacity-40 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="rounded-xl border border-gray-200 px-4 py-2 font-bold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40"
                 >
                   Última
                 </button>
