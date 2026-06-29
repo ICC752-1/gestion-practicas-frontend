@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ChevronDown } from "lucide-react";
+import { ArrowLeft, Search, ChevronDown } from "lucide-react";
 import { Header } from "../../components/Header/Header";
 import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
 import { useAuth } from "../../context/useAuth";
 import { useNavigate } from "react-router-dom";
+import { getRedirectPathForRoles } from "../../services/roleRouting";
 
 const SUPPORT_EMAIL = "secretaria.vincfica@ufrontera.cl";
 
@@ -71,10 +72,13 @@ export const FAQPage = () => {
   const [openQuestionId, setOpenQuestionId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("Todas");
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   const categories = ["Todas", ...new Set(faqItems.map((item) => item.category))];
+  const backPath = isAuthenticated
+    ? getRedirectPathForRoles(user?.roles)
+    : "/landing";
   const normalizedSearchTerm = normalizeText(searchTerm.trim());
   const filteredFaqs = faqItems.filter((item) => {
     const matchesCategory = activeCategory === "Todas" || item.category === activeCategory;
@@ -101,10 +105,11 @@ export const FAQPage = () => {
           <div className="mb-12">
           <button
             type="button"
-            onClick={() => navigate("/")}
-            className="inline-flex items-center gap-2 text-brand-medium font-semibold hover:underline mb-8 text-2xl"
+            onClick={() => navigate(backPath)}
+            className="mb-8 inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-brand-medium transition hover:underline"
           >
-            ← 
+            <ArrowLeft size={18} />
+            Volver
           </button>
 
           <div className="text-center">

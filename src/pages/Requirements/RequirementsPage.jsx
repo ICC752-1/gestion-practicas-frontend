@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import {
+  ArrowLeft,
   ArrowRight,
   CheckCircle2,
   ClipboardList,
@@ -12,6 +13,7 @@ import { Header } from '../../components/Header/Header';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import { useAuth } from '../../context/useAuth';
+import { getRedirectPathForRoles } from '../../services/roleRouting';
 
 
 const requirementCards = [
@@ -46,9 +48,12 @@ const processSteps = [
 ];
 
 export const RequirementsPage = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const primaryActionPath = isAuthenticated ? '/dashboard/inscripcion' : '/login';
   const primaryActionLabel = isAuthenticated ? 'Ir a preinscripción' : 'Iniciar sesión';
+  const backPath = isAuthenticated
+    ? getRedirectPathForRoles(user?.roles)
+    : '/landing';
   const navigate = useNavigate();
 
   return (
@@ -60,10 +65,11 @@ export const RequirementsPage = () => {
           <div className="max-w-7xl mx-auto py-3 px-6 w-full">
           <button
             type="button"
-            onClick={() => navigate("/")}
-            className="inline-flex items-center gap-2 text-[#d22864] font-semibold hover:underline text-2xl"
+            onClick={() => navigate(backPath)}
+            className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-[#d22864] transition hover:underline"
           >
-            ←
+            <ArrowLeft size={18} />
+            Volver
           </button>
         </div>
 
