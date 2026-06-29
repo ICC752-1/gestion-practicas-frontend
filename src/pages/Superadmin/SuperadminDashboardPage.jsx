@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ShieldCheck, UsersRound } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
@@ -22,6 +23,12 @@ const tabs = [
   },
 ];
 
+const getTabEntryMotion = () => ({
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+  transition: { duration: 0.12 },
+});
+
 export const SuperadminDashboardPage = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -38,7 +45,7 @@ export const SuperadminDashboardPage = () => {
       <main className="flex-grow container mx-auto max-w-7xl px-4 py-8">
         <nav
           aria-label="Panel Superadmin"
-          className="mb-6 flex flex-wrap gap-2 rounded-3xl border border-gray-100 bg-white p-2 shadow-sm"
+          className="mb-6 flex flex-wrap justify-center gap-2 rounded-3xl border border-gray-100 bg-white p-2 shadow-sm"
         >
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -63,7 +70,14 @@ export const SuperadminDashboardPage = () => {
           })}
         </nav>
 
-        {activeTab === 'audit' ? <SuperadminAuditPanel /> : <SuperadminUsersPanel />}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeTab}
+            {...getTabEntryMotion()}
+          >
+            {activeTab === 'audit' ? <SuperadminAuditPanel /> : <SuperadminUsersPanel />}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       <Footer />

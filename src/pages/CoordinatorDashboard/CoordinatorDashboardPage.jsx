@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { Loader2, AlertCircle, Calendar, FileText, Mail, PlayCircle, UserPlus } from 'lucide-react';
 
@@ -56,6 +57,12 @@ const buildTabs = (basePath, pendingRequestsCount) => [
     match: (pathname) => pathname === `${basePath}/estudiantes`,
   },
 ];
+
+const getTabEntryMotion = () => ({
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+  transition: { duration: 0.12 },
+});
 
 export const CoordinatorDashboardPage = () => {
   const [statusFilter, setStatusFilter] = useState('submitted');
@@ -145,7 +152,7 @@ export const CoordinatorDashboardPage = () => {
       <main className="flex-grow container mx-auto px-4 py-8 max-w-7xl space-y-6">
         <nav
           aria-label="Panel administrativo de prácticas"
-          className="flex flex-wrap gap-2 rounded-3xl border border-gray-100 bg-white p-2 shadow-sm"
+          className="flex flex-wrap justify-center gap-2 rounded-3xl border border-gray-100 bg-white p-2 shadow-sm"
         >
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -178,7 +185,14 @@ export const CoordinatorDashboardPage = () => {
           })}
         </nav>
 
-        {renderActivePanel()}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeTab}
+            {...getTabEntryMotion()}
+          >
+            {renderActivePanel()}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       <Footer />

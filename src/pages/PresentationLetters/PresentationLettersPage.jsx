@@ -540,8 +540,14 @@ const TemplateEditor = ({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-      <aside className="space-y-5">
-        <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <motion.aside
+        className="space-y-5"
+        {...getPracticeCardEntryMotion(0.04)}
+      >
+        <motion.section
+          className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+          {...getPracticeCardEntryMotion(0.08)}
+        >
           <h3 className="text-lg font-black text-gray-950">Plantilla por práctica</h3>
           <label className="mt-4 block text-sm font-bold text-gray-700">
             Tipo de práctica
@@ -557,9 +563,12 @@ const TemplateEditor = ({
               ))}
             </select>
           </label>
-        </section>
+        </motion.section>
 
-        <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+        <motion.section
+          className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+          {...getPracticeCardEntryMotion(0.14)}
+        >
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff0f6] text-[#d22864]">
               <Braces size={20} />
@@ -575,12 +584,16 @@ const TemplateEditor = ({
           </div>
 
           <div className="mt-4 overflow-hidden rounded-xl border border-gray-100">
-            {TEMPLATE_VARIABLES.map((variable) => {
+            {TEMPLATE_VARIABLES.map((variable, index) => {
               const Icon = variable.icon;
               const isCopied = copiedVariable === variable.token;
 
               return (
-                <div key={variable.token} className="border-b border-gray-100 bg-gray-50/70 p-3 last:border-b-0">
+                <motion.div
+                  key={variable.token}
+                  className="border-b border-gray-100 bg-gray-50/70 p-3 last:border-b-0"
+                  {...getPracticeCardEntryMotion(0.18 + index * 0.035)}
+                >
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#d22864] ring-1 ring-gray-100">
                       <Icon size={16} />
@@ -618,19 +631,25 @@ const TemplateEditor = ({
                       </p>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
-        </section>
-      </aside>
+        </motion.section>
+      </motion.aside>
 
-      <section className="min-w-0 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <motion.section
+        className="min-w-0 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+        {...getPracticeCardEntryMotion(0.1)}
+      >
         {loading ? (
-          <div className="flex min-h-[420px] flex-col items-center justify-center">
+          <motion.div
+            className="flex min-h-[420px] flex-col items-center justify-center"
+            {...getPracticeCardEntryMotion(0.16)}
+          >
             <Loader2 className="animate-spin text-[#d22864]" size={42} />
             <p className="mt-4 text-sm font-bold text-gray-500">Cargando plantilla...</p>
-          </div>
+          </motion.div>
         ) : (
           <form
             className="space-y-5"
@@ -639,7 +658,10 @@ const TemplateEditor = ({
               onSave();
             }}
           >
-            <div className="flex flex-col gap-3 border-b border-gray-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+            <motion.div
+              className="flex flex-col gap-3 border-b border-gray-100 pb-5 sm:flex-row sm:items-center sm:justify-between"
+              {...getPracticeCardEntryMotion(0.16)}
+            >
               <div>
                 <h3 className="text-xl font-black text-gray-950">Edición de plantilla</h3>
                 <p className="mt-1 text-sm font-semibold text-gray-500">{selectedType}</p>
@@ -652,9 +674,12 @@ const TemplateEditor = ({
                 <Eye size={17} />
                 Previsualizar carta
               </button>
-            </div>
+            </motion.div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <motion.div
+              className="grid gap-4 md:grid-cols-2"
+              {...getPracticeCardEntryMotion(0.22)}
+            >
               <label className="text-sm font-bold text-gray-700">
                 Título
                 <input
@@ -675,36 +700,45 @@ const TemplateEditor = ({
                   required
                 />
               </label>
-            </div>
+            </motion.div>
 
-            <TemplateTextarea
-              label="Introducción/base"
-              rows={3}
-              value={form.base_intro}
-              onValueChange={(value) => updateField('base_intro', value)}
-              disabled={!canEdit}
-              required
-            />
+            <motion.div {...getPracticeCardEntryMotion(0.28)}>
+              <TemplateTextarea
+                label="Introducción/base"
+                rows={3}
+                value={form.base_intro}
+                onValueChange={(value) => updateField('base_intro', value)}
+                disabled={!canEdit}
+                required
+              />
+            </motion.div>
 
-            <TemplateTextarea
-              label="Presentación del estudiante"
-              rows={3}
-              value={form.student_presentation_template}
-              onValueChange={(value) => updateField('student_presentation_template', value)}
-              disabled={!canEdit}
-              required
-            />
+            <motion.div {...getPracticeCardEntryMotion(0.34)}>
+              <TemplateTextarea
+                label="Presentación del estudiante"
+                rows={3}
+                value={form.student_presentation_template}
+                onValueChange={(value) => updateField('student_presentation_template', value)}
+                disabled={!canEdit}
+                required
+              />
+            </motion.div>
 
-            <TemplateTextarea
-              label="Descripción específica de práctica"
-              rows={4}
-              value={form.practice_description}
-              onValueChange={(value) => updateField('practice_description', value)}
-              disabled={!canEdit}
-              required
-            />
+            <motion.div {...getPracticeCardEntryMotion(0.4)}>
+              <TemplateTextarea
+                label="Descripción específica de práctica"
+                rows={4}
+                value={form.practice_description}
+                onValueChange={(value) => updateField('practice_description', value)}
+                disabled={!canEdit}
+                required
+              />
+            </motion.div>
 
-            <div className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
+            <motion.div
+              className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]"
+              {...getPracticeCardEntryMotion(0.46)}
+            >
               <label className="text-sm font-bold text-gray-700">
                 Horas mínimas
                 <input
@@ -727,27 +761,34 @@ const TemplateEditor = ({
                 placeholder="Un aprendizaje por línea"
                 required
               />
-            </div>
+            </motion.div>
 
-            <TemplateTextarea
-              label="Cláusula de seguro"
-              rows={3}
-              value={form.insurance_clause}
-              onValueChange={(value) => updateField('insurance_clause', value)}
-              disabled={!canEdit}
-              required
-            />
+            <motion.div {...getPracticeCardEntryMotion(0.52)}>
+              <TemplateTextarea
+                label="Cláusula de seguro"
+                rows={3}
+                value={form.insurance_clause}
+                onValueChange={(value) => updateField('insurance_clause', value)}
+                disabled={!canEdit}
+                required
+              />
+            </motion.div>
 
-            <TemplateTextarea
-              label="Cierre"
-              rows={3}
-              value={form.closing_text}
-              onValueChange={(value) => updateField('closing_text', value)}
-              disabled={!canEdit}
-              required
-            />
+            <motion.div {...getPracticeCardEntryMotion(0.58)}>
+              <TemplateTextarea
+                label="Cierre"
+                rows={3}
+                value={form.closing_text}
+                onValueChange={(value) => updateField('closing_text', value)}
+                disabled={!canEdit}
+                required
+              />
+            </motion.div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <motion.div
+              className="grid gap-4 md:grid-cols-3"
+              {...getPracticeCardEntryMotion(0.64)}
+            >
               <label className="text-sm font-bold text-gray-700">
                 Firma
                 <input
@@ -778,9 +819,12 @@ const TemplateEditor = ({
                   required
                 />
               </label>
-            </div>
+            </motion.div>
 
-            <section className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+            <motion.section
+              className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4"
+              {...getPracticeCardEntryMotion(0.7)}
+            >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h4 className="text-sm font-black uppercase tracking-wide text-gray-500">
@@ -827,25 +871,29 @@ const TemplateEditor = ({
                   <p className="text-sm font-bold text-gray-400">Sin imagen de firma configurada</p>
                 )}
               </div>
-            </section>
+            </motion.section>
 
             {canEdit ? (
-              <button
+              <motion.button
                 type="submit"
                 disabled={saving}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] disabled:opacity-60"
+                {...getPracticeCardEntryMotion(0.76)}
               >
                 {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
                 Guardar plantilla
-              </button>
+              </motion.button>
             ) : (
-              <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-bold text-gray-500">
+              <motion.p
+                className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-bold text-gray-500"
+                {...getPracticeCardEntryMotion(0.76)}
+              >
                 Solo el Director de carrera puede editar plantillas.
-              </p>
+              </motion.p>
             )}
           </form>
         )}
-      </section>
+      </motion.section>
 
       {isPreviewOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4 py-6">
@@ -1183,21 +1231,19 @@ export const PresentationLettersPanel = () => {
             downloadingId={downloadingId}
           />
         ) : (
-          <motion.div {...getPracticeCardEntryMotion(0.08)}>
-            <TemplateEditor
-              selectedType={selectedType}
-              onSelectedTypeChange={setSelectedType}
-              form={templateForm}
-              onFormChange={setTemplateForm}
-              onSave={handleSaveTemplate}
-              onSignatureImageDelete={handleSignatureImageDelete}
-              onSignatureImageUpload={handleSignatureImageUpload}
-              signatureImageUrl={signatureImageUrl}
-              loading={templateLoading}
-              saving={savingTemplate}
-              canEdit={canEditTemplates}
-            />
-          </motion.div>
+          <TemplateEditor
+            selectedType={selectedType}
+            onSelectedTypeChange={setSelectedType}
+            form={templateForm}
+            onFormChange={setTemplateForm}
+            onSave={handleSaveTemplate}
+            onSignatureImageDelete={handleSignatureImageDelete}
+            onSignatureImageUpload={handleSignatureImageUpload}
+            signatureImageUrl={signatureImageUrl}
+            loading={templateLoading}
+            saving={savingTemplate}
+            canEdit={canEditTemplates}
+          />
         )}
     </>
   );

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { ArrowDown, ArrowDownUp, ArrowUp, BarChart3, Search, UserPlus, Users } from 'lucide-react';
 
 import { Footer } from '../../components/Footer/Footer';
@@ -118,6 +119,12 @@ const normalizeCount = (value, fallback) => {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : fallback;
 };
+
+const getEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
 
 const getShortPracticeType = (type) => PRACTICE_TYPE_SHORT_LABELS[type] || type;
 
@@ -339,7 +346,10 @@ export const StudentAccountsPanel = () => {
 
   return (
     <>
-        <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+        <motion.section
+          className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm"
+          {...getEntryMotion()}
+        >
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-4">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d22864]">
@@ -362,22 +372,35 @@ export const StudentAccountsPanel = () => {
               Nuevo estudiante
             </button>
           </div>
-        </section>
+        </motion.section>
 
         {error && (
-          <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+          <motion.div
+            className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700"
+            {...getEntryMotion(0.06)}
+          >
             {error}
-          </div>
+          </motion.div>
         )}
         {message && (
-          <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
+          <motion.div
+            className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700"
+            {...getEntryMotion(0.06)}
+          >
             {message}
-          </div>
+          </motion.div>
         )}
 
-        <section className="mt-6">
+        <motion.section
+          className="mt-6"
+          {...getEntryMotion(0.12)}
+        >
           <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-            <form onSubmit={handleApplyFilters} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_300px_140px]">
+            <motion.form
+              onSubmit={handleApplyFilters}
+              className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_300px_140px]"
+              {...getEntryMotion(0.16)}
+            >
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
@@ -414,9 +437,12 @@ export const StudentAccountsPanel = () => {
               <button type="submit" className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-bold text-white hover:bg-gray-800">
                 Filtrar
               </button>
-            </form>
+            </motion.form>
 
-            <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 text-sm font-semibold text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+            <motion.div
+              className="mt-5 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 text-sm font-semibold text-gray-600 sm:flex-row sm:items-center sm:justify-between"
+              {...getEntryMotion(0.22)}
+            >
               <div>
                 <p className="font-black text-gray-900">
                   {total} {total === 1 ? 'resultado' : 'resultados'}
@@ -451,9 +477,12 @@ export const StudentAccountsPanel = () => {
                   Más antiguos
                 </button>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="mt-6 overflow-hidden rounded-xl border border-gray-100">
+            <motion.div
+              className="mt-6 min-h-[560px] overflow-hidden rounded-xl border border-gray-100"
+              {...getEntryMotion(0.28)}
+            >
               <table className="w-full table-fixed divide-y divide-gray-100 text-sm">
                 <colgroup>
                   <col className="w-[32%] md:w-[27%] lg:w-[24%]" />
@@ -488,24 +517,28 @@ export const StudentAccountsPanel = () => {
                 <tbody className="divide-y divide-gray-100">
                   {loading && (
                     <tr>
-                      <td colSpan="7" className="px-3 py-8 text-center font-semibold text-gray-500">
+                      <td colSpan="7" className="h-[480px] px-3 py-8 text-center align-middle font-semibold text-gray-500">
                         Cargando estudiantes...
                       </td>
                     </tr>
                   )}
                   {!loading && students.length === 0 && (
                     <tr>
-                      <td colSpan="7" className="px-3 py-8 text-center font-semibold text-gray-500">
+                      <td colSpan="7" className="h-[480px] px-3 py-8 text-center align-middle font-semibold text-gray-500">
                         No hay estudiantes para los filtros seleccionados.
                       </td>
                     </tr>
                   )}
-                  {!loading && students.map((student) => {
+                  {!loading && students.map((student, index) => {
                     const progress = getAcademicProgress(student);
                     const progressPercent = getProgressPercent(progress);
 
                     return (
-                      <tr key={student.id} className="align-top">
+                      <motion.tr
+                        key={student.id}
+                        className="align-top"
+                        {...getEntryMotion(0.3 + index * 0.025)}
+                      >
                         <td className="min-w-0 px-3 py-4">
                           <p className="truncate font-black text-gray-900">{student.first_name} {student.last_name}</p>
                           <p className="truncate text-gray-500">{student.email}</p>
@@ -561,14 +594,17 @@ export const StudentAccountsPanel = () => {
                             {student.is_active ? 'Desactivar' : 'Reactivar'}
                           </button>
                         </td>
-                      </tr>
+                      </motion.tr>
                     );
                   })}
                 </tbody>
               </table>
-            </div>
+            </motion.div>
 
-            <div className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+            <motion.div
+              className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between"
+              {...getEntryMotion(0.34)}
+            >
               <span>
                 Mostrando {start}-{end} de {total} · Página {currentPage} de {totalPages}
               </span>
@@ -606,9 +642,9 @@ export const StudentAccountsPanel = () => {
                   Última
                 </button>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </section>
+        </motion.section>
 
         <FormModal
           isOpen={isCreateModalOpen}

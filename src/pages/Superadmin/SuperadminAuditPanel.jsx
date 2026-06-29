@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   ChevronLeft,
   ChevronRight,
@@ -40,6 +41,12 @@ const entityOptions = [
 
 const getErrorMessage = (error) => error?.response?.data?.detail || 'No se pudo cargar la auditoría.';
 
+const getEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
+
 const formatDateTime = (value) => {
   if (!value) {
     return 'Sin fecha';
@@ -67,12 +74,15 @@ const formatJson = (value) => {
   return JSON.stringify(value, null, 2);
 };
 
-const StatCard = ({ title, value, helper }) => (
-  <article className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+const StatCard = ({ title, value, helper, delay = 0 }) => (
+  <motion.article
+    className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm"
+    {...getEntryMotion(delay)}
+  >
     <p className="text-xs font-black uppercase tracking-wide text-gray-500">{title}</p>
     <p className="mt-3 text-3xl font-black text-gray-900">{value}</p>
     <p className="mt-2 text-xs font-semibold text-gray-500">{helper}</p>
-  </article>
+  </motion.article>
 );
 
 export const SuperadminAuditPanel = () => {
@@ -164,16 +174,23 @@ export const SuperadminAuditPanel = () => {
 
   return (
     <>
-      <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+      <motion.section
+        className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm"
+        {...getEntryMotion()}
+      >
         <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Superadmin</p>
         <h1 className="mt-2 text-3xl font-black text-gray-900">Auditoría del sistema</h1>
         <p className="mt-3 text-sm leading-relaxed text-gray-600">
           Consulta eventos técnicos y funcionales generados por acciones críticas del sistema.
           Los valores sensibles se muestran sanitizados desde el backend.
         </p>
-      </section>
+      </motion.section>
 
-      <form onSubmit={handleApplyFilters} className="mt-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+      <motion.form
+        onSubmit={handleApplyFilters}
+        className="mt-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm"
+        {...getEntryMotion(0.08)}
+      >
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           <input
             name="date_from"
@@ -271,26 +288,33 @@ export const SuperadminAuditPanel = () => {
             </button>
           </div>
         </div>
-      </form>
+      </motion.form>
 
       {error && (
-        <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+        <motion.div
+          className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700"
+          {...getEntryMotion(0.12)}
+        >
           {error}
-        </div>
+        </motion.div>
       )}
 
       <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Eventos filtrados" value={stats?.total ?? 0} helper="Total según filtros activos." />
-        <StatCard title="Últimas 24 horas" value={stats?.last_24_hours ?? 0} helper="Actividad reciente dentro del alcance filtrado." />
+        <StatCard delay={0.14} title="Eventos filtrados" value={stats?.total ?? 0} helper="Total según filtros activos." />
+        <StatCard delay={0.2} title="Últimas 24 horas" value={stats?.last_24_hours ?? 0} helper="Actividad reciente dentro del alcance filtrado." />
         <StatCard
+          delay={0.26}
           title="Por acción"
           value={`${byAction.INSERT || 0}/${byAction.UPDATE || 0}/${byAction.DELETE || 0}`}
           helper="INSERT / UPDATE / DELETE."
         />
-        <StatCard title="Sin actor" value={stats?.without_actor ?? 0} helper="Eventos generados sin user_id capturado." />
+        <StatCard delay={0.32} title="Sin actor" value={stats?.without_actor ?? 0} helper="Eventos generados sin user_id capturado." />
       </section>
 
-      <section className="mt-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+      <motion.section
+        className="mt-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm"
+        {...getEntryMotion(0.38)}
+      >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-black text-gray-900">Eventos registrados</h2>
@@ -318,7 +342,7 @@ export const SuperadminAuditPanel = () => {
           </div>
         </div>
 
-        <div className="mt-5 overflow-x-auto rounded-2xl border border-gray-100">
+        <div className="mt-5 min-h-[560px] overflow-x-auto rounded-2xl border border-gray-100">
           <div className="min-w-[1080px]">
             <div className="grid grid-cols-[1fr_0.7fr_0.9fr_0.7fr_1.25fr_1.4fr_1.3fr_0.6fr] gap-4 bg-gray-50 px-5 py-3 text-xs font-black uppercase tracking-wide text-gray-500">
               <div>Fecha</div>
@@ -333,22 +357,23 @@ export const SuperadminAuditPanel = () => {
 
             <div className="divide-y divide-gray-100">
               {loading && (
-                <div className="p-10 text-center text-sm font-bold text-gray-500">
+                <div className="flex h-[480px] items-center justify-center p-10 text-center text-sm font-bold text-gray-500">
                   Cargando eventos...
                 </div>
               )}
 
               {!loading && events.length === 0 && (
-                <div className="flex flex-col items-center gap-2 p-10 text-center text-sm font-bold text-gray-500">
+                <div className="flex h-[480px] flex-col items-center justify-center gap-2 p-10 text-center text-sm font-bold text-gray-500">
                   <Inbox className="h-8 w-8 text-gray-300" />
                   <span>No hay eventos para los filtros seleccionados.</span>
                 </div>
               )}
 
-              {!loading && events.map((event) => (
-                <div
+              {!loading && events.map((event, index) => (
+                <motion.div
                   key={event.id}
                   className="grid grid-cols-[1fr_0.7fr_0.9fr_0.7fr_1.25fr_1.4fr_1.3fr_0.6fr] items-center gap-4 px-5 py-4 text-sm"
+                  {...getEntryMotion(0.4 + index * 0.025)}
                 >
                   <div className="font-bold text-gray-700">{formatDateTime(event.timestamp)}</div>
                   <div>
@@ -383,12 +408,12 @@ export const SuperadminAuditPanel = () => {
                       Ver
                     </button>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {(detailLoading || detailError || selectedEvent) && (
         <div className="fixed inset-0 z-[60] flex justify-end bg-black/40">

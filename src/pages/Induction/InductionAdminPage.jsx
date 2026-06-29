@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Footer } from '../../components/Footer/Footer';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
@@ -72,6 +73,12 @@ const getVersionStatusMeta = (version) => {
 const getRetakeLabel = (requiresRetake) => (
   requiresRetake ? 'Exige repetir la inducción' : 'No exige repetición'
 );
+
+const getEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
 
 const canActivateVersion = (version) => (
   version?.status === 'published' && !version?.is_active
@@ -404,39 +411,74 @@ export const InductionAdminPanel = () => {
 
   return (
     <>
-        <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+        <motion.section
+          className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm"
+          {...getEntryMotion()}
+        >
           <p className="text-sm font-black uppercase tracking-wide text-[#d22864]">Inducción</p>
           <h1 className="mt-3 text-3xl font-black text-gray-900">Administración de contenido</h1>
           <p className="mt-3 max-w-3xl text-gray-600">
             Crea borradores, valida preguntas y publica una única versión activa para nuevos intentos.
           </p>
           <div className="mt-6 grid gap-3 md:grid-cols-4">
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+            <motion.div
+              className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
+              {...getEntryMotion(0.08)}
+            >
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Acceso actual</p>
               <p className="mt-2 text-sm font-black text-gray-900">{userRole}</p>
-            </div>
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+            </motion.div>
+            <motion.div
+              className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
+              {...getEntryMotion(0.14)}
+            >
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Borradores</p>
               <p className="mt-2 text-2xl font-black text-gray-900">{draftCount}</p>
-            </div>
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+            </motion.div>
+            <motion.div
+              className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
+              {...getEntryMotion(0.2)}
+            >
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Publicadas</p>
               <p className="mt-2 text-2xl font-black text-gray-900">{publishedCount}</p>
-            </div>
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+            </motion.div>
+            <motion.div
+              className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
+              {...getEntryMotion(0.26)}
+            >
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Repetición activa</p>
               <p className="mt-2 text-sm font-black text-gray-900">
                 {activeVersion ? getRetakeLabel(activeVersion.requires_retake) : 'Sin versión activa'}
               </p>
-            </div>
+            </motion.div>
           </div>
-        </section>
+        </motion.section>
 
-        {error && <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
-        {message && <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">{message}</div>}
+        {error && (
+          <motion.div
+            className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700"
+            {...getEntryMotion(0.08)}
+          >
+            {error}
+          </motion.div>
+        )}
+        {message && (
+          <motion.div
+            className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700"
+            {...getEntryMotion(0.08)}
+          >
+            {message}
+          </motion.div>
+        )}
 
-        <section className="mt-6 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <aside className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+        <motion.section
+          className="mt-6 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]"
+          {...getEntryMotion(0.32)}
+        >
+          <motion.aside
+            className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm"
+            {...getEntryMotion(0.36)}
+          >
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-black text-gray-900">Versiones</h2>
               <button type="button" onClick={handleNewDraft} className="rounded-xl bg-gray-900 px-3 py-2 text-xs font-bold text-white">
@@ -446,10 +488,11 @@ export const InductionAdminPanel = () => {
             <div className="mt-5 space-y-3">
               {loading && <p className="text-sm font-semibold text-gray-500">Cargando...</p>}
               {!loading && versions.length === 0 && <p className="text-sm font-semibold text-gray-500">No hay versiones creadas.</p>}
-              {versions.map((version) => (
-                <article
+              {versions.map((version, index) => (
+                <motion.article
                   key={version.id}
                   className={`rounded-2xl border p-4 transition ${selectedVersionId === version.id ? 'border-[#d22864] bg-[#fff8fb]' : 'border-gray-100 hover:border-[#d22864]/50'}`}
+                  {...getEntryMotion(0.4 + index * 0.05)}
                 >
                   <button
                     type="button"
@@ -489,12 +532,16 @@ export const InductionAdminPanel = () => {
                       </button>
                     )}
                   </div>
-                </article>
+                </motion.article>
               ))}
             </div>
-          </aside>
+          </motion.aside>
 
-          <form onSubmit={handleSave} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <motion.form
+            onSubmit={handleSave}
+            className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm"
+            {...getEntryMotion(0.44)}
+          >
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-xl font-black text-gray-900">{isEditing ? 'Editar versión' : 'Nuevo borrador'}</h2>
@@ -643,8 +690,8 @@ export const InductionAdminPanel = () => {
                 {isEditing ? 'Guardar y publicar' : 'Publicar y activar'}
               </button>
             </div>
-          </form>
-        </section>
+          </motion.form>
+        </motion.section>
       <ConfirmDialog
         isOpen={Boolean(confirmAction)}
         title={confirmAction?.title}

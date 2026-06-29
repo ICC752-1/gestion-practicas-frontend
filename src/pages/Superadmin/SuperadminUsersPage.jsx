@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import { FormModal } from '../../components/common/FormModal';
@@ -138,6 +139,12 @@ const formatDateTime = (value) => {
     minute: '2-digit',
   }).format(new Date(value.endsWith?.('Z') ? value : `${value}Z`));
 };
+
+const getEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
 
 const SortHeader = ({ label, field, sort, onSort, align = 'left' }) => {
   const isActive = sort.sort_by === field;
@@ -466,7 +473,10 @@ export const SuperadminUsersPanel = () => {
   return (
     <>
         {/* Cabecera / Banner */}
-        <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+        <motion.section
+          className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm"
+          {...getEntryMotion()}
+        >
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Superadmin</p>
@@ -485,25 +495,38 @@ export const SuperadminUsersPanel = () => {
               Crear usuario
             </button>
           </div>
-        </section>
+        </motion.section>
 
         {error && (
-          <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+          <motion.div
+            className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700"
+            {...getEntryMotion(0.06)}
+          >
             {error}
-          </div>
+          </motion.div>
         )}
         {message && (
-          <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
+          <motion.div
+            className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700"
+            {...getEntryMotion(0.06)}
+          >
             {message}
-          </div>
+          </motion.div>
         )}
 
         {/* Sección de tabla */}
-        <section className="mt-6">
+        <motion.section
+          className="mt-6"
+          {...getEntryMotion(0.12)}
+        >
           <div className="flex flex-col justify-between rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
             
             {/* Barra de Filtros */}
-            <form onSubmit={handleApplyFilters} className="grid gap-3 md:grid-cols-4">
+            <motion.form
+              onSubmit={handleApplyFilters}
+              className="grid gap-3 md:grid-cols-4"
+              {...getEntryMotion(0.16)}
+            >
               <div className="relative flex items-center">
                 <input
                   name="search"
@@ -540,9 +563,12 @@ export const SuperadminUsersPanel = () => {
               >
                 Filtrar
               </button>
-            </form>
+            </motion.form>
 
-            <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 text-sm font-semibold text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+            <motion.div
+              className="mt-5 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 text-sm font-semibold text-gray-600 sm:flex-row sm:items-center sm:justify-between"
+              {...getEntryMotion(0.22)}
+            >
               <div>
                 <p className="font-black text-gray-900">
                   {total} {total === 1 ? 'resultado' : 'resultados'}
@@ -577,10 +603,13 @@ export const SuperadminUsersPanel = () => {
                   Más antiguos
                 </button>
               </div>
-            </div>
+            </motion.div>
 
             {/* Contenedor de Tabla Fluid / Responsive sin Scroll Horizontal */}
-            <div className="w-full mt-6 rounded-xl border border-gray-100 overflow-hidden bg-white">
+            <motion.div
+              className="w-full mt-6 min-h-[560px] rounded-xl border border-gray-100 overflow-hidden bg-white"
+              {...getEntryMotion(0.28)}
+            >
               <div className="w-full table-layout-fixed">
                 
                 {/* Cabecera Grid de la Tabla */}
@@ -596,20 +625,24 @@ export const SuperadminUsersPanel = () => {
                 {/* Cuerpo Grid de la Tabla */}
                 <div className="divide-y divide-gray-100">
                   {loading && (
-                    <div className="p-12 text-center font-semibold text-gray-500 text-sm">
+                    <div className="flex h-[480px] items-center justify-center p-12 text-center text-sm font-semibold text-gray-500">
                       Cargando usuarios...
                     </div>
                   )}
                   
                   {!loading && users.length === 0 && (
-                    <div className="p-12 text-center font-semibold text-gray-500 text-sm flex flex-col items-center gap-2">
+                    <div className="flex h-[480px] flex-col items-center justify-center gap-2 p-12 text-center text-sm font-semibold text-gray-500">
                       <Inbox className="text-gray-300 w-8 h-8" />
                       <span>No hay usuarios para los filtros seleccionados.</span>
                     </div>
                   )}
 
-                  {!loading && users.map((item) => (
-                    <div key={item.id} className={`${gridLayoutClass} hover:bg-gray-50/40 transition-colors min-w-0`}>
+                  {!loading && users.map((item, index) => (
+                    <motion.div
+                      key={item.id}
+                      className={`${gridLayoutClass} hover:bg-gray-50/40 transition-colors min-w-0`}
+                      {...getEntryMotion(0.3 + index * 0.025)}
+                    >
                       
                       {/* Celda: Usuario */}
                       <div className="min-w-0 flex flex-col">
@@ -691,15 +724,18 @@ export const SuperadminUsersPanel = () => {
                         </button>
                       </div>
 
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
 
               </div>
-            </div>
+            </motion.div>
 
             {/* Paginación */}
-            <div className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+            <motion.div
+              className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between"
+              {...getEntryMotion(0.34)}
+            >
               <span>
                 Mostrando {start}-{end} de {total} · Página {currentPage} de {totalPages}
               </span>
@@ -737,10 +773,10 @@ export const SuperadminUsersPanel = () => {
                   Última
                 </button>
               </div>
-            </div>
+            </motion.div>
           </div>
 
-        </section>
+        </motion.section>
 
         <FormModal
           isOpen={isCreateModalOpen}

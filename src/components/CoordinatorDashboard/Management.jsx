@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { StudentTable } from '../coordinador/StudentTable';
 
 const STATUS_FILTERS = [
@@ -8,17 +9,29 @@ const STATUS_FILTERS = [
   { value: 'rejected', label: 'Solicitudes rechazadas' },
 ];
 
+const getEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
+
 const Management = ({ students, statusFilter, onStatusFilterChange }) => {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] border border-gray-100/50">
       <div className="flex flex-col gap-4 mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Gestión de solicitudes de práctica</h2>
+        <motion.h2
+          className="text-xl font-bold text-gray-800"
+          {...getEntryMotion()}
+        >
+          Gestión de solicitudes de práctica
+        </motion.h2>
         <div className="flex flex-wrap gap-2" aria-label="Filtrar solicitudes por estado administrativo">
-          {STATUS_FILTERS.map((filter) => (
-            <button
+          {STATUS_FILTERS.map((filter, index) => (
+            <motion.button
               key={filter.value || 'all'}
               type="button"
               onClick={() => onStatusFilterChange(filter.value)}
+              {...getEntryMotion(0.06 + index * 0.04)}
               className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
                 statusFilter === filter.value
                   ? 'bg-ufro-primary text-white'
@@ -26,7 +39,7 @@ const Management = ({ students, statusFilter, onStatusFilterChange }) => {
               }`}
             >
               {filter.label}
-            </button>
+            </motion.button>
           ))}
         </div>
       </div>
