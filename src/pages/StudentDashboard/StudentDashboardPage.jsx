@@ -605,15 +605,15 @@ export const StudentDashboardPage = () => {
 
       <main className="flex-grow">
         {/* Welcome Section */}
-        <div className="bg-white border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="bg-white border-b border-gray-100 w-full overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6 py-8">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex flex-col items-end justify-between gap-4 md:flex-row md:items-center"
+              className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full min-w-0"
             >
-              <div>
-                <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-none mb-2">
+              <div className="min-w-0">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight leading-none mb-2">
                   Hola, {userName} <span className="inline-block animate-bounce-slow">👋</span>
                 </h2>
                 <p className="text-gray-500 font-medium text-base">
@@ -622,9 +622,10 @@ export const StudentDashboardPage = () => {
                     : 'No tienes prácticas inscritas aún.'}
                 </p>
               </div>
-              <div className="w-full max-w-md rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex min-w-0 items-center gap-2">
+
+              <div className="w-full md:w-auto md:max-w-[440px] min-w-0 rounded-2xl border border-gray-100 bg-gray-50 p-5">
+                <div className="mb-3 flex items-center justify-between gap-4 min-w-0">
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
                     <p className="text-sm font-bold text-gray-700">
                       <span className="mr-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
                         Progreso total
@@ -636,11 +637,7 @@ export const StudentDashboardPage = () => {
                       tabIndex={0}
                       aria-describedby="overall-progress-tooltip"
                     >
-                      <Info
-                        size={15}
-                        className="text-gray-400"
-                        aria-hidden="true"
-                      />
+                      <Info size={15} className="text-gray-400" aria-hidden="true" />
                       <span
                         id="overall-progress-tooltip"
                         role="tooltip"
@@ -649,16 +646,19 @@ export const StudentDashboardPage = () => {
                         Solo las prácticas aprobadas o finalizadas aprobadas aportan al progreso total.
                       </span>
                     </span>
+                  </div>              
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-full rounded-full bg-[#d22864] transition-all duration-500"
+                      style={{ width: `${overallProgress.percentage}%` }}
+                    />
                   </div>
-                  <span className="shrink-0 text-sm font-black text-[#d22864]">
+                  <span className="w-12 text-right text-sm font-bold text-[#d22864] flex-shrink-0">
                     {overallProgress.percentage}%
                   </span>
-                </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-200">
-                  <div
-                    className="h-full rounded-full bg-[#d22864] transition-all duration-500"
-                    style={{ width: `${overallProgress.percentage}%` }}
-                  />
                 </div>
               </div>
             </motion.div>
