@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Plus,
   Play,
@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   ClipboardCheck,
+  ClipboardList,
   Calendar,
   Building2,
   FileText,
@@ -18,16 +19,27 @@ import {
   Briefcase,
   Shield,
   Download,
+  Eye,
+  LayoutDashboard,
+  ListChecks,
+  Mail,
+  Info,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { UserHeader } from "../../components/Header/UserHeader";
 import { Footer } from "../../components/Footer/Footer";
 import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
 import { schedulingService } from "../../services/schedulingService";
 import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
+import { DataPortabilityModal } from "../../components/DataPortability/DataPortabilityModal";
 import { canUploadDocuments, documentService } from "../../services/documentService";
 import { dataPortabilityService } from "../../services/dataPortabilityService";
+import { PresentationLettersPanel } from "../PresentationLetters/PresentationLettersPage";
+import { InterviewSchedulingPage } from "../InterviewScheduling/InterviewSchedulingPage";
+import { SeguimientoPage } from "../Seguimiento/SeguimientoPage";
+import { PreRegistrationPage } from "../Registration/PreRegistrationPage";
+import { RegistrationPage } from "../Registration/RegistrationPage";
 import {
   getInternshipAdministrativeProgress,
   getOverallInternshipProgress,
@@ -124,7 +136,59 @@ const getUploadErrorMessage = (error) => {
   return detail?.message || error.message || 'No se pudo subir.';
 };
 
-const PRE_REGISTRATION_PATH = '/practicas/nueva/preinscripcion';
+const PRE_REGISTRATION_PATH = '/dashboard/inscripcion';
+const REGISTRATION_FORM_PATH = '/dashboard/inscripcion/formulario';
+const STUDENT_DASHBOARD_TABS = [
+  {
+    id: 'summary',
+    label: 'Resumen',
+    to: '/dashboard',
+    icon: LayoutDashboard,
+    match: (pathname) => pathname === '/dashboard',
+  },
+  {
+    id: 'registration',
+    label: 'Inscripción',
+    to: PRE_REGISTRATION_PATH,
+    icon: ClipboardList,
+    match: (pathname) => pathname === PRE_REGISTRATION_PATH
+      || pathname.startsWith(`${PRE_REGISTRATION_PATH}/`),
+  },
+  {
+    id: 'tracking',
+    label: 'Seguimiento',
+    to: '/dashboard/seguimiento',
+    icon: ListChecks,
+    match: (pathname) => pathname === '/dashboard/seguimiento'
+      || pathname.startsWith('/dashboard/seguimiento/'),
+  },
+  {
+    id: 'agenda',
+    label: 'Agenda y consultas',
+    to: '/dashboard/agenda',
+    icon: Calendar,
+    match: (pathname) => pathname === '/dashboard/agenda',
+  },
+  {
+    id: 'letters',
+    label: 'Carta de presentación',
+    to: '/dashboard/cartas-presentacion',
+    icon: Mail,
+    match: (pathname) => pathname === '/dashboard/cartas-presentacion',
+  },
+  {
+    id: 'documents',
+    label: 'Documentos',
+    to: '/dashboard/documentos',
+    icon: Upload,
+    match: (pathname) => pathname === '/dashboard/documentos',
+  },
+];
+const getPracticeCardEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
 const SELF_EVALUATION_ENABLED_STATUSES = new Set([
   'pending_evaluations',
   'pending_presentation',
@@ -156,8 +220,12 @@ const businessWindowStart = (endDateStr, businessDays) => {
   return cursor;
 };
 
-const isSelfEvaluationAvailable = (internship) => {
+const isSelfEvaluationAvailable = (internship, lifecycle) => {
   if (!internship || internship.is_cancelled) return false;
+  if (internship.status_id === 5) return false;
+
+  if (lifecycle?.self_evaluation_submitted) return false;
+
   if (SELF_EVALUATION_ENABLED_STATUSES.has(internship.completion_status)) return true;
   if (internship.status_id !== 4) return false;
 
@@ -170,6 +238,42 @@ const isSelfEvaluationAvailable = (internship) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return today >= start;
+};
+
+const getTrackingProgressScore = (internship, lifecycle) => {
+  if (lifecycle?.progress_percentage !== undefined) {
+    return Number(lifecycle.progress_percentage) || 0;
+  }
+
+  return getInternshipAdministrativeProgress(internship).percentage;
+};
+
+const getDefaultTrackingInternship = (internships, lifecyclesById) => {
+  const availableInternships = internships.filter((internship) => !internship.is_cancelled);
+  const activeInternships = availableInternships.filter((internship) => (
+    internship.completion_status
+    && internship.completion_status !== 'not_started'
+    && internship.completion_status !== 'finalized'
+  ));
+  const candidates = activeInternships.length > 0
+    ? activeInternships
+    : availableInternships;
+
+  return [...candidates].sort((first, second) => {
+    const secondScore = getTrackingProgressScore(second, lifecyclesById[second.id]);
+    const firstScore = getTrackingProgressScore(first, lifecyclesById[first.id]);
+
+    if (secondScore !== firstScore) {
+      return secondScore - firstScore;
+    }
+
+    return Number(second.id) - Number(first.id);
+  })[0] || null;
+};
+
+const getTrackingInternshipIdFromPath = (pathname) => {
+  const match = pathname.match(/^\/dashboard\/seguimiento\/([^/]+)\/?$/);
+  return match?.[1] || null;
 };
 
 // --- Sub-components ---
@@ -187,7 +291,7 @@ const StatusBadge = ({ internship }) => {
 };
 
 const DetailChip = ({ icon: Icon, label, value }) => (
-  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
+  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 flex-1 min-w-0">
     <Icon size={14} className="text-[#d22864] flex-shrink-0" />
     <div className="min-w-0">
       <p className="text-[9px] uppercase tracking-wider font-bold text-gray-400 leading-none">{label}</p>
@@ -205,7 +309,7 @@ const PracticeCard = ({ internship, lifecycle }) => {
         color: lifecycle.progress_percentage >= 100 ? 'bg-green-500' : 'bg-[#d22864]',
       }
     : getInternshipAdministrativeProgress(internship);
-  const canSelfEvaluate = isSelfEvaluationAvailable(internship);
+  const canSelfEvaluate = isSelfEvaluationAvailable(internship, lifecycle);
 
   return (
     <motion.div
@@ -232,7 +336,7 @@ const PracticeCard = ({ internship, lifecycle }) => {
       {/* Body */}
       <div className="px-6 py-4 space-y-4">
         {/* Org + Supervisor row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div className="flex items-center gap-3 bg-gray-50/80 p-3 rounded-2xl border border-gray-100/50">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#d22864] shadow-sm flex-shrink-0">
               <Building2 size={18} />
@@ -254,7 +358,7 @@ const PracticeCard = ({ internship, lifecycle }) => {
         </div>
 
         {/* Chips row */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2">
           <DetailChip icon={Briefcase} label="Modalidad" value={internship.modality} />
           <DetailChip icon={Shield} label="Período" value={internship.internship_period} />
           <DetailChip icon={Clock} label="Horario" value={internship.schedule} />
@@ -278,10 +382,17 @@ const PracticeCard = ({ internship, lifecycle }) => {
 
       {/* Footer */}
       <div className="px-6 pb-6 pt-2">
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <button
+            onClick={() => navigate(`/dashboard/seguimiento/${internship.id}`)}
+            className="w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border border-gray-200 bg-white text-gray-700 hover:border-[#d22864]/30 hover:bg-gray-50 hover:text-[#d22864] transition-all"
+          >
+            Ver seguimiento
+            <Eye size={18} />
+          </button>
           {lifecycle?.current_step === "Presentación final por agendar" ? (
             <button
-              onClick={() => navigate(`/entrevistas?internshipId=${internship.id}&purpose=final_presentation`)}
+              onClick={() => navigate(`/dashboard/agenda?internshipId=${internship.id}&purpose=final_presentation`)}
               className="w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border border-[#d22864]/20 bg-[#fff0f6] text-[#d22864] hover:bg-[#ffe3ee] transition-all"
             >
               Agendar Presentación
@@ -289,11 +400,12 @@ const PracticeCard = ({ internship, lifecycle }) => {
             </button>
           ) : (
             <button
-              onClick={() => navigate(`/autoevaluacion/${internship.id}`)}
+              onClick={() => canSelfEvaluate ? navigate(`/autoevaluacion/${internship.id}`) : null}
+              disabled={!canSelfEvaluate}
               className={`w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 border transition-all ${
                 canSelfEvaluate
                   ? 'border-[#d22864]/20 bg-[#fff0f6] text-[#d22864] hover:bg-[#ffe3ee]'
-                  : 'border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100'
+                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
               }`}
             >
               Autoevaluación
@@ -306,36 +418,66 @@ const PracticeCard = ({ internship, lifecycle }) => {
   );
 };
 
-const QuickAction = ({ icon: Icon, title, desc, onClick, primary, disabled, badge }) => (
-  <motion.button
-    whileHover={!disabled ? { y: -5, scale: 1.02 } : {}}
-    onClick={!disabled ? onClick : undefined}
-    className={`relative p-6 rounded-[2rem] text-left flex flex-col gap-4 transition-all duration-300 ${
-      disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' :
-      primary
-        ? 'bg-[#d22864] text-white shadow-xl shadow-[#d22864]/20'
-        : 'bg-white text-gray-900 shadow-lg shadow-gray-200/50 border border-gray-50 hover:border-[#d22864]/20'
-    }`}
-  >
-    {badge ? (
-      <span className="absolute top-4 right-4 min-w-[22px] h-[22px] px-1.5 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[11px] font-bold leading-none shadow-md">
-        {badge > 9 ? '9+' : badge}
-      </span>
-    ) : null}
-    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${primary && !disabled ? 'bg-white/20' : 'bg-[#d22864]/10 text-[#d22864]'}`}>
-      <Icon size={24} />
-    </div>
-    <div>
-      <h4 className="font-bold text-lg leading-tight">{title}</h4>
-      <p className={`text-sm mt-1 ${primary && !disabled ? 'text-white/70' : 'text-gray-400'}`}>{desc}</p>
-    </div>
-  </motion.button>
-);
+const PersonalDataBlock = ({ user, onDownload, downloading }) => {
+  const rows = [
+    { label: 'Correo', value: user?.email },
+    { label: 'Matrícula', value: user?.enrollment },
+    { label: 'Año de ingreso', value: user?.admission_year },
+    { label: 'Carrera', value: user?.degree || user?.cod_degree },
+  ];
+
+  return (
+    <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-lg shadow-gray-200/50">
+      <div className="flex items-start gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#d22864]/10 text-[#d22864]">
+          <User size={22} />
+        </div>
+        <div>
+          <h3 className="text-lg font-black text-gray-900">Datos personales</h3>
+          <p className="mt-1 text-sm font-semibold text-gray-400">
+            Información asociada a tu cuenta estudiante.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 space-y-3">
+        {rows.map((row) => (
+          <div key={row.label} className="flex items-start justify-between gap-4 border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
+            <span className="text-xs font-black uppercase tracking-wider text-gray-400">{row.label}</span>
+            <span className="min-w-0 text-right text-sm font-bold text-gray-700 break-words">
+              {row.value || 'No registrado'}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={onDownload}
+        disabled={downloading}
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#d22864]/20 bg-[#fff0f6] px-5 py-3 text-sm font-black text-[#d22864] transition hover:bg-[#ffe3ee] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {downloading ? (
+          <>
+            <Loader2 size={17} className="animate-spin" />
+            Preparando descarga...
+          </>
+        ) : (
+          <>
+            <Download size={17} />
+            Descargar mis datos
+          </>
+        )}
+      </button>
+    </section>
+  );
+};
 
 // --- Main Component ---
 
 export const StudentDashboardPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { showToast } = useToast();
   const { notifications } = useNotifications(50, true);
@@ -358,23 +500,19 @@ export const StudentDashboardPage = () => {
   };
 
   const [lifecyclesById, setLifecyclesById] = useState({});
-  const [generalConfig, setGeneralConfig] = useState({ general_consultations_enabled: false, active_coordinators: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [downloadingData, setDownloadingData] = useState(false);
+  const [isPortabilityModalOpen, setIsPortabilityModalOpen] = useState(false);
 
   const fetchInternships = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const [data, config] = await Promise.all([
-        internshipService.getMyInternships(),
-        schedulingService.getSchedulingConfig().catch(() => ({ general_consultations_enabled: false }))
-      ]);
+      const data = await internshipService.getMyInternships();
       
       setInternships(data);
-      setGeneralConfig(config);
 
       const lifecycleEntries = await Promise.all(
         data.map(async (internship) => {
@@ -401,11 +539,15 @@ export const StudentDashboardPage = () => {
     fetchInternships();
   };
 
-  const handleDataPortabilityDownload = async () => {
+  const handleDataPortabilityDownload = async ({
+    format = 'zip',
+    includeDocuments = true,
+  } = {}) => {
     try {
+      setDownloadingData(true);
       const { blob, filename } = await dataPortabilityService.downloadMyData({
-        format: 'zip',
-        includeDocuments: true,
+        format,
+        includeDocuments,
       });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -418,14 +560,21 @@ export const StudentDashboardPage = () => {
       showToast({
         type: 'success',
         title: 'Descarga iniciada',
-        message: 'Se generó tu copia estructurada de datos y documentos.',
+        message: format === 'pdf'
+          ? 'Se generó tu informe de datos en PDF.'
+          : format === 'json'
+            ? 'Se generó tu copia estructurada de datos.'
+            : 'Se generó tu paquete de datos y documentos.',
       });
+      setIsPortabilityModalOpen(false);
     } catch (err) {
       showToast({
         type: 'error',
         title: 'No se pudo generar la portabilidad',
         message: err?.response?.data?.detail || 'Intenta nuevamente.',
       });
+    } finally {
+      setDownloadingData(false);
     }
   };
 
@@ -437,22 +586,14 @@ export const StudentDashboardPage = () => {
   const userName = user
     ? `${user.first_name} ${user.last_name}`
     : "Estudiante";
+  const activeTab = STUDENT_DASHBOARD_TABS.find((tab) => tab.match(location.pathname))?.id || 'summary';
   const overallProgress = getOverallInternshipProgress(internships);
+  const defaultTrackingInternship = getDefaultTrackingInternship(internships, lifecyclesById);
+  const selectedTrackingInternshipId = getTrackingInternshipIdFromPath(location.pathname)
+    || defaultTrackingInternship?.id
+    || null;
 
-  const canUpload = internships.some((internship) => canUploadDocuments(internship));
-
-  const hasQualifyingInternship = internships.some(internship => {
-    const lifecycle = lifecyclesById[internship.id];
-    return !internship.is_cancelled &&
-           internship.completion_status !== 'finalized' &&
-           lifecycle?.self_evaluation_submitted &&
-           lifecycle?.supervisor_evaluation_submitted;
-  });
-
-  const hasActiveCoordinators = Array.isArray(generalConfig?.active_coordinators)
-    && generalConfig.active_coordinators.length > 0;
-
-  const isSchedulingActionEnabled = hasActiveCoordinators || hasQualifyingInternship;
+  const uploadableInternshipsCount = internships.filter((internship) => canUploadDocuments(internship)).length;
 
   const appointmentNotificationsCount = notifications.filter(
     (notification) => !notification.is_read && notification.event_type === 'appointment_scheduled'
@@ -464,57 +605,111 @@ export const StudentDashboardPage = () => {
 
       <main className="flex-grow">
         {/* Welcome Section */}
-        <div className="bg-white border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="bg-white border-b border-gray-100 w-full overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6 py-7">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex flex-col md:flex-row justify-between items-end md:items-center gap-6"
+              className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 w-full min-w-0"
             >
-              <div>
-                <h2 className="text-4xl font-black text-gray-900 tracking-tight leading-none mb-3">
+              <div className="min-w-0">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight leading-none mb-2">
                   Hola, {userName} <span className="inline-block animate-bounce-slow">👋</span>
                 </h2>
-                <p className="text-gray-500 font-medium text-lg">
+                <p className="text-gray-500 font-medium text-base">
                   {internships.length > 0
                     ? `Tienes ${internships.length} práctica${internships.length > 1 ? 's' : ''} registrada${internships.length > 1 ? 's' : ''}.`
                     : 'No tienes prácticas inscritas aún.'}
                 </p>
               </div>
-              <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-gray-50 p-5">
-                <div className="mb-3 flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-widest font-black text-gray-400">Progreso total</p>
-                    <p className="mt-1 text-sm font-bold text-gray-700">
-                      {overallProgress.completedCount} de {overallProgress.requiredCount} prácticas aprobadas
+
+              <div className="w-full md:w-auto md:max-w-[440px] min-w-0 rounded-2xl border border-gray-100 bg-gray-50 p-5">
+                <div className="mb-3 flex items-center justify-between gap-4 min-w-0">
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <p className="text-sm font-bold text-gray-700">
+                      <span className="mr-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        Progreso total
+                      </span>
+                      {overallProgress.completedCount} de {overallProgress.requiredCount} aprobadas
                     </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-widest font-black text-gray-400">Prácticas</p>
-                    <span className="font-black text-3xl leading-none text-gray-900">{internships.length}</span>
-                  </div>
+                    <span
+                      className="group relative shrink-0"
+                      tabIndex={0}
+                      aria-describedby="overall-progress-tooltip"
+                    >
+                      <Info size={15} className="text-gray-400" aria-hidden="true" />
+                      <span
+                        id="overall-progress-tooltip"
+                        role="tooltip"
+                        className="pointer-events-none absolute right-0 top-full z-20 mt-2 hidden w-64 rounded-lg bg-gray-900 px-3 py-2 text-xs font-medium leading-5 text-white shadow-lg group-hover:block group-focus:block"
+                      >
+                        Solo las prácticas aprobadas o finalizadas aprobadas aportan al progreso total.
+                      </span>
+                    </span>
+                  </div>              
                 </div>
+
                 <div className="flex items-center gap-3">
-                  <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
                     <div
                       className="h-full rounded-full bg-[#d22864] transition-all duration-500"
                       style={{ width: `${overallProgress.percentage}%` }}
                     />
                   </div>
-                  <span className="w-12 text-right text-sm font-black text-[#d22864]">
+                  <span className="w-12 text-right text-sm font-bold text-[#d22864] flex-shrink-0">
                     {overallProgress.percentage}%
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  Solo las prácticas aprobadas o finalizadas aprobadas aportan al progreso total.
-                </p>
               </div>
             </motion.div>
           </div>
         </div>
+        <div className="max-w-7xl mx-auto px-6 pt-6 pb-12">
+          <nav
+            aria-label="Panel del estudiante"
+            className="mb-6 flex flex-wrap justify-center gap-2 rounded-3xl border border-gray-100 bg-white p-2 shadow-sm"
+          >
+            {STUDENT_DASHBOARD_TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              const badge = tab.id === 'agenda' ? appointmentNotificationsCount : 0;
 
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+              return (
+                <Link
+                  key={tab.id}
+                  to={tab.to}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={[
+                    'inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition-colors',
+                    isActive
+                      ? 'bg-[#d22864] text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-[#d22864]',
+                  ].join(' ')}
+                >
+                  <Icon size={18} strokeWidth={2.5} />
+                  <span>{tab.label}</span>
+                  {badge > 0 && (
+                    <span className={[
+                      'ml-1 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-black',
+                      isActive ? 'bg-white text-[#d22864]' : 'bg-red-500 text-white',
+                    ].join(' ')}>
+                      {badge > 9 ? '9+' : badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+            >
+            {activeTab === 'summary' && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
             {/* Practices List */}
             <div className="lg:col-span-2 space-y-8">
@@ -579,7 +774,7 @@ export const StudentDashboardPage = () => {
                                     a.click();
                                     window.URL.revokeObjectURL(url);
                                     document.body.removeChild(a);
-                                  } catch (e) {
+                                  } catch {
                                     showToast({ type: 'error', title: 'Error', message: 'No se pudo descargar.' });
                                   }
                                 }}
@@ -632,7 +827,7 @@ export const StudentDashboardPage = () => {
                                 await schedulingService.confirmAppointment(appt.id);
                                 showToast({ type: 'success', title: 'Asistencia confirmada', message: 'Has confirmado tu asistencia.' });
                                 fetchAppointments();
-                              } catch (err) {
+                              } catch {
                                 showToast({ type: 'error', title: 'Error', message: 'No se pudo confirmar.' });
                               } finally {
                                 setConfirmingAppointmentId(null);
@@ -651,7 +846,7 @@ export const StudentDashboardPage = () => {
                           </button>
                         )}
                         <button
-                          onClick={() => navigate('/entrevistas')}
+                          onClick={() => navigate('/dashboard/agenda')}
                           className="w-full md:w-auto text-xs font-bold text-gray-500 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl px-5 py-3 transition text-center"
                         >
                           Detalles en Agenda
@@ -662,7 +857,7 @@ export const StudentDashboardPage = () => {
                 </div>
               )}
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between px-5">
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   Mis Prácticas
                   <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-1 rounded-md">{internships.length} TOTAL</span>
@@ -733,47 +928,12 @@ export const StudentDashboardPage = () => {
             </div>
 
             {/* Side Actions & Widgets */}
-            <div className="space-y-8">
-              <h3 className="text-xl font-bold text-gray-900">Acciones Rápidas</h3>
-
-              <div className="grid grid-cols-1 gap-4">
-                <QuickAction
-                  icon={Plus}
-                  title="Nueva Inscripción"
-                  desc="Comienza el proceso para tu próxima práctica"
-                  onClick={() => navigate(PRE_REGISTRATION_PATH)}
-                  primary={true}
-                />
-                <QuickAction
-                  icon={Calendar}
-                  title="Agendar horas y consultas"
-                  desc={hasActiveCoordinators
-                    ? "Solicita consultas generales o presentación final"
-                    : "Solicita presentación final de tu práctica"}
-                  onClick={() => navigate('/entrevistas')}
-                  badge={appointmentNotificationsCount}
-                />
-                <QuickAction
-                  icon={FileText}
-                  title="Carta de Presentación"
-                  desc="Genera o descarga tu carta opcional"
-                  onClick={() => navigate('/cartas-presentacion')}
-                />
-                <QuickAction
-                  icon={Upload}
-                  title="Subir Documentos"
-                  desc="Informes, certificados y evaluaciones"
-                  onClick={() => setIsUploadModalOpen(true)}
-                  disabled={!canUpload || internships.length === 0}
-                />
-                <QuickAction
-                  icon={Download}
-                  title="Portabilidad"
-                  desc="Descarga tus datos y documentos"
-                  onClick={handleDataPortabilityDownload}
-                  disabled={internships.length === 0}
-                />
-              </div>
+            <div className="space-y-6">
+              <PersonalDataBlock
+                user={user}
+                onDownload={() => setIsPortabilityModalOpen(true)}
+                downloading={downloadingData}
+              />
 
               {/* Help Widget */}
               <div className="bg-gradient-to-br from-[#d22864] to-[#972fa4] rounded-[2rem] p-8 text-white relative overflow-hidden shadow-xl shadow-[#d22864]/20">
@@ -792,17 +952,137 @@ export const StudentDashboardPage = () => {
             </div>
 
           </div>
+          )}
+
+          {activeTab === 'letters' && (
+            <motion.div
+              className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm"
+              {...getPracticeCardEntryMotion()}
+            >
+              <PresentationLettersPanel />
+            </motion.div>
+          )}
+
+          {activeTab === 'agenda' && (
+            <motion.div
+              className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm"
+              {...getPracticeCardEntryMotion()}
+            >
+              <InterviewSchedulingPage embedded />
+            </motion.div>
+          )}
+
+          {activeTab === 'tracking' && (
+            <>
+              {loading ? (
+                <motion.div
+                  className="flex flex-col items-center justify-center rounded-[2rem] border border-gray-100 bg-white py-24 shadow-sm"
+                  {...getPracticeCardEntryMotion()}
+                >
+                  <Loader2 size={42} className="animate-spin text-[#d22864]" />
+                  <p className="mt-4 text-sm font-bold text-gray-500">Preparando seguimiento...</p>
+                </motion.div>
+              ) : selectedTrackingInternshipId ? (
+                <SeguimientoPage
+                  embedded
+                  internshipIdOverride={selectedTrackingInternshipId}
+                />
+              ) : (
+                <motion.div
+                  className="flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-gray-200 bg-white px-8 py-24 text-center"
+                  {...getPracticeCardEntryMotion()}
+                >
+                  <Briefcase size={46} className="text-gray-300" />
+                  <h3 className="mt-5 text-2xl font-black text-gray-900">Sin prácticas para seguimiento</h3>
+                  <p className="mt-2 max-w-md text-sm font-semibold leading-relaxed text-gray-500">
+                    Cuando registres una práctica, esta pestaña mostrará automáticamente la solicitud activa con mayor avance.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => navigate(PRE_REGISTRATION_PATH)}
+                    className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-[#d22864] px-6 py-3 text-sm font-black text-white transition hover:bg-[#b01e52]"
+                  >
+                    <Plus size={18} />
+                    Inscribir nueva práctica
+                  </button>
+                </motion.div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'registration' && (
+            <div>
+              {location.pathname === REGISTRATION_FORM_PATH || location.pathname === `${REGISTRATION_FORM_PATH}/` ? (
+                <RegistrationPage embedded />
+              ) : (
+                <PreRegistrationPage
+                  embedded
+                  formPath={REGISTRATION_FORM_PATH}
+                />
+              )}
+            </div>
+          )}
+
+            {activeTab === 'documents' && (
+            <motion.div
+              className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]"
+              {...getPracticeCardEntryMotion()}
+            >
+              <motion.div
+                className="min-w-0"
+                {...getPracticeCardEntryMotion(0.08)}
+              >
+                <DocumentUploadModal
+                  embedded
+                  isOpen
+                  onClose={() => {}}
+                  internships={internships}
+                  onDocumentUploaded={handleDocumentUploaded}
+                />
+              </motion.div>
+
+              <motion.aside
+                className="space-y-6"
+                {...getPracticeCardEntryMotion(0.16)}
+              >
+                <motion.section
+                  className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm"
+                  {...getPracticeCardEntryMotion(0.2)}
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#d22864]/10 text-[#d22864]">
+                    <Upload size={22} />
+                  </div>
+                  <h3 className="mt-4 text-lg font-black text-gray-900">Entrega documental</h3>
+                  <p className="mt-2 text-sm font-semibold leading-relaxed text-gray-500">
+                    Usa esta pestaña para cargar documentos asociados a tus prácticas. El sistema solo mostrará tipos disponibles según el estado de cada solicitud.
+                  </p>
+                  <div className="mt-5 rounded-2xl bg-gray-50 p-4">
+                    <p className="text-xs font-black uppercase tracking-wider text-gray-400">Prácticas habilitadas</p>
+                    <p className="mt-1 text-3xl font-black text-gray-900">{uploadableInternshipsCount}</p>
+                  </div>
+                </motion.section>
+
+                <PersonalDataBlock
+                  user={user}
+                  onDownload={() => setIsPortabilityModalOpen(true)}
+                  downloading={downloadingData}
+                />
+              </motion.aside>
+            </motion.div>
+            )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
 
-      <Footer />
-
-      <DocumentUploadModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-        internships={internships}
-        onDocumentUploaded={handleDocumentUploaded}
+      <DataPortabilityModal
+        isOpen={isPortabilityModalOpen}
+        isDownloading={downloadingData}
+        onClose={() => setIsPortabilityModalOpen(false)}
+        onDownload={handleDataPortabilityDownload}
       />
+
+      <Footer />
     </div>
   );
 };

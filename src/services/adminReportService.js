@@ -6,7 +6,7 @@ const cleanParams = (filters = {}) => Object.fromEntries(
 
 const getFilename = (contentDisposition) => {
   const match = contentDisposition?.match(/filename="?([^";]+)"?/i);
-  return match?.[1] || 'admin_reports.csv';
+  return match?.[1];
 };
 
 export const adminReportService = {
@@ -24,7 +24,18 @@ export const adminReportService = {
     });
     return {
       blob: response.data,
-      filename: getFilename(response.headers['content-disposition']),
+      filename: getFilename(response.headers['content-disposition']) || 'reporte_institucional.csv',
+    };
+  },
+
+  async exportPdf(filters) {
+    const response = await api.get('/admin/reports/export.pdf', {
+      params: cleanParams(filters),
+      responseType: 'blob',
+    });
+    return {
+      blob: response.data,
+      filename: getFilename(response.headers['content-disposition']) || 'reporte_institucional.pdf',
     };
   },
 };

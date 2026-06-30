@@ -77,7 +77,7 @@ export const NotificationBell = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="absolute right-0 mt-3 w-[360px] bg-white rounded-[20px] shadow-xl border border-gray-100 overflow-hidden z-50"
+            className="fixed left-3 right-3 top-[72px] z-50 max-h-[calc(100vh-6rem)] overflow-hidden rounded-[20px] border border-gray-100 bg-white shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[min(380px,calc(100vw-2rem))] sm:max-h-none"
           >
             <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100">
               <div>
@@ -105,7 +105,7 @@ export const NotificationBell = () => {
               </div>
             </div>
 
-            <div className="max-h-[340px] overflow-y-auto">
+            <div className="max-h-[calc(100vh-12rem)] overflow-y-auto sm:max-h-[340px]">
               {loading && notifications.length === 0 && (
                 <p className="px-5 py-8 text-center text-gray-500 text-sm">Cargando notificaciones...</p>
               )}
@@ -135,32 +135,38 @@ export const NotificationBell = () => {
                 return (
                   <div
                     key={notification.id}
-                    className={`flex items-start gap-3 px-5 py-3.5 border-b border-gray-50 last:border-b-0 hover:bg-gray-50 transition-colors ${notification.is_read ? 'bg-white' : 'bg-[#fff8fb]'}`}
+                    className={`border-b border-gray-50 px-4 py-3.5 transition-colors last:border-b-0 hover:bg-gray-50 sm:px-5 ${notification.is_read ? 'bg-white' : 'bg-[#fff8fb]'}`}
                   >
-                    <div className={`w-9 h-9 shrink-0 ${meta.bg} rounded-full flex items-center justify-center`}>
-                      <Icon className={meta.color} size={18} />
+                    <div className="flex items-start gap-3">
+                      <div className={`w-9 h-9 shrink-0 ${meta.bg} rounded-full flex items-center justify-center`}>
+                        <Icon className={meta.color} size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{meta.label}</p>
+                        <p className="mt-0.5 whitespace-normal break-words text-sm font-semibold leading-5 text-gray-800 [overflow-wrap:anywhere]">
+                          {notification.subject}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-400">{formatDate(notification.created_at)}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">{meta.label}</p>
-                      <p className="text-sm text-gray-800 font-semibold truncate">{notification.subject}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{formatDate(notification.created_at)}</p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-2">
-                      {notification.status === 'failed' && (
-                        <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
-                          Fallida
-                        </span>
-                      )}
-                      {!notification.is_read && (
-                        <button
-                          type="button"
-                          onClick={() => markAsRead(notification.id)}
-                          className="text-[10px] font-bold text-[#d22864] hover:underline"
-                        >
-                          Marcar leída
-                        </button>
-                      )}
-                    </div>
+                    {(notification.status === 'failed' || !notification.is_read) && (
+                      <div className="mt-2 flex items-center justify-end gap-2 pl-12">
+                        {notification.status === 'failed' && (
+                          <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                            Fallida
+                          </span>
+                        )}
+                        {!notification.is_read && (
+                          <button
+                            type="button"
+                            onClick={() => markAsRead(notification.id)}
+                            className="text-[10px] font-bold text-[#d22864] hover:underline cursor-pointer"
+                          >
+                            Marcar leída
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

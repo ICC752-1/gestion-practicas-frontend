@@ -55,14 +55,17 @@ export const authService = {
         return response.data;
     },
 
-    async activateAccount(token, newPassword, admissionYear) {
+    async activateAccount(token, newPassword, optionalProfile = {}) {
         const payload = {
             token,
             new_password: newPassword,
         };
 
-        if (admissionYear !== undefined) {
-            payload.admission_year = admissionYear;
+        if (optionalProfile.phone !== undefined) {
+            payload.phone = optionalProfile.phone;
+        }
+        if (optionalProfile.sexo !== undefined) {
+            payload.sexo = optionalProfile.sexo;
         }
 
         await api.post("/auth/activate-account", payload);

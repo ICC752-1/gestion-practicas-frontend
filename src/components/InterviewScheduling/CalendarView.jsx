@@ -59,7 +59,7 @@ export const CalendarView = ({ selectedDate, onSelectDate, savedDates }) => {
     };
 
     return (
-        <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100">
+        <div className="w-full">
             {/* Month navigation */}
             <div className="flex items-center justify-between mb-5">
                 <button
@@ -106,23 +106,28 @@ export const CalendarView = ({ selectedDate, onSelectDate, savedDates }) => {
                     const past = isPast(day);
                     const selected = isSelected(day);
                     const slots = hasSlots(day);
+                    const selectable = !past || slots;
 
                     return (
                         <button
                             key={day}
-                            disabled={past}
+                            type="button"
+                            disabled={!selectable}
                             onClick={() =>
                                 onSelectDate({ year: viewYear, month: viewMonth, day })
                             }
+                            aria-label={`${day} de ${MONTHS[viewMonth]} de ${viewYear}${slots ? ', con citas registradas' : ''}`}
                             className={[
                                 'relative aspect-square flex items-center justify-center rounded-xl text-sm font-medium transition',
-                                past
+                                !selectable
                                     ? 'text-gray-300 cursor-not-allowed'
                                     : selected
                                         ? 'bg-brand-medium text-white'
                                         : isToday(day)
                                             ? 'text-brand-medium ring-1 ring-brand-medium hover:bg-brand-medium/10'
-                                            : 'hover:bg-gray-100',
+                                            : past
+                                                ? 'text-gray-500 hover:bg-gray-100'
+                                                : 'hover:bg-gray-100',
                             ].join(' ')}
                         >
                             {day}
@@ -143,7 +148,7 @@ export const CalendarView = ({ selectedDate, onSelectDate, savedDates }) => {
             {/* Legend */}
             <p className="mt-4 text-xs text-gray-400 flex items-center gap-1.5">
                 <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
-                Día con horarios guardados
+                Día con citas registradas
             </p>
         </div>
     );

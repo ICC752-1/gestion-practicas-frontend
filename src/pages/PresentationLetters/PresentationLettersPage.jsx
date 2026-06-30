@@ -1,13 +1,24 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
+  Braces,
+  Check,
   CheckCircle2,
+  ChevronDown,
+  Copy,
   Download,
+  Eye,
   FileText,
+  Hash,
+  ImagePlus,
   Loader2,
   Mail,
   RefreshCw,
   Save,
   Send,
+  Trash2,
+  UserRound,
+  X,
 } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
@@ -22,14 +33,51 @@ import {
 const PRACTICE_TYPES = [
   'Práctica de Estudio I',
   'Práctica de Estudio II',
+  'Práctica Controlada',
 ];
 
-const VARIABLES = [
-  '{{student_name}}',
-  '{{student_identifier}}',
-  '{{practice_type}}',
+const getPracticeCardEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
+
+const TEMPLATE_VARIABLES = [
+  {
+    token: '{{student_name}}',
+    title: 'Nombre del estudiante',
+    description: 'Nombres y apellidos registrados en la cuenta del estudiante.',
+    example: 'Ej.: Camila Rojas',
+    recommendedFields: 'Introducción o presentación del estudiante.',
+    icon: UserRound,
+  },
+  {
+    token: '{{student_identifier}}',
+    title: 'Número de matrícula',
+    description: 'Matrícula registrada en la cuenta del estudiante.',
+    example: 'Ej.: 12345678924',
+    recommendedFields: 'Presentación del estudiante.',
+    icon: Hash,
+  },
+  {
+    token: '{{practice_type}}',
+    title: 'Tipo de práctica',
+    description: 'Tipo seleccionado para la plantilla activa.',
+    example: 'Ej.: Práctica de Estudio I',
+    recommendedFields: 'Título, subtítulo o descripción específica.',
+    icon: FileText,
+  },
+  {
+    token: '{{minimum_hours}}',
+    title: 'Horas mínimas',
+    description: 'Cantidad de horas configurada para la plantilla seleccionada.',
+    example: 'Ej.: 168',
+    recommendedFields: 'Párrafo de duración y aprendizajes.',
+    icon: Hash,
+  },
+];
+const INTERNAL_VARIABLE_TOKENS = [
   '{{current_date}}',
-  '{{minimum_hours}}',
   '{{learning_outcomes}}',
 ];
 
@@ -39,6 +87,11 @@ const TEMPLATE_READER_ROLES = new Set([
   'Director de carrera',
   'Secretaria de Carrera',
 ]);
+const DEFAULT_MINIMUM_HOURS_CLAUSE = (
+  'Es importante destacar que la duración mínima de la Práctica de Estudios I '
+  + 'es de {{minimum_hours}} horas cronológicas, y que una vez completada con éxito el/la '
+  + 'estudiante debe ser capaz de evidenciar los siguientes aprendizajes:'
+);
 
 const DEFAULT_TEMPLATE_FORM = {
   title: '',
@@ -47,12 +100,14 @@ const DEFAULT_TEMPLATE_FORM = {
   student_presentation_template: '',
   practice_description: '',
   minimum_hours: 168,
+  minimum_hours_clause: DEFAULT_MINIMUM_HOURS_CLAUSE,
   learning_outcomes: '',
   insurance_clause: '',
   closing_text: '',
   signature_name: '',
   signature_role: '',
   signature_institution: '',
+  signature_image_uploaded: false,
   is_active: true,
 };
 
@@ -64,6 +119,24 @@ const getErrorMessage = (error) => {
   if (Array.isArray(detail)) return detail.map((item) => item.msg).join(', ');
 
   return 'No se pudo completar la operación.';
+};
+
+const getBlobErrorMessage = async (error) => {
+  const responseData = error?.response?.data;
+  if (!(responseData instanceof Blob)) return getErrorMessage(error);
+
+  try {
+    const parsed = JSON.parse(await responseData.text());
+    return getErrorMessage({
+      ...error,
+      response: {
+        ...error.response,
+        data: parsed,
+      },
+    });
+  } catch {
+    return 'No se pudo renderizar la previsualización en PDF.';
+  }
 };
 
 const formatDateTime = (value) => {
@@ -85,6 +158,7 @@ const toTemplateForm = (template) => ({
   student_presentation_template: template?.student_presentation_template || '',
   practice_description: template?.practice_description || '',
   minimum_hours: template?.minimum_hours || 168,
+  minimum_hours_clause: template?.minimum_hours_clause || DEFAULT_MINIMUM_HOURS_CLAUSE,
   learning_outcomes: Array.isArray(template?.learning_outcomes)
     ? template.learning_outcomes.join('\n')
     : '',
@@ -93,25 +167,114 @@ const toTemplateForm = (template) => ({
   signature_name: template?.signature_name || '',
   signature_role: template?.signature_role || '',
   signature_institution: template?.signature_institution || '',
+  signature_image_uploaded: Boolean(template?.signature_image_uploaded),
   is_active: template?.is_active ?? true,
 });
 
-const buildTemplatePayload = (form) => ({
-  ...form,
-  minimum_hours: Number(form.minimum_hours),
-  learning_outcomes: form.learning_outcomes
-    .split('\n')
-    .map((item) => item.trim())
-    .filter(Boolean),
-});
+const buildTemplatePayload = (form) => {
+  const { signature_image_uploaded: _signatureImageUploaded, ...editableFields } = form;
+
+  return {
+    ...editableFields,
+    minimum_hours: Number(form.minimum_hours),
+    learning_outcomes: form.learning_outcomes
+      .split('\n')
+      .map((item) => item.trim())
+      .filter(Boolean),
+  };
+};
+
+const VARIABLE_TOKEN_PATTERN = /({{[a-z_]+}})/g;
+const KNOWN_VARIABLE_TOKENS = new Set([
+  ...TEMPLATE_VARIABLES.map((variable) => variable.token),
+  ...INTERNAL_VARIABLE_TOKENS,
+]);
+
+const renderHighlightedTemplateText = (value, placeholder) => {
+  const text = value || placeholder || ' ';
+  const parts = text.split(VARIABLE_TOKEN_PATTERN);
+
+  return parts.map((part, index) => {
+    if (!part) return null;
+    if (KNOWN_VARIABLE_TOKENS.has(part)) {
+      return (
+        <mark
+          key={`${part}-${index}`}
+          className="rounded-md bg-[#fff0f6] px-1 font-black text-[#b01e52]"
+        >
+          {part}
+        </mark>
+      );
+    }
+
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
+};
+
+const TemplateTextarea = ({
+  label,
+  value,
+  onValueChange,
+  disabled,
+  required,
+  rows = 3,
+  placeholder = '',
+}) => {
+  const textareaRef = useRef(null);
+  const minHeight = rows * 24 + 28;
+
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.max(textarea.scrollHeight, minHeight)}px`;
+  }, [value, minHeight]);
+
+  return (
+    <label className="block text-sm font-bold text-gray-700">
+      {label}
+      <div
+        className={`relative mt-1 rounded-xl border transition focus-within:border-[#d22864] ${
+          disabled ? 'border-gray-200 bg-gray-50' : 'border-gray-200 bg-white'
+        }`}
+      >
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none min-h-full whitespace-pre-wrap break-words px-3 py-3 text-sm leading-6 ${
+            value ? 'text-gray-700' : 'text-gray-400'
+          }`}
+          style={{ minHeight }}
+        >
+          {renderHighlightedTemplateText(value, placeholder)}
+          {'\n'}
+        </div>
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(event) => onValueChange(event.target.value)}
+          disabled={disabled}
+          required={required}
+          rows={rows}
+          spellCheck="true"
+          className="absolute inset-0 h-full w-full resize-none overflow-hidden rounded-xl bg-transparent px-3 py-3 text-sm leading-6 text-transparent caret-gray-900 outline-none selection:bg-[#d22864]/20 disabled:cursor-not-allowed"
+          style={{ minHeight }}
+        />
+      </div>
+    </label>
+  );
+};
 
 const StudentLetterCard = ({ letter, onDownload, downloadingId }) => (
-  <article className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+  <motion.article
+    className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+    {...getPracticeCardEntryMotion()}
+  >
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-lg font-black text-gray-950">{letter.practice_type}</h3>
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-black text-green-700">
+          <h3 className="text-lg font-bold text-gray-900">{letter.practice_type}</h3>
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
             <CheckCircle2 size={13} />
             Generada
           </span>
@@ -129,13 +292,13 @@ const StudentLetterCard = ({ letter, onDownload, downloadingId }) => (
         type="button"
         disabled={downloadingId === letter.id}
         onClick={() => onDownload(letter)}
-        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] disabled:opacity-60"
+        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#b01e52] disabled:opacity-60 cursor-pointer"
       >
         {downloadingId === letter.id ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
         Descargar
       </button>
     </div>
-  </article>
+  </motion.article>
 );
 
 const StudentView = ({
@@ -150,17 +313,26 @@ const StudentView = ({
   const [practiceType, setPracticeType] = useState(PRACTICE_TYPES[0]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-      <aside className="space-y-5">
-        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+    <motion.div
+      className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]"
+      {...getPracticeCardEntryMotion()}
+    >
+      <motion.aside
+        className="space-y-5"
+        {...getPracticeCardEntryMotion(0.08)}
+      >
+        <motion.section
+          className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+          {...getPracticeCardEntryMotion(0.12)}
+        >
           <div className="mb-5 flex items-start gap-3">
             <div className="rounded-2xl bg-[#d22864]/10 p-3 text-[#d22864]">
               <FileText size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-black text-gray-950">Generar carta</h3>
+              <h3 className="text-xl font-bold text-gray-900">Generar carta</h3>
               <p className="mt-1 text-sm text-gray-500">
-                Selecciona el tipo de práctica. El sistema genera el PDF y registra el envío a tu correo.
+                Selecciona el tipo de práctica. El sistema genera el documento PDF y registra el envío a tu correo.
               </p>
             </div>
           </div>
@@ -184,29 +356,34 @@ const StudentView = ({
             type="button"
             disabled={generating}
             onClick={() => onGenerate(practiceType)}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 font-black text-white transition hover:bg-[#b01e52] disabled:opacity-60"
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 font-semibold text-white transition hover:bg-[#b01e52] disabled:opacity-60 cursor-pointer"
           >
             {generating ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
             Generar carta de presentación
           </button>
-        </section>
+        </motion.section>
 
-        <section className="rounded-2xl border border-[#d22864]/10 bg-[#fff0f6] p-5 text-sm text-[#8B1D46]">
-          <h3 className="font-black">Regla de uso</h3>
+        <motion.section
+          className="rounded-2xl border border-[#d22864]/10 bg-[#fff0f6] p-5 text-sm text-[#8B1D46]"
+          {...getPracticeCardEntryMotion(0.18)}
+        >
+          <h3 className="font-bold">Nota</h3>
           <p className="mt-2 leading-relaxed">
-            La carta es opcional. No bloquea inducción, inscripción, aprobación,
-            agenda ni seguimiento de práctica.
+            Esta carta es únicamente para gestionar el acercamiento inicial con la organización. A veces, es un requisito que algunas empresas solicitan presentar.
           </p>
-        </section>
-      </aside>
+        </motion.section>
+      </motion.aside>
 
-      <section className="min-w-0 space-y-4">
+      <motion.section
+        className="min-w-0 space-y-4"
+        {...getPracticeCardEntryMotion(0.16)}
+      >
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-black text-gray-950">Mis cartas generadas</h2>
+          <h2 className="text-xl font-bold text-gray-900">Mis cartas generadas</h2>
           <button
             type="button"
             onClick={onRefresh}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-black text-gray-700 shadow-sm ring-1 ring-gray-100 transition hover:bg-gray-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-gray-100 transition hover:bg-gray-50 cursor-pointer"
           >
             <RefreshCw size={16} />
             Actualizar
@@ -214,20 +391,26 @@ const StudentView = ({
         </div>
 
         {loading ? (
-          <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl bg-white shadow-sm">
+          <motion.div
+            className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl bg-white shadow-sm"
+            {...getPracticeCardEntryMotion(0.2)}
+          >
             <Loader2 className="animate-spin text-[#d22864]" size={42} />
             <p className="mt-4 text-sm font-bold text-gray-500">Cargando cartas...</p>
-          </div>
+          </motion.div>
         ) : letters.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center">
+          <motion.div
+            className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center"
+            {...getPracticeCardEntryMotion(0.2)}
+          >
             <Mail className="mx-auto text-gray-300" size={44} />
-            <h3 className="mt-4 text-lg font-black text-gray-900">
+            <h3 className="mt-4 text-lg font-bold text-gray-900">
               Aún no tienes cartas generadas
             </h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
               Cuando generes una carta, quedará disponible para descarga desde esta sección.
             </p>
-          </div>
+          </motion.div>
         ) : (
           letters.map((letter) => (
             <StudentLetterCard
@@ -238,8 +421,8 @@ const StudentView = ({
             />
           ))
         )}
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 };
 
@@ -248,18 +431,89 @@ const TemplateEditor = ({
   onSelectedTypeChange,
   form,
   onFormChange,
+  onPreview,
   onSave,
+  onSignatureImageDelete,
+  onSignatureImageUpload,
+  signatureImageUrl,
   loading,
   saving,
   canEdit,
 }) => {
   const updateField = (field, value) => onFormChange({ ...form, [field]: value });
+  const [copiedVariable, setCopiedVariable] = useState('');
+  const [variablesExpanded, setVariablesExpanded] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
+  const [previewPdfUrl, setPreviewPdfUrl] = useState('');
+  const previewPdfUrlRef = useRef('');
+
+  const revokePreviewPdfUrl = useCallback(() => {
+    if (previewPdfUrlRef.current) {
+      window.URL.revokeObjectURL(previewPdfUrlRef.current);
+      previewPdfUrlRef.current = '';
+    }
+    setPreviewPdfUrl('');
+  }, []);
+
+  useEffect(() => () => revokePreviewPdfUrl(), [revokePreviewPdfUrl]);
+
+  const handleOpenPreview = async () => {
+    setIsPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewError('');
+    revokePreviewPdfUrl();
+
+    try {
+      const blob = await onPreview();
+      const objectUrl = window.URL.createObjectURL(blob);
+      previewPdfUrlRef.current = objectUrl;
+      setPreviewPdfUrl(objectUrl);
+    } catch (error) {
+      setPreviewError(await getBlobErrorMessage(error));
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleClosePreview = () => {
+    setIsPreviewOpen(false);
+    setPreviewError('');
+    revokePreviewPdfUrl();
+  };
+
+  const handleCopyVariable = async (token) => {
+    try {
+      await navigator.clipboard.writeText(token);
+      setCopiedVariable(token);
+      window.setTimeout(() => {
+        setCopiedVariable((current) => (current === token ? '' : current));
+      }, 1600);
+    } catch {
+      setCopiedVariable('');
+    }
+  };
+
+  const handleSignatureFileChange = (event) => {
+    const [file] = event.target.files || [];
+    event.target.value = '';
+    if (file) {
+      onSignatureImageUpload(file);
+    }
+  };
 
   return (
     <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-      <aside className="space-y-5">
-        <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <h3 className="text-lg font-black text-gray-950">Plantilla por práctica</h3>
+      <motion.aside
+        className="space-y-5"
+        {...getPracticeCardEntryMotion(0.04)}
+      >
+        <motion.section
+          className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+          {...getPracticeCardEntryMotion(0.08)}
+        >
+          <h3 className="text-lg font-bold text-gray-900">Plantilla por práctica</h3>
           <label className="mt-4 block text-sm font-bold text-gray-700">
             Tipo de práctica
             <select
@@ -274,31 +528,115 @@ const TemplateEditor = ({
               ))}
             </select>
           </label>
-        </section>
+        </motion.section>
 
-        <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-black uppercase tracking-wide text-gray-500">
-            Variables disponibles
-          </h3>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {VARIABLES.map((variable) => (
-              <code
-                key={variable}
-                className="rounded-lg bg-gray-100 px-2 py-1 text-xs font-bold text-gray-700"
-              >
-                {variable}
-              </code>
-            ))}
+        <motion.section
+          className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+          {...getPracticeCardEntryMotion(0.14)}
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff0f6] text-[#d22864]">
+              <Braces size={20} />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wide text-gray-500">
+                Variables disponibles
+              </h3>
+              <p className="mt-1 text-sm leading-relaxed text-gray-500">
+                Se reemplazan automáticamente al generar el PDF. Mantén las llaves dobles.
+              </p>
+            </div>
           </div>
-        </section>
-      </aside>
 
-      <section className="min-w-0 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div
+            className={`relative mt-4 overflow-hidden rounded-xl border border-gray-100 transition-[max-height] duration-300 ${
+              variablesExpanded ? 'max-h-[720px]' : 'max-h-48'
+            } lg:max-h-none`}
+          >
+            <div>
+              {TEMPLATE_VARIABLES.map((variable, index) => {
+                const Icon = variable.icon;
+                const isCopied = copiedVariable === variable.token;
+
+                return (
+                  <motion.div
+                    key={variable.token}
+                    className="border-b border-gray-100 bg-gray-50/70 p-3 last:border-b-0"
+                    {...getPracticeCardEntryMotion(0.18 + index * 0.035)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#d22864] ring-1 ring-gray-100">
+                        <Icon size={16} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-black text-gray-900">{variable.title}</p>
+                            <code className="mt-1 inline-block max-w-full rounded-lg bg-white px-2 py-1 text-xs font-black text-gray-700 ring-1 ring-gray-100">
+                              {variable.token}
+                            </code>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyVariable(variable.token)}
+                            className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border text-xs transition ${
+                              isCopied
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                : 'border-gray-200 bg-white text-gray-500 hover:border-[#d22864] hover:text-[#d22864]'
+                            }`}
+                            aria-label={`Copiar ${variable.token}`}
+                            title={`Copiar ${variable.token}`}
+                          >
+                            {isCopied ? <Check size={15} /> : <Copy size={15} />}
+                          </button>
+                        </div>
+                        <p className="mt-2 text-xs leading-relaxed text-gray-600">
+                          {variable.description}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold text-gray-400">
+                          {variable.example}
+                        </p>
+                        <p className="mt-2 text-[11px] font-bold uppercase tracking-wide text-gray-500">
+                          Útil en: {variable.recommendedFields}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+            {!variablesExpanded && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 border-t border-gray-100 bg-white/95 lg:hidden" />
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setVariablesExpanded((current) => !current)}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-black text-gray-600 transition hover:border-[#d22864] hover:text-[#d22864] lg:hidden"
+            aria-expanded={variablesExpanded}
+          >
+            {variablesExpanded ? 'Mostrar menos' : `Ver las ${TEMPLATE_VARIABLES.length} variables`}
+            <ChevronDown
+              size={16}
+              className={`transition-transform ${variablesExpanded ? 'rotate-180' : ''}`}
+            />
+          </button>
+        </motion.section>
+      </motion.aside>
+
+      <motion.section
+        className="min-w-0 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+        {...getPracticeCardEntryMotion(0.1)}
+      >
         {loading ? (
-          <div className="flex min-h-[420px] flex-col items-center justify-center">
+          <motion.div
+            className="flex min-h-[420px] flex-col items-center justify-center"
+            {...getPracticeCardEntryMotion(0.16)}
+          >
             <Loader2 className="animate-spin text-[#d22864]" size={42} />
             <p className="mt-4 text-sm font-bold text-gray-500">Cargando plantilla...</p>
-          </div>
+          </motion.div>
         ) : (
           <form
             className="space-y-5"
@@ -307,7 +645,29 @@ const TemplateEditor = ({
               onSave();
             }}
           >
-            <div className="grid gap-4 md:grid-cols-2">
+            <motion.div
+              className="flex flex-col gap-3 border-b border-gray-100 pb-5 sm:flex-row sm:items-center sm:justify-between"
+              {...getPracticeCardEntryMotion(0.16)}
+            >
+              <div>
+                <h3 className="text-xl font-black text-gray-950">Edición de plantilla</h3>
+                <p className="mt-1 text-sm font-semibold text-gray-500">{selectedType}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenPreview}
+                disabled={previewLoading}
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-black text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {previewLoading ? <Loader2 className="animate-spin" size={17} /> : <Eye size={17} />}
+                Previsualizar PDF
+              </button>
+            </motion.div>
+
+            <motion.div
+              className="grid gap-4 md:grid-cols-2"
+              {...getPracticeCardEntryMotion(0.22)}
+            >
               <label className="text-sm font-bold text-gray-700">
                 Título
                 <input
@@ -328,47 +688,47 @@ const TemplateEditor = ({
                   required
                 />
               </label>
-            </div>
+            </motion.div>
 
-            <label className="block text-sm font-bold text-gray-700">
-              Introducción/base
-              <textarea
+            <motion.div {...getPracticeCardEntryMotion(0.28)}>
+              <TemplateTextarea
+                label="Introducción/base"
                 rows={3}
                 value={form.base_intro}
-                onChange={(event) => updateField('base_intro', event.target.value)}
+                onValueChange={(value) => updateField('base_intro', value)}
                 disabled={!canEdit}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-[#d22864] disabled:bg-gray-50"
                 required
               />
-            </label>
+            </motion.div>
 
-            <label className="block text-sm font-bold text-gray-700">
-              Presentación del estudiante
-              <textarea
+            <motion.div {...getPracticeCardEntryMotion(0.34)}>
+              <TemplateTextarea
+                label="Presentación del estudiante"
                 rows={3}
                 value={form.student_presentation_template}
-                onChange={(event) => updateField('student_presentation_template', event.target.value)}
+                onValueChange={(value) => updateField('student_presentation_template', value)}
                 disabled={!canEdit}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-[#d22864] disabled:bg-gray-50"
                 required
               />
-            </label>
+            </motion.div>
 
-            <label className="block text-sm font-bold text-gray-700">
-              Descripción específica de práctica
-              <textarea
+            <motion.div {...getPracticeCardEntryMotion(0.4)}>
+              <TemplateTextarea
+                label="Descripción específica de práctica"
                 rows={4}
                 value={form.practice_description}
-                onChange={(event) => updateField('practice_description', event.target.value)}
+                onValueChange={(value) => updateField('practice_description', value)}
                 disabled={!canEdit}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-[#d22864] disabled:bg-gray-50"
                 required
               />
-            </label>
+            </motion.div>
 
-            <div className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
+            <motion.div
+              className="grid items-start gap-4 md:grid-cols-[180px_minmax(0,1fr)]"
+              {...getPracticeCardEntryMotion(0.46)}
+            >
               <label className="text-sm font-bold text-gray-700">
-                Horas mínimas
+                Valor de horas mínimas
                 <input
                   type="number"
                   min="1"
@@ -380,45 +740,54 @@ const TemplateEditor = ({
                   required
                 />
               </label>
-              <label className="text-sm font-bold text-gray-700">
-                Aprendizajes esperados
-                <textarea
-                  rows={5}
-                  value={form.learning_outcomes}
-                  onChange={(event) => updateField('learning_outcomes', event.target.value)}
-                  disabled={!canEdit}
-                  placeholder="Un aprendizaje por línea"
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-[#d22864] disabled:bg-gray-50"
-                  required
-                />
-              </label>
-            </div>
+              <TemplateTextarea
+                label="Párrafo de duración y aprendizajes"
+                rows={4}
+                value={form.minimum_hours_clause}
+                onValueChange={(value) => updateField('minimum_hours_clause', value)}
+                disabled={!canEdit}
+                required
+              />
+            </motion.div>
 
-            <label className="block text-sm font-bold text-gray-700">
-              Cláusula de seguro
-              <textarea
+            <motion.div {...getPracticeCardEntryMotion(0.5)}>
+              <TemplateTextarea
+                label="Aprendizajes esperados"
+                rows={5}
+                value={form.learning_outcomes}
+                onValueChange={(value) => updateField('learning_outcomes', value)}
+                disabled={!canEdit}
+                placeholder="Un aprendizaje por línea"
+                required
+              />
+            </motion.div>
+
+            <motion.div {...getPracticeCardEntryMotion(0.52)}>
+              <TemplateTextarea
+                label="Cláusula de seguro"
                 rows={3}
                 value={form.insurance_clause}
-                onChange={(event) => updateField('insurance_clause', event.target.value)}
+                onValueChange={(value) => updateField('insurance_clause', value)}
                 disabled={!canEdit}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-[#d22864] disabled:bg-gray-50"
                 required
               />
-            </label>
+            </motion.div>
 
-            <label className="block text-sm font-bold text-gray-700">
-              Cierre
-              <textarea
+            <motion.div {...getPracticeCardEntryMotion(0.58)}>
+              <TemplateTextarea
+                label="Cierre"
                 rows={3}
                 value={form.closing_text}
-                onChange={(event) => updateField('closing_text', event.target.value)}
+                onValueChange={(value) => updateField('closing_text', value)}
                 disabled={!canEdit}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-[#d22864] disabled:bg-gray-50"
                 required
               />
-            </label>
+            </motion.div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <motion.div
+              className="grid gap-4 md:grid-cols-3"
+              {...getPracticeCardEntryMotion(0.64)}
+            >
               <label className="text-sm font-bold text-gray-700">
                 Firma
                 <input
@@ -449,30 +818,150 @@ const TemplateEditor = ({
                   required
                 />
               </label>
-            </div>
+            </motion.div>
+
+            <motion.section
+              className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4"
+              {...getPracticeCardEntryMotion(0.7)}
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h4 className="text-sm font-black uppercase tracking-wide text-gray-500">
+                    Imagen de firma
+                  </h4>
+                  <p className="mt-1 text-sm font-semibold text-gray-500">
+                    PNG o JPG, máximo 2 MB.
+                  </p>
+                </div>
+                {canEdit && (
+                  <div className="flex flex-wrap gap-2">
+                    <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-black text-gray-700 ring-1 ring-gray-200 transition hover:text-[#d22864] hover:ring-[#d22864]">
+                      <ImagePlus size={16} />
+                      {signatureImageUrl ? 'Reemplazar firma' : 'Subir firma'}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg"
+                        onChange={handleSignatureFileChange}
+                        className="sr-only"
+                      />
+                    </label>
+                    {signatureImageUrl && (
+                      <button
+                        type="button"
+                        onClick={onSignatureImageDelete}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-100 bg-white px-4 py-3 text-sm font-black text-red-600 transition hover:bg-red-50 cursor-pointer"
+                      >
+                        <Trash2 size={16} />
+                        Quitar firma
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex min-h-28 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white p-4">
+                {signatureImageUrl ? (
+                  <img
+                    src={signatureImageUrl}
+                    alt="Firma configurada"
+                    className="max-h-24 max-w-full object-contain"
+                  />
+                ) : (
+                  <p className="text-sm font-bold text-gray-400">Sin imagen de firma configurada</p>
+                )}
+              </div>
+            </motion.section>
 
             {canEdit ? (
-              <button
+              <motion.button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] disabled:opacity-60 cursor-pointer"
+                {...getPracticeCardEntryMotion(0.76)}
               >
                 {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
                 Guardar plantilla
-              </button>
+              </motion.button>
             ) : (
-              <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-bold text-gray-500">
+              <motion.p
+                className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-bold text-gray-500"
+                {...getPracticeCardEntryMotion(0.76)}
+              >
                 Solo el Director de carrera puede editar plantillas.
-              </p>
+              </motion.p>
             )}
           </form>
         )}
-      </section>
+      </motion.section>
+
+      {isPreviewOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 p-2 sm:p-6">
+          <div
+            className="flex h-[96vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:h-[92vh] sm:rounded-3xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="presentation-letter-preview-title"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-4 py-4 sm:px-6 sm:py-5">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+                  Previsualización
+                </p>
+                <h2
+                  id="presentation-letter-preview-title"
+                  className="mt-1 text-xl font-black text-gray-950 sm:text-2xl"
+                >
+                  Carta de presentación en PDF
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-gray-500">
+                  Documento renderizado con la edición actual y datos representativos.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleClosePreview}
+                className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition hover:border-[#d22864] hover:text-[#d22864]"
+                aria-label="Cerrar previsualización"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 bg-gray-200 p-2 sm:p-4">
+              {previewLoading ? (
+                <div className="flex h-full flex-col items-center justify-center rounded-xl bg-white">
+                  <Loader2 className="animate-spin text-[#d22864]" size={38} />
+                  <p className="mt-3 text-sm font-bold text-gray-500">Renderizando PDF...</p>
+                </div>
+              ) : previewError ? (
+                <div className="flex h-full flex-col items-center justify-center rounded-xl bg-white px-6 text-center">
+                  <FileText className="text-red-300" size={42} />
+                  <p className="mt-4 max-w-lg text-sm font-bold text-red-700">{previewError}</p>
+                  <button
+                    type="button"
+                    onClick={handleOpenPreview}
+                    className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white"
+                  >
+                    <RefreshCw size={16} />
+                    Reintentar
+                  </button>
+                </div>
+              ) : previewPdfUrl ? (
+                <iframe
+                  src={previewPdfUrl}
+                  title="Vista previa PDF de la carta de presentación"
+                  className="h-full w-full rounded-xl border-0 bg-white"
+                />
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export const PresentationLettersPage = () => {
+export const PresentationLettersPanel = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const roleNames = useMemo(() => normalizeRoleNames(user?.roles), [user]);
@@ -487,6 +976,8 @@ export const PresentationLettersPage = () => {
   const [templateForm, setTemplateForm] = useState(DEFAULT_TEMPLATE_FORM);
   const [templateLoading, setTemplateLoading] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [signatureImageUrl, setSignatureImageUrl] = useState('');
+  const signatureImageUrlRef = useRef('');
 
   const loadLetters = useCallback(async () => {
     if (!isStudent) return;
@@ -505,12 +996,39 @@ export const PresentationLettersPage = () => {
     }
   }, [isStudent, showToast]);
 
+  const revokeSignatureImageUrl = useCallback(() => {
+    if (signatureImageUrlRef.current) {
+      window.URL.revokeObjectURL(signatureImageUrlRef.current);
+      signatureImageUrlRef.current = '';
+    }
+    setSignatureImageUrl('');
+  }, []);
+
+  const loadSignatureImagePreview = useCallback(async (template) => {
+    revokeSignatureImageUrl();
+    if (!template?.signature_image_uploaded) return;
+
+    try {
+      const blob = await presentationLetterService.getSignatureImage(selectedType);
+      const objectUrl = window.URL.createObjectURL(blob);
+      signatureImageUrlRef.current = objectUrl;
+      setSignatureImageUrl(objectUrl);
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'No se pudo cargar la firma',
+        message: getErrorMessage(error),
+      });
+    }
+  }, [revokeSignatureImageUrl, selectedType, showToast]);
+
   const loadTemplate = useCallback(async () => {
     if (!canReadTemplates) return;
     setTemplateLoading(true);
     try {
       const template = await presentationLetterService.getTemplate(selectedType);
       setTemplateForm(toTemplateForm(template));
+      await loadSignatureImagePreview(template);
     } catch (error) {
       showToast({
         type: 'error',
@@ -520,7 +1038,7 @@ export const PresentationLettersPage = () => {
     } finally {
       setTemplateLoading(false);
     }
-  }, [canReadTemplates, selectedType, showToast]);
+  }, [canReadTemplates, loadSignatureImagePreview, selectedType, showToast]);
 
   useEffect(() => {
     loadLetters();
@@ -529,6 +1047,8 @@ export const PresentationLettersPage = () => {
   useEffect(() => {
     loadTemplate();
   }, [loadTemplate]);
+
+  useEffect(() => () => revokeSignatureImageUrl(), [revokeSignatureImageUrl]);
 
   const handleGenerate = async (practiceType) => {
     setGenerating(true);
@@ -593,23 +1113,79 @@ export const PresentationLettersPage = () => {
     }
   };
 
-  return (
-    <div className="flex min-h-screen flex-col bg-[#FAFAFA]">
-      <UserHeader />
+  const handlePreviewTemplate = () => (
+    presentationLetterService.previewTemplate(
+      selectedType,
+      buildTemplatePayload(templateForm),
+    )
+  );
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-5 py-8 sm:px-8">
-        <div className="mb-6">
-          <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
-            Carta de presentación
-          </p>
-          <h1 className="mt-2 text-3xl font-black text-gray-950">
-            {isStudent ? 'Mis cartas de presentación' : 'Plantillas de carta de presentación'}
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-500">
-            El Director administra plantillas por tipo de práctica. El estudiante
-            genera automáticamente su PDF con datos reales y puede descargarlo desde esta página.
-          </p>
-        </div>
+  const handleSignatureImageUpload = async (file) => {
+    setSavingTemplate(true);
+    try {
+      const updated = await presentationLetterService.uploadSignatureImage(
+        selectedType,
+        file,
+      );
+      setTemplateForm(toTemplateForm(updated));
+      await loadSignatureImagePreview(updated);
+      showToast({
+        type: 'success',
+        title: 'Firma actualizada',
+        message: 'La imagen se usará en las próximas cartas generadas.',
+      });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'No se pudo subir la firma',
+        message: getErrorMessage(error),
+      });
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const handleSignatureImageDelete = async () => {
+    setSavingTemplate(true);
+    try {
+      const updated = await presentationLetterService.deleteSignatureImage(selectedType);
+      setTemplateForm(toTemplateForm(updated));
+      revokeSignatureImageUrl();
+      showToast({
+        type: 'success',
+        title: 'Firma eliminada',
+        message: 'La plantilla volverá a usar solo los datos escritos de firma.',
+      });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'No se pudo eliminar la firma',
+        message: getErrorMessage(error),
+      });
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  return (
+    <>
+      <motion.div
+        className="mb-6"
+        {...getPracticeCardEntryMotion()}
+      >
+        <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+          Carta de presentación
+        </p>
+        <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight">
+          {isStudent ? 'Mis cartas de presentación' : 'Plantillas de carta de presentación'}
+        </h1>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600">
+          Si necesitas una carta de presentación emitida por tu Dirección de Carrera para buscar tu Práctica de Estudios, puedes solicitarla acá.
+        </p>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600">
+          Esta carta es una herramienta clave para tu primer contacto con la organización, ya que incluye información sobre los principales resultados de aprendizaje esperados durante la práctica.
+        </p>
+      </motion.div>
 
         {isStudent ? (
           <StudentView
@@ -627,17 +1203,28 @@ export const PresentationLettersPage = () => {
             onSelectedTypeChange={setSelectedType}
             form={templateForm}
             onFormChange={setTemplateForm}
+            onPreview={handlePreviewTemplate}
             onSave={handleSaveTemplate}
+            onSignatureImageDelete={handleSignatureImageDelete}
+            onSignatureImageUpload={handleSignatureImageUpload}
+            signatureImageUrl={signatureImageUrl}
             loading={templateLoading}
             saving={savingTemplate}
             canEdit={canEditTemplates}
           />
         )}
-      </main>
-
-      <Footer />
-    </div>
+    </>
   );
 };
+
+export const PresentationLettersPage = () => (
+  <div className="flex min-h-screen flex-col bg-[#FAFAFA]">
+    <UserHeader />
+    <main className="mx-auto w-full max-w-7xl flex-1 px-5 py-8 sm:px-8">
+      <PresentationLettersPanel />
+    </main>
+    <Footer />
+  </div>
+);
 
 export default PresentationLettersPage;

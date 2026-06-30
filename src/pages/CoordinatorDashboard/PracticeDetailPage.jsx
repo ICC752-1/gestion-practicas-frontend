@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertCircle, User, Building, MapPin, FileText, History, MessageSquare, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, Calendar, Clock, Briefcase, Mail, Phone, DollarSign, Globe2 } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, User, Building, MapPin, FileText, History, MessageSquare, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, Calendar, Clock, Briefcase, Mail, Phone, DollarSign, Globe2, X } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
 import { ActionButtons } from '../../components/coordinador/ActionButtons';
@@ -16,13 +17,13 @@ import { formatBenefitLabels } from '../../constants/benefits';
 
 // Componente para mostrar un detalle con ícono
 const DetailItem = ({ icon: Icon, label, value, subValue }) => (
-  <div>
-    <div className="flex items-center text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
-      <Icon className="w-4 h-4 mr-2" />
+  <div className="min-w-0">
+    <div className="mb-2 flex items-center text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
+      <Icon className="mr-2 h-4 w-4 shrink-0" />
       <span>{label}</span>
     </div>
-    <p className="text-lg font-medium text-gray-800">{value || 'No disponible'}</p>
-    {subValue && <p className="text-gray-500">{subValue}</p>}
+    <p className="break-words text-base font-medium text-gray-800 sm:text-lg">{value || 'No disponible'}</p>
+    {subValue && <p className="break-words text-sm text-gray-500 sm:text-base">{subValue}</p>}
   </div>
 );
 
@@ -31,21 +32,21 @@ const DetailSection = ({ icon: Icon, title, summary, isOpen, onToggle, children 
     <button
       type="button"
       onClick={onToggle}
-      className="flex w-full items-center justify-between gap-4 p-5 text-left transition-colors hover:bg-gray-50"
+      className="flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-gray-50 sm:gap-4 sm:p-5"
     >
-      <div className="flex items-center gap-3">
-        <div className="rounded-2xl bg-white p-3 text-[#d22864] shadow-sm">
-          <Icon size={22} />
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="shrink-0 rounded-2xl bg-white p-2.5 text-[#d22864] shadow-sm sm:p-3">
+          <Icon size={20} />
         </div>
-        <div>
+        <div className="min-w-0">
           <h3 className="font-bold text-gray-900">{title}</h3>
-          {summary && <p className="mt-0.5 text-sm font-medium text-gray-500">{summary}</p>}
+          {summary && <p className="mt-0.5 truncate text-sm font-medium text-gray-500">{summary}</p>}
         </div>
       </div>
-      {isOpen ? <ChevronUp className="text-gray-400" size={20} /> : <ChevronDown className="text-gray-400" size={20} />}
+      {isOpen ? <ChevronUp className="shrink-0 text-gray-400" size={20} /> : <ChevronDown className="shrink-0 text-gray-400" size={20} />}
     </button>
     {isOpen && (
-      <div className="border-t border-gray-100 bg-white px-5 py-6">
+      <div className="border-t border-gray-100 bg-white px-4 py-5 sm:px-5 sm:py-6">
         {children}
       </div>
     )}
@@ -74,6 +75,49 @@ const formatMoney = (amount) => {
 
   return `$${Number(amount).toLocaleString('es-CL')}`;
 };
+
+const SummaryField = ({ label, value }) => (
+  <div className="rounded-2xl bg-gray-50 p-3">
+    <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">{label}</p>
+    <p className="mt-1 break-words text-sm font-bold text-gray-800">{value || 'No disponible'}</p>
+  </div>
+);
+
+const PracticeSummaryCard = ({
+  studentName,
+  studentEmail,
+  currentStatusLabel,
+  statusClass,
+  practice,
+  companyAddress,
+}) => (
+  <section className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black uppercase tracking-wider text-[#d22864]">Resumen de solicitud</p>
+        <h3 className="mt-1 break-words text-xl font-black text-gray-900 sm:text-2xl">{studentName}</h3>
+        {studentEmail && <p className="mt-1 break-words text-sm font-semibold text-gray-500">{studentEmail}</p>}
+      </div>
+      <span className={`inline-flex w-fit items-center rounded-full border px-3 py-1 text-sm font-bold ${statusClass}`}>
+        {currentStatusLabel}
+      </span>
+    </div>
+
+    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <SummaryField label="Tipo" value={practice.internship_type} />
+      <SummaryField label="Empresa" value={practice.org_name} />
+      <SummaryField label="Inicio" value={formatDate(practice.start_date)} />
+      <SummaryField label="Término" value={formatDate(practice.end_date)} />
+    </div>
+
+    {(companyAddress || practice.schedule) && (
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <SummaryField label="Ubicación" value={companyAddress || practice.internship_address} />
+        <SummaryField label="Horario" value={practice.schedule} />
+      </div>
+    )}
+  </section>
+);
 
 const HISTORY_ACTION_TITLES = {
   admin_update: 'Corrección administrativa',
@@ -109,12 +153,341 @@ const INSURANCE_STATUS_DESCRIPTIONS = {
   not_applicable: 'Administración marcó que esta solicitud no requiere validación de seguro.',
 };
 
+const INSURANCE_ACTION_OPTIONS = [
+  {
+    value: 'validated',
+    label: 'Validar seguro',
+    description: 'Confirma que la solicitud cumple con el seguro escolar requerido.',
+    successMessage: 'Seguro escolar validado para esta solicitud.',
+  },
+  {
+    value: 'requires_exception',
+    label: 'Solicitar excepción',
+    description: 'Marca que la solicitud no tiene seguro validado y necesita una excepción administrativa.',
+    successMessage: 'Solicitud marcada como pendiente de excepción de seguro escolar.',
+  },
+  {
+    value: 'exception_authorized',
+    label: 'Autorizar excepción',
+    description: 'Registra una excepción autorizada. Requiere dejar un motivo administrativo.',
+    successMessage: 'Excepción de seguro escolar autorizada para esta solicitud.',
+  },
+  {
+    value: 'pending',
+    label: 'Dejar pendiente',
+    description: 'Mantiene la revisión del seguro escolar como pendiente.',
+    successMessage: 'Seguro escolar restablecido como pendiente de validación.',
+  },
+];
+
 const getInsuranceBadgeClass = (status) => {
   if (status === 'validated') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
   if (status === 'exception_authorized') return 'bg-blue-50 text-blue-700 border-blue-100';
   if (status === 'requires_exception') return 'bg-red-50 text-red-700 border-red-100';
   if (status === 'not_applicable') return 'bg-gray-50 text-gray-700 border-gray-200';
   return 'bg-amber-50 text-amber-700 border-amber-100';
+};
+
+const getDefaultInsuranceDecision = (status) => (
+  INSURANCE_ACTION_OPTIONS.some((option) => option.value === status)
+    ? status
+    : 'pending'
+);
+
+const InsuranceSummaryCard = ({
+  practice,
+  insuranceStatus,
+  insuranceStatusLabel,
+  insuranceStatusDescription,
+  requiresExplicitInsurance,
+  canManageSchoolInsurance,
+  insuranceActionError,
+  insuranceActionSuccess,
+  onOpen,
+}) => (
+  <section className="rounded-2xl border border-amber-100 bg-amber-50/40 p-4 shadow-sm sm:p-5">
+    <div className="flex items-start gap-3">
+      <div className="mt-1 h-fit rounded-2xl bg-white p-3 text-amber-600 shadow-sm">
+        {insuranceStatus === 'validated' || insuranceStatus === 'exception_authorized'
+          ? <ShieldCheck size={22} />
+          : <ShieldAlert size={22} />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-black uppercase tracking-wider text-gray-400">
+          Seguro escolar
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-bold ${getInsuranceBadgeClass(insuranceStatus)}`}>
+            {insuranceStatusLabel}
+          </span>
+          {requiresExplicitInsurance && (
+            <span className="rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-bold text-amber-700">
+              Requiere revisión
+            </span>
+          )}
+        </div>
+        <p className="mt-2 text-sm leading-relaxed text-gray-600">{insuranceStatusDescription}</p>
+      </div>
+    </div>
+
+    <div className="mt-4 space-y-3">
+      {practice.insurance_validated_at && (
+        <p className="rounded-xl border border-amber-100 bg-white px-3 py-2 text-xs font-semibold text-gray-500">
+          Última actualización: {formatDateTime(practice.insurance_validated_at)}
+        </p>
+      )}
+      {practice.insurance_notes && (
+        <p className="line-clamp-4 rounded-xl border border-amber-100 bg-white px-3 py-2 text-sm text-gray-600">
+          {practice.insurance_notes}
+        </p>
+      )}
+      {insuranceActionError && (
+        <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+          {insuranceActionError}
+        </p>
+      )}
+      {insuranceActionSuccess && (
+        <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
+          {insuranceActionSuccess}
+        </p>
+      )}
+    </div>
+
+    <button
+      type="button"
+      onClick={onOpen}
+      className="mt-4 flex w-full items-center justify-center rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm font-black text-amber-700 transition hover:border-amber-300 hover:bg-amber-50"
+    >
+      {canManageSchoolInsurance ? 'Gestionar seguro' : 'Ver detalle del seguro'}
+    </button>
+  </section>
+);
+
+const SupervisorEvaluationActionCard = ({
+  canGenerateSupervisorInvitation,
+  canSendSupervisorEvaluation,
+  supervisorEvaluationRequestSent,
+  supervisorInvitationUnavailableMessage,
+  supervisorInviteLoading,
+  supervisorInviteError,
+  supervisorInvite,
+  onSend,
+}) => (
+  <section className="rounded-2xl border border-[#ffd6e5] bg-[#fff8fb] p-4 shadow-sm sm:p-5">
+    <div className="flex items-start gap-3">
+      <div className="mt-1 h-fit rounded-2xl bg-white p-3 text-[#d22864] shadow-sm">
+        <MessageSquare size={22} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-black uppercase tracking-wider text-[#d22864]">
+          Evaluación externa
+        </p>
+        <h3 className="mt-1 text-base font-black text-gray-900">
+          Evaluación del supervisor a estudiante
+        </h3>
+        <p className="mt-2 text-sm leading-relaxed text-gray-600">
+          Envía al supervisor un enlace de un solo uso para evaluar al estudiante en práctica.
+        </p>
+      </div>
+    </div>
+
+    {!canGenerateSupervisorInvitation && supervisorInvitationUnavailableMessage && (
+      <p className="mt-4 rounded-xl border border-[#ffd6e5] bg-white px-3 py-2 text-sm font-semibold text-[#b01e52]">
+        {supervisorInvitationUnavailableMessage}
+      </p>
+    )}
+
+    {supervisorInviteError && (
+      <p className="mt-4 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+        {supervisorInviteError}
+      </p>
+    )}
+
+    {supervisorEvaluationRequestSent && !supervisorInviteError && (
+      <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <p className="font-bold">Evaluación enviada correctamente.</p>
+        <p className="mt-1">El supervisor recibirá el enlace en el correo registrado.</p>
+      </div>
+    )}
+
+    {supervisorInvite?.demo_url && (
+      <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <p className="font-bold">Evaluación enviada en modo demo.</p>
+        <a className="mt-1 block break-all font-semibold underline" href={supervisorInvite.demo_url} target="_blank" rel="noreferrer">
+          {supervisorInvite.demo_url}
+        </a>
+      </div>
+    )}
+
+    <button
+      type="button"
+      onClick={onSend}
+      disabled={supervisorInviteLoading || !canSendSupervisorEvaluation}
+      className="mt-4 w-full rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {supervisorInviteLoading
+        ? 'Enviando...'
+        : supervisorEvaluationRequestSent
+          ? 'Evaluación enviada'
+          : 'Enviar evaluación'}
+    </button>
+  </section>
+);
+
+const InsuranceManagementModal = ({
+  isOpen,
+  onClose,
+  practice,
+  insuranceStatus,
+  insuranceStatusLabel,
+  insuranceStatusDescription,
+  canManageSchoolInsurance,
+  insuranceDecision,
+  onDecisionChange,
+  insuranceNotes,
+  onNotesChange,
+  onSubmit,
+  insuranceActionLoading,
+  insuranceActionError,
+}) => {
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+      <div className="relative flex max-h-[90vh] w-full max-w-[620px] flex-col overflow-hidden rounded-[28px] border border-gray-100 bg-white shadow-2xl animate-fade-up">
+        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-8 sm:py-6">
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-wider text-[#d22864]">Gestión administrativa</p>
+            <h3 className="mt-1 text-xl font-black text-gray-900">Seguro escolar de la solicitud</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={insuranceActionLoading}
+            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
+            aria-label="Cerrar gestión de seguro escolar"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto px-5 py-5 sm:px-8 sm:py-6">
+          <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-bold ${getInsuranceBadgeClass(insuranceStatus)}`}>
+                {insuranceStatusLabel}
+              </span>
+              <span className="text-xs font-bold text-gray-500">
+                Declarado por estudiante: {practice.has_school_insurance ? 'Sí' : 'No'}
+              </span>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-gray-600">{insuranceStatusDescription}</p>
+            {practice.insurance_validated_at && (
+              <p className="mt-2 text-xs font-semibold text-gray-500">
+                Última actualización: {formatDateTime(practice.insurance_validated_at)}
+              </p>
+            )}
+          </div>
+
+          {canManageSchoolInsurance ? (
+            <form
+              className="mt-5 space-y-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                onSubmit();
+              }}
+            >
+              <fieldset>
+                <legend className="text-sm font-black text-gray-900">Decisión sobre el seguro</legend>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {INSURANCE_ACTION_OPTIONS.map((option) => {
+                    const selected = insuranceDecision === option.value;
+
+                    return (
+                      <label
+                        key={option.value}
+                        className={`cursor-pointer rounded-2xl border p-4 transition ${
+                          selected
+                            ? 'border-[#d22864] bg-[#fff0f6] shadow-sm'
+                            : 'border-gray-100 bg-white hover:border-gray-200'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="insuranceDecision"
+                          value={option.value}
+                          checked={selected}
+                          onChange={(event) => onDecisionChange(event.target.value)}
+                          className="sr-only"
+                        />
+                        <span className="block text-sm font-black text-gray-900">{option.label}</span>
+                        <span className="mt-1 block text-xs font-semibold leading-relaxed text-gray-500">
+                          {option.description}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <label className="block">
+                <span className="text-sm font-black text-gray-900">Observación administrativa</span>
+                <textarea
+                  value={insuranceNotes}
+                  onChange={(event) => onNotesChange(event.target.value)}
+                  rows={4}
+                  className="mt-2 w-full resize-y rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#d22864] focus:ring-2 focus:ring-[#d22864]/10"
+                  placeholder="Ej.: seguro validado para esta solicitud, o motivo de la excepción."
+                />
+                {insuranceDecision === 'exception_authorized' && (
+                  <span className="mt-2 block text-xs font-semibold text-amber-700">
+                    Para autorizar una excepción debes indicar el motivo.
+                  </span>
+                )}
+              </label>
+
+              {insuranceActionError && (
+                <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  {insuranceActionError}
+                </p>
+              )}
+
+              <div className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={insuranceActionLoading}
+                  className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-black text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={insuranceActionLoading}
+                  className="inline-flex items-center justify-center rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] disabled:opacity-50"
+                >
+                  {insuranceActionLoading ? 'Guardando...' : 'Guardar decisión'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="mt-5 space-y-3">
+              <p className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-600">
+                Solo Dirección de carrera puede modificar el estado del seguro escolar desde esta vista.
+              </p>
+              {practice.insurance_notes && (
+                <div className="rounded-2xl border border-gray-100 bg-white px-4 py-3">
+                  <p className="text-xs font-black uppercase tracking-wider text-gray-400">Observación registrada</p>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-700">{practice.insurance_notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
 };
 
 const getHistoryMetadata = (entry) => entry.metadata || entry.metadata_json || {};
@@ -172,9 +545,11 @@ export const PracticeDetailPage = () => {
   const [insuranceActionError, setInsuranceActionError] = useState('');
   const [insuranceActionSuccess, setInsuranceActionSuccess] = useState('');
   const [insuranceNotes, setInsuranceNotes] = useState('');
+  const [insuranceDecision, setInsuranceDecision] = useState('pending');
+  const [isInsuranceModalOpen, setIsInsuranceModalOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
-    student: true,
     practice: true,
+    student: false,
     organization: false,
     supervisor: false,
   });
@@ -270,6 +645,20 @@ export const PracticeDetailPage = () => {
     fallback
   );
 
+  const openInsuranceModal = () => {
+    setInsuranceDecision(getDefaultInsuranceDecision(insuranceStatus));
+    setInsuranceNotes(practice?.insurance_notes || '');
+    setInsuranceActionError('');
+    setInsuranceActionSuccess('');
+    setIsInsuranceModalOpen(true);
+  };
+
+  const closeInsuranceModal = () => {
+    if (!insuranceActionLoading) {
+      setIsInsuranceModalOpen(false);
+    }
+  };
+
   const handleUpdateSchoolInsurance = async (status, successMessage) => {
     setInsuranceActionLoading(true);
     setInsuranceActionError('');
@@ -282,6 +671,7 @@ export const PracticeDetailPage = () => {
         insuranceNotes.trim() || null
       );
       setInsuranceActionSuccess(successMessage);
+      setIsInsuranceModalOpen(false);
       setInsuranceNotes('');
       await refresh();
     } catch (err) {
@@ -312,6 +702,7 @@ export const PracticeDetailPage = () => {
         reason
       );
       setInsuranceActionSuccess('Excepción de seguro escolar autorizada para esta solicitud.');
+      setIsInsuranceModalOpen(false);
       setInsuranceNotes('');
       await refresh();
     } catch (err) {
@@ -321,6 +712,22 @@ export const PracticeDetailPage = () => {
     } finally {
       setInsuranceActionLoading(false);
     }
+  };
+
+  const handleSubmitSchoolInsuranceDecision = () => {
+    const selectedOption = INSURANCE_ACTION_OPTIONS.find((option) => (
+      option.value === insuranceDecision
+    ));
+
+    if (insuranceDecision === 'exception_authorized') {
+      handleAuthorizeSchoolInsuranceException();
+      return;
+    }
+
+    handleUpdateSchoolInsurance(
+      selectedOption?.value || 'pending',
+      selectedOption?.successMessage || 'Seguro escolar actualizado para esta solicitud.'
+    );
   };
 
   const userName = user ? `${user.first_name} ${user.last_name}` : "Encargado";
@@ -358,8 +765,6 @@ export const PracticeDetailPage = () => {
   };
   const supervisorInvitationUnavailableMessage = getSupervisorInvitationUnavailableMessage();
 
-  // Usamos el estudiante que pasamos en la navegación desde StudentTable como fuente principal.
-  // Si no está (ej. si el usuario entra directo a la URL), intentamos buscarlo en el practice.
   const studentFromState = location.state?.student;
   const studentData = studentFromState || practice?.student || practice?.user || practice;
 
@@ -399,17 +804,17 @@ export const PracticeDetailPage = () => {
     <div className="min-h-screen flex flex-col bg-ufro-bg">
       <UserHeader userName={userName} userRole={userRole} />
 
-      <main className="flex-grow container mx-auto px-4 py-12 max-w-4xl animate-fade-in">
+      <main className="container mx-auto max-w-5xl flex-grow px-4 py-6 animate-fade-in sm:py-8">
         <button
           onClick={() => navigate(adminBasePath)}
-          className="flex items-center text-ufro-primary hover:underline mb-6 font-medium cursor-pointer"
+          className="mb-6 flex items-center font-medium text-ufro-primary hover:underline"
         >
           <ArrowLeft className="mr-2" size={20} />
           Volver al Dashboard
         </button>
 
-        <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-800 mb-8">Detalle de solicitud de práctica</h2>
+        <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-xl sm:p-8">
+          <h2 className="mb-6 text-2xl font-bold text-gray-800 sm:mb-8">Detalle de solicitud de práctica</h2>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center min-h-[30vh] space-y-4">
@@ -424,23 +829,51 @@ export const PracticeDetailPage = () => {
               <p className="text-gray-500 text-center max-w-md">{error}</p>
             </div>
           ) : practice ? (
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <DetailSection
-                  icon={User}
-                  title="Estudiante"
-                  summary={studentEmail || 'Datos del solicitante'}
-                  isOpen={expandedSections.student}
-                  onToggle={() => toggleSection('student')}
-                >
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <DetailItem icon={User} label="Nombre" value={studentName} />
-                    <DetailItem icon={Mail} label="Correo" value={studentEmail} />
-                    <DetailItem icon={FileText} label="RUT" value={studentData?.rut} />
-                    <DetailItem icon={Building} label="Carrera" value={studentDegree} />
-                  </div>
-                </DetailSection>
+            <div className="space-y-6 sm:space-y-8">
+              <PracticeSummaryCard
+                studentName={studentName}
+                studentEmail={studentEmail}
+                currentStatusLabel={currentStatusLabel}
+                statusClass={getBadgeColor(currentStatusLabel)}
+                practice={practice}
+                companyAddress={companyAddress}
+              />
 
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+                <aside className="space-y-4 lg:order-last lg:sticky lg:top-24">
+                  <ActionButtons
+                    practice={practice}
+                    onActionSuccess={handleActionSuccess}
+                  />
+
+                  <InsuranceSummaryCard
+                    practice={practice}
+                    insuranceStatus={insuranceStatus}
+                    insuranceStatusLabel={insuranceStatusLabel}
+                    insuranceStatusDescription={insuranceStatusDescription}
+                    requiresExplicitInsurance={requiresExplicitInsurance}
+                    canManageSchoolInsurance={canManageSchoolInsurance}
+                    insuranceActionError={insuranceActionError}
+                    insuranceActionSuccess={insuranceActionSuccess}
+                    onOpen={openInsuranceModal}
+                  />
+
+                  {canInviteSupervisor && (
+                    <SupervisorEvaluationActionCard
+                      canGenerateSupervisorInvitation={canGenerateSupervisorInvitation}
+                      canSendSupervisorEvaluation={canSendSupervisorEvaluation}
+                      supervisorEvaluationRequestSent={supervisorEvaluationRequestSent}
+                      supervisorInvitationUnavailableMessage={supervisorInvitationUnavailableMessage}
+                      supervisorInviteLoading={supervisorInviteLoading}
+                      supervisorInviteError={supervisorInviteError}
+                      supervisorInvite={supervisorInvite}
+                      onSend={handleGenerateSupervisorInvitation}
+                    />
+                  )}
+                </aside>
+
+                <div className="space-y-6 sm:space-y-8 lg:order-first">
+                  <div className="space-y-4">
                 <DetailSection
                   icon={Briefcase}
                   title="Solicitud y práctica"
@@ -450,7 +883,7 @@ export const PracticeDetailPage = () => {
                 >
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div>
-                      <div className="flex items-center text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                      <div className="mb-2 flex items-center text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
                         <ShieldCheck className="w-4 h-4 mr-2" />
                         <span>Estado de solicitud</span>
                       </div>
@@ -468,9 +901,7 @@ export const PracticeDetailPage = () => {
                     <DetailItem icon={MapPin} label="Dirección de práctica" value={practice.internship_address} />
                     <DetailItem icon={FileText} label="Fecha de registro" value={formatDateTime(practice.upload_date)} />
                     <DetailItem icon={ShieldAlert} label="Seguro escolar declarado" value={practice.has_school_insurance ? 'Sí' : 'No'} />
-                    <DetailItem icon={FileText} label="Estado DIRAE" value={practice.dirae_status} />
                   </div>
-
                   {practice.act_description && (
                     <div className="mt-6 border-t border-gray-100 pt-5">
                       <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Actividades a realizar</p>
@@ -487,6 +918,23 @@ export const PracticeDetailPage = () => {
                       <DetailItem icon={DollarSign} label="Apoyo económico" value={formatMoney(practice.amount)} />
                     </div>
                   )}
+                </DetailSection>
+                  </div>
+
+                  <div className="space-y-4">
+                <DetailSection
+                  icon={User}
+                  title="Estudiante"
+                  summary={studentEmail || 'Datos del solicitante'}
+                  isOpen={expandedSections.student}
+                  onToggle={() => toggleSection('student')}
+                >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <DetailItem icon={User} label="Nombre" value={studentName} />
+                    <DetailItem icon={Mail} label="Correo" value={studentEmail} />
+                    <DetailItem icon={FileText} label="RUT" value={studentData?.rut} />
+                    <DetailItem icon={Building} label="Carrera" value={studentDegree} />
+                  </div>
                 </DetailSection>
 
                 <DetailSection
@@ -524,166 +972,11 @@ export const PracticeDetailPage = () => {
                 </DetailSection>
               </div>
 
-              {/* Seguro escolar */}
-              <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-5">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div className="flex gap-3">
-                    <div className="mt-1 rounded-2xl bg-white p-3 text-amber-600 shadow-sm">
-                      {insuranceStatus === 'validated' || insuranceStatus === 'exception_authorized'
-                        ? <ShieldCheck size={24} />
-                        : <ShieldAlert size={24} />}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-                        Seguro escolar de la solicitud
-                      </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-bold ${getInsuranceBadgeClass(insuranceStatus)}`}>
-                          {insuranceStatusLabel}
-                        </span>
-                        {requiresExplicitInsurance && (
-                          <span className="rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-bold text-amber-700">
-                            Requiere revisión de Dirección de carrera
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-2 text-sm text-gray-600">{insuranceStatusDescription}</p>
-                      {practice.insurance_validated_at && (
-                        <p className="mt-1 text-xs font-semibold text-gray-500">
-                          Última actualización: {new Date(practice.insurance_validated_at.endsWith('Z') ? practice.insurance_validated_at : practice.insurance_validated_at + 'Z').toLocaleString('es-CL')}
-                        </p>
-                      )}
-                      {practice.insurance_notes && (
-                        <p className="mt-2 rounded-xl border border-amber-100 bg-white px-3 py-2 text-sm text-gray-600">
-                          {practice.insurance_notes}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {canManageSchoolInsurance && (
-                  <div className="mt-5 space-y-4 border-t border-amber-100 pt-5">
-                    <label className="block">
-                      <span className="text-sm font-bold text-gray-700">Observación administrativa</span>
-                      <textarea
-                        value={insuranceNotes}
-                        onChange={(event) => setInsuranceNotes(event.target.value)}
-                        rows={3}
-                        className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#d22864] focus:ring-2 focus:ring-[#d22864]/10"
-                        placeholder="Ej.: seguro validado para esta solicitud, o motivo de la excepción."
-                      />
-                    </label>
-
-                    {insuranceActionError && (
-                      <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-                        {insuranceActionError}
-                      </p>
-                    )}
-                    {insuranceActionSuccess && (
-                      <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-                        {insuranceActionSuccess}
-                      </p>
-                    )}
-
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateSchoolInsurance('validated', 'Seguro escolar validado para esta solicitud.')}
-                        disabled={insuranceActionLoading}
-                        className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
-                      >
-                        Validar seguro
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateSchoolInsurance('requires_exception', 'Solicitud marcada como pendiente de excepción de seguro escolar.')}
-                        disabled={insuranceActionLoading}
-                        className="rounded-xl bg-amber-600 px-4 py-3 text-sm font-bold text-white hover:bg-amber-700 disabled:opacity-50"
-                      >
-                        Requiere excepción
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleAuthorizeSchoolInsuranceException}
-                        disabled={insuranceActionLoading}
-                        className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        Autorizar excepción
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateSchoolInsurance('pending', 'Seguro escolar restablecido como pendiente de validación.')}
-                        disabled={insuranceActionLoading}
-                        className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                      >
-                        Dejar pendiente
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Acciones administrativas */}
-              <ActionButtons
-                practice={practice}
-                onActionSuccess={handleActionSuccess}
-              />
-
-              {canInviteSupervisor && (
-                <div className="rounded-2xl border border-[#ffd6e5] bg-[#fff8fb] p-5">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <h3 className="font-bold text-gray-900">Evaluación del supervisor a estudiante</h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Envía al supervisor un enlace de un solo uso para evaluar al estudiante en práctica.
-                      </p>
-                      {!canGenerateSupervisorInvitation && supervisorInvitationUnavailableMessage && (
-                        <p className="mt-2 text-sm font-semibold text-[#b01e52]">
-                          {supervisorInvitationUnavailableMessage}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleGenerateSupervisorInvitation}
-                      disabled={supervisorInviteLoading || !canSendSupervisorEvaluation}
-                      className="rounded-xl bg-[#d22864] px-4 py-3 text-sm font-bold text-white hover:bg-[#b01e52] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {supervisorInviteLoading
-                        ? 'Enviando...'
-                        : supervisorEvaluationRequestSent
-                          ? 'Evaluación enviada'
-                          : 'Enviar evaluación'}
-                    </button>
-                  </div>
-                  {supervisorInviteError && (
-                    <p className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-                      {supervisorInviteError}
-                    </p>
-                  )}
-                  {supervisorEvaluationRequestSent && !supervisorInviteError && (
-                    <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                      <p className="font-bold">Evaluación enviada al supervisor correctamente.</p>
-                      <p className="mt-1">El supervisor recibirá el enlace en el correo registrado para completar la evaluación del estudiante.</p>
-                    </div>
-                  )}
-                  {supervisorInvite?.demo_url && (
-                    <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                      <p className="font-bold">Evaluación enviada en modo demo.</p>
-                      <a className="mt-1 block break-all font-semibold underline" href={supervisorInvite.demo_url} target="_blank" rel="noreferrer">
-                        {supervisorInvite.demo_url}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* Sección de Documentos */}
-              <div className="border-t border-gray-100 pt-8 mt-8">
-                <div className="flex items-center gap-2 mb-6">
+              <div className="mt-8 border-t border-gray-100 pt-6 sm:pt-8">
+                <div className="mb-6 flex items-center gap-2">
                   <FileText className="text-ufro-primary" size={24} />
-                  <h3 className="text-xl font-bold text-gray-800">Revisión de Documentos</h3>
+                  <h3 className="text-lg font-bold text-gray-800 sm:text-xl">Revisión de Documentos</h3>
                 </div>
                 <AdminDocumentList
                   documents={documents}
@@ -695,8 +988,8 @@ export const PracticeDetailPage = () => {
               </div>
 
               {/* Historial / Timeline de Seguimiento */}
-              <div className="border-t border-gray-100 pt-8 mt-8">
-                <div className="flex items-center gap-2 mb-6">
+              <div className="mt-8 border-t border-gray-100 pt-6 sm:pt-8">
+                <div className="mb-6 flex items-center gap-2">
                   <History className="w-5 h-5 text-gray-400" />
                   <h3 className="text-lg font-bold text-gray-800">
                     Historial de Seguimiento
@@ -712,7 +1005,7 @@ export const PracticeDetailPage = () => {
                     <p className="text-gray-400 text-sm font-medium">No hay registros de seguimiento para esta práctica.</p>
                   </div>
                 ) : (
-                  <div className="relative pl-6 border-l-2 border-gray-100 ml-3 space-y-6">
+                  <div className="relative ml-3 space-y-6 border-l-2 border-gray-100 pl-6">
                     {timelineEntries.map((entry) => {
                       const isLifecycleEntry = Boolean(entry.type);
                       const historyTitle = isLifecycleEntry ? entry.title : buildHistoryTitle(entry);
@@ -728,10 +1021,10 @@ export const PracticeDetailPage = () => {
 
                       return (
                         <div key={entry.id} className="relative group">
-                          {/* Circle on the left line */}
+                          {/* Circle on the left line unificado */}
                           <div className={`absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white shadow-sm transition-transform group-hover:scale-110 ${getTimelineCircleColor(historyTitle, entry.status)}`} />
 
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-4">
+                          <div className="flex flex-col justify-between gap-1 md:flex-row md:items-center md:gap-4">
                             <span className="font-bold text-gray-800 text-[15px]">
                               {historyTitle}
                             </span>
@@ -760,6 +1053,26 @@ export const PracticeDetailPage = () => {
                   </div>
                 )}
               </div>
+
+                </div>
+              </div>
+
+              <InsuranceManagementModal
+                isOpen={isInsuranceModalOpen}
+                onClose={closeInsuranceModal}
+                practice={practice}
+                insuranceStatus={insuranceStatus}
+                insuranceStatusLabel={insuranceStatusLabel}
+                insuranceStatusDescription={insuranceStatusDescription}
+                canManageSchoolInsurance={canManageSchoolInsurance}
+                insuranceDecision={insuranceDecision}
+                onDecisionChange={setInsuranceDecision}
+                insuranceNotes={insuranceNotes}
+                onNotesChange={setInsuranceNotes}
+                onSubmit={handleSubmitSchoolInsuranceDecision}
+                insuranceActionLoading={insuranceActionLoading}
+                insuranceActionError={insuranceActionError}
+              />
             </div>
           ) : (
             <div className="text-center text-gray-500 py-8">

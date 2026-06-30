@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { CircleHelp } from 'lucide-react';
 import { Footer } from '../../components/Footer/Footer';
 import { UserHeader } from '../../components/Header/UserHeader';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { useAuth } from '../../context/useAuth';
 import {
   getDisplayRoleForRoles,
 } from '../../services/roleRouting';
-import { inductionAdminService } from '../../services/inductionAdminService';
+import {
+  getInductionAdminErrorMessage,
+  inductionAdminService,
+} from '../../services/inductionAdminService';
 
 const emptyVideo = { title: '', video_url: '', order: 1 };
 const emptyQuestion = {
@@ -40,22 +46,6 @@ const normalizeDetailToForm = (version) => ({
     : [cloneQuestion()],
 });
 
-const ERROR_TRANSLATIONS = {
-  'Document type not found': 'No se encontró el tipo de documento.',
-  'Insufficient permissions': 'No tienes permisos para realizar esta acción.',
-};
-
-const getErrorMessage = (error) => {
-  const detail = error?.response?.data?.detail || error?.message;
-  if (typeof detail === 'string') {
-    return ERROR_TRANSLATIONS[detail] || detail;
-  }
-  if (Array.isArray(detail)) {
-    return detail.map((item) => item.msg || item.message).filter(Boolean).join(' ');
-  }
-  return detail?.message || 'No se pudo completar la acción.';
-};
-
 const countByStatus = (versions, status) => (
   versions.filter((version) => version.status === status).length
 );
@@ -81,6 +71,51 @@ const getVersionStatusMeta = (version) => {
   return { label: 'Borrador', className: 'bg-amber-50 text-amber-700 border-amber-200' };
 };
 
+const getRetakeLabel = (requiresRetake) => (
+  requiresRetake ? 'Deben renovarse' : 'Siguen vigentes'
+);
+
+const RETAKE_HELP_TEXT = (
+  'Define qué ocurre con estudiantes que aprobaron una versión anterior. '
+  + 'Si solicitas una nueva aprobación, deberán completar y aprobar la versión '
+  + 'activa antes de inscribir una práctica. Si mantienes las aprobaciones, '
+  + 'su aprobación anterior seguirá siendo válida.'
+);
+
+const RetakeHelp = () => (
+  <span className="group relative inline-flex shrink-0">
+    <button
+      type="button"
+      className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-[#d22864] focus:bg-gray-100 focus:text-[#d22864] focus:outline-none"
+      aria-label={RETAKE_HELP_TEXT}
+    >
+      <CircleHelp size={17} />
+    </button>
+    <span
+      role="tooltip"
+      className="pointer-events-none invisible absolute right-0 top-full z-40 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl bg-gray-900 px-3 py-2.5 text-left text-xs font-semibold normal-case leading-relaxed tracking-normal text-white opacity-0 shadow-xl transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+    >
+      {RETAKE_HELP_TEXT}
+    </span>
+  </span>
+);
+
+const getRetakePublishEffect = (requiresRetake) => (
+  requiresRetake
+    ? 'Los estudiantes con una aprobación anterior deberán aprobar esta nueva versión.'
+    : 'Las aprobaciones obtenidas en versiones anteriores seguirán siendo válidas.'
+);
+
+const getEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
+
+const canActivateVersion = (version) => (
+  version?.status === 'published' && !version?.is_active
+);
+
 const nextOptionKey = (options) => {
   const keys = Object.keys(options || {});
   for (let code = 97; code <= 122; code += 1) {
@@ -90,9 +125,8 @@ const nextOptionKey = (options) => {
   return `opcion_${keys.length + 1}`;
 };
 
-export const InductionAdminPage = () => {
+export const InductionAdminPanel = () => {
   const { user } = useAuth();
-  const userName = user ? `${user.first_name} ${user.last_name}` : 'Administrador';
   const userRole = getDisplayRoleForRoles(user?.roles);
   const [versions, setVersions] = useState([]);
   const [selectedVersionId, setSelectedVersionId] = useState(null);
@@ -101,9 +135,10 @@ export const InductionAdminPage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const selectedVersion = versions.find((version) => version.id === selectedVersionId);
-  const isEditingDraft = selectedVersion?.status === 'draft';
+  const isEditing = Boolean(selectedVersion);
   const activeVersion = versions.find((version) => version.is_active);
   const draftCount = countByStatus(versions, 'draft');
   const publishedCount = countByStatus(versions, 'published');
@@ -115,7 +150,7 @@ export const InductionAdminPage = () => {
       const data = await inductionAdminService.listVersions();
       setVersions(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getInductionAdminErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -137,7 +172,7 @@ export const InductionAdminPage = () => {
       const detail = await inductionAdminService.getVersion(version.id);
       setForm(normalizeDetailToForm(detail));
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getInductionAdminErrorMessage(err));
     }
   };
 
@@ -277,158 +312,286 @@ export const InductionAdminPage = () => {
     )),
   });
 
+  const saveCurrentVersion = async () => {
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      throw new Error(validationErrors.join(' '));
+    }
+
+    const payload = buildPayload();
+    const saved = isEditing
+      ? await inductionAdminService.updateVersion(selectedVersionId, payload)
+      : await inductionAdminService.createDraft(payload);
+
+    setSelectedVersionId(saved.id);
+    setForm(normalizeDetailToForm(saved));
+    await loadVersions();
+
+    return saved;
+  };
+
   const handleSave = async (event) => {
     event.preventDefault();
     setSaving(true);
     setError('');
     setMessage('');
+    const wasEditing = isEditing;
+
     try {
-      const validationErrors = validateForm();
-      if (validationErrors.length > 0) {
-        setError(validationErrors.join(' '));
-        return;
-      }
-      const payload = buildPayload();
-      const saved = isEditingDraft
-        ? await inductionAdminService.updateDraft(selectedVersionId, payload)
-        : await inductionAdminService.createDraft(payload);
-      setSelectedVersionId(saved.id);
-      setForm(normalizeDetailToForm(saved));
-      setMessage(isEditingDraft ? 'Borrador actualizado.' : 'Borrador creado.');
-      await loadVersions();
+      await saveCurrentVersion();
+      setMessage(wasEditing ? 'Versión actualizada.' : 'Borrador creado.');
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getInductionAdminErrorMessage(err));
     } finally {
       setSaving(false);
     }
   };
 
-  const handlePublish = async () => {
-    if (!selectedVersionId || !window.confirm('¿Publicar esta versión como activa?')) {
+  const requestPublish = () => {
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(' '));
       return;
     }
-    setSaving(true);
+
     setError('');
-    try {
-      const validationErrors = validateForm();
-      if (validationErrors.length > 0) {
-        setError(validationErrors.join(' '));
-        return;
-      }
-      const published = await inductionAdminService.publish(selectedVersionId);
-      setForm(normalizeDetailToForm(published));
-      setMessage('Versión publicada y activada.');
-      await loadVersions();
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setSaving(false);
-    }
+    setMessage('');
+    setConfirmAction({
+      type: 'publish',
+      title: 'Publicar inducción',
+      message: `${
+        selectedVersionId
+          ? 'Se guardarán los cambios y esta versión quedará activa para nuevos intentos.'
+          : 'Se creará una versión con estos datos y quedará activa para nuevos intentos.'
+      } ${getRetakePublishEffect(form.requires_retake)}`,
+      confirmLabel: 'Publicar y activar',
+      tone: 'success',
+    });
   };
 
-  const handleDiscard = async () => {
-    if (!selectedVersionId || !window.confirm('¿Descartar este borrador?')) {
-      return;
-    }
+  const requestActivate = (version) => {
+    setError('');
+    setMessage('');
+    setConfirmAction({
+      type: 'activate',
+      versionId: version.id,
+      title: 'Activar versión',
+      message: (
+        `La versión "${version.title}" reemplazará a la inducción activa para nuevos intentos. `
+        + getRetakePublishEffect(version.requires_retake)
+      ),
+      confirmLabel: 'Activar versión',
+      tone: 'success',
+    });
+  };
+
+  const requestDelete = () => {
+    if (!selectedVersionId) return;
+    setError('');
+    setMessage('');
+    setConfirmAction({
+      type: 'delete',
+      title: 'Eliminar versión',
+      message: selectedVersion?.is_active
+        ? 'Esta acción eliminará la versión activa y sus videos y preguntas. Deberás activar otra versión para nuevos intentos.'
+        : 'Esta acción eliminará la versión y sus videos y preguntas asociadas.',
+      confirmLabel: 'Eliminar',
+      tone: 'danger',
+    });
+  };
+
+  const handleNewDraft = () => {
+    setSelectedVersionId(null);
+    setForm(initialForm);
+    setError('');
+    setMessage('');
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return;
+
     setSaving(true);
     setError('');
+
     try {
-      await inductionAdminService.discardDraft(selectedVersionId);
-      setSelectedVersionId(null);
-      setForm(initialForm);
-      setMessage('Borrador descartado.');
-      await loadVersions();
+      if (confirmAction.type === 'publish') {
+        const saved = await saveCurrentVersion();
+        const published = await inductionAdminService.publish(saved.id);
+        setSelectedVersionId(published.id);
+        setForm(normalizeDetailToForm(published));
+        setMessage('Versión publicada y activada.');
+        await loadVersions();
+      }
+
+      if (confirmAction.type === 'activate') {
+        const activated = await inductionAdminService.activate(confirmAction.versionId);
+        setSelectedVersionId(activated.id);
+        setForm(normalizeDetailToForm(activated));
+        setMessage('Versión activada para nuevos intentos.');
+        await loadVersions();
+      }
+
+      if (confirmAction.type === 'delete') {
+        await inductionAdminService.deleteVersion(selectedVersionId);
+        setSelectedVersionId(null);
+        setForm(initialForm);
+        setMessage('Versión eliminada.');
+        await loadVersions();
+      }
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getInductionAdminErrorMessage(err));
     } finally {
       setSaving(false);
+      setConfirmAction(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <UserHeader userName={userName} userRole={userRole} />
-      <main className="mx-auto w-full max-w-7xl flex-grow px-4 py-8">
-        <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+    <>
+        <motion.section
+          className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-8"
+          {...getEntryMotion()}
+        >
           <p className="text-sm font-black uppercase tracking-wide text-[#d22864]">Inducción</p>
-          <h1 className="mt-3 text-3xl font-black text-gray-900">Administración de contenido</h1>
+          <h1 className="mt-3 text-2xl font-black text-gray-900 sm:text-3xl">Administración de contenido</h1>
           <p className="mt-3 max-w-3xl text-gray-600">
-            Crea borradores, valida preguntas y publica una única versión activa para nuevos intentos.
+            Crea borradores, valida preguntas y define cómo afecta una nueva versión a las aprobaciones anteriores.
           </p>
-          <div className="mt-6 grid gap-3 md:grid-cols-4">
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <motion.div
+              className="min-w-0 rounded-2xl border border-gray-100 bg-gray-50 p-3 sm:p-4"
+              {...getEntryMotion(0.08)}
+            >
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Acceso actual</p>
-              <p className="mt-2 text-sm font-black text-gray-900">{userRole}</p>
-            </div>
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <p className="mt-2 break-words text-sm font-black text-gray-900">{userRole}</p>
+            </motion.div>
+            <motion.div
+              className="min-w-0 rounded-2xl border border-gray-100 bg-gray-50 p-3 sm:p-4"
+              {...getEntryMotion(0.14)}
+            >
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Borradores</p>
               <p className="mt-2 text-2xl font-black text-gray-900">{draftCount}</p>
-            </div>
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+            </motion.div>
+            <motion.div
+              className="min-w-0 rounded-2xl border border-gray-100 bg-gray-50 p-3 sm:p-4"
+              {...getEntryMotion(0.2)}
+            >
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Publicadas</p>
               <p className="mt-2 text-2xl font-black text-gray-900">{publishedCount}</p>
-            </div>
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Repetición activa</p>
-              <p className="mt-2 text-sm font-black text-gray-900">
-                {activeVersion?.requires_retake ? 'Sí, estudiantes deben repetir' : 'No exigida'}
+            </motion.div>
+            <motion.div
+              className="min-w-0 rounded-2xl border border-gray-100 bg-gray-50 p-3 sm:p-4"
+              {...getEntryMotion(0.26)}
+            >
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Aprobaciones previas</p>
+                <RetakeHelp />
+              </div>
+              <p className="mt-2 break-words text-sm font-black text-gray-900">
+                {activeVersion ? getRetakeLabel(activeVersion.requires_retake) : 'Sin versión activa'}
               </p>
-            </div>
+            </motion.div>
           </div>
-        </section>
+        </motion.section>
 
-        {error && <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
-        {message && <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">{message}</div>}
+        {error && (
+          <motion.div
+            className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700"
+            {...getEntryMotion(0.08)}
+          >
+            {error}
+          </motion.div>
+        )}
+        {message && (
+          <motion.div
+            className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700"
+            {...getEntryMotion(0.08)}
+          >
+            {message}
+          </motion.div>
+        )}
 
-        <section className="mt-6 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <aside className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+        <motion.section
+          className="mt-6 grid min-w-0 gap-6 xl:grid-cols-[340px_minmax(0,1fr)]"
+          {...getEntryMotion(0.32)}
+        >
+          <motion.aside
+            className="min-w-0 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5"
+            {...getEntryMotion(0.36)}
+          >
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-black text-gray-900">Versiones</h2>
-              <button type="button" onClick={() => { setSelectedVersionId(null); setForm(initialForm); }} className="rounded-xl bg-gray-900 px-3 py-2 text-xs font-bold text-white">
-                Nuevo
+              <button type="button" onClick={handleNewDraft} className="shrink-0 rounded-xl bg-gray-900 px-3 py-2 text-xs font-bold text-white">
+                Nueva versión
               </button>
             </div>
             <div className="mt-5 space-y-3">
               {loading && <p className="text-sm font-semibold text-gray-500">Cargando...</p>}
               {!loading && versions.length === 0 && <p className="text-sm font-semibold text-gray-500">No hay versiones creadas.</p>}
-              {versions.map((version) => (
-                <button
+              {versions.map((version, index) => (
+                <motion.article
                   key={version.id}
-                  type="button"
-                  onClick={() => handleSelectVersion(version)}
-                  className={`w-full rounded-2xl border p-4 text-left transition ${selectedVersionId === version.id ? 'border-[#d22864] bg-[#fff8fb]' : 'border-gray-100 hover:border-[#d22864]/50'}`}
+                  className={`rounded-2xl border p-4 transition ${selectedVersionId === version.id ? 'border-[#d22864] bg-[#fff8fb]' : 'border-gray-100 hover:border-[#d22864]/50'}`}
+                  {...getEntryMotion(0.4 + index * 0.05)}
                 >
-                  <p className="font-black text-gray-900">{version.title}</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${getVersionStatusMeta(version).className}`}>
-                      {getVersionStatusMeta(version).label}
-                    </span>
-                    {version.requires_retake && (
-                      <span className="rounded-full bg-[#fff0f6] px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-[#d22864]">
-                        repetir
+                  <button
+                    type="button"
+                    onClick={() => handleSelectVersion(version)}
+                    className="w-full text-left"
+                  >
+                    <p className="break-words font-black text-gray-900">{version.title}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${getVersionStatusMeta(version).className}`}>
+                        {getVersionStatusMeta(version).label}
                       </span>
+                      <span className={`max-w-full rounded-full px-2.5 py-1 text-left text-[10px] font-black uppercase leading-tight tracking-wide ${version.requires_retake ? 'bg-[#fff0f6] text-[#d22864]' : 'bg-gray-100 text-gray-500'}`}>
+                        {getRetakeLabel(version.requires_retake)}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-xs text-gray-500">Puntaje mínimo: {version.min_score}</p>
+                    <p className="mt-1 text-xs text-gray-500">Publicada: {formatDateTime(version.published_at)}</p>
+                    <p className="mt-1 text-xs text-gray-500">Última modificación: {formatDateTime(version.updated_at || version.created_at)}</p>
+                  </button>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectVersion(version)}
+                      disabled={saving}
+                      className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-xs font-black text-gray-700 transition hover:border-[#d22864] hover:text-[#d22864] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Editar versión
+                    </button>
+                    {canActivateVersion(version) && (
+                      <button
+                        type="button"
+                        onClick={() => requestActivate(version)}
+                        disabled={saving}
+                        className="flex-1 rounded-xl border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Activar versión
+                      </button>
                     )}
                   </div>
-                  <p className="mt-3 text-xs text-gray-500">Puntaje mínimo: {version.min_score}</p>
-                  <p className="mt-1 text-xs text-gray-500">Publicada: {formatDateTime(version.published_at)}</p>
-                  <p className="mt-1 text-xs text-gray-500">Última modificación: {formatDateTime(version.updated_at || version.created_at)}</p>
-                </button>
+                </motion.article>
               ))}
             </div>
-          </aside>
+          </motion.aside>
 
-          <form onSubmit={handleSave} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <motion.form
+            onSubmit={handleSave}
+            className="min-w-0 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6"
+            {...getEntryMotion(0.44)}
+          >
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-xl font-black text-gray-900">{isEditingDraft ? 'Editar borrador' : selectedVersion ? 'Vista publicada' : 'Nuevo borrador'}</h2>
-                {selectedVersion && selectedVersion.status !== 'draft' && <p className="mt-1 text-sm text-gray-500">Las versiones publicadas no se editan. Crea un nuevo borrador para cambios.</p>}
+              <div className="min-w-0">
+                <h2 className="text-xl font-black text-gray-900">{isEditing ? 'Editar versión' : 'Nuevo borrador'}</h2>
                 {selectedVersion && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${getVersionStatusMeta(selectedVersion).className}`}>
                       {getVersionStatusMeta(selectedVersion).label}
                     </span>
-                    <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${form.requires_retake ? 'bg-[#fff0f6] text-[#d22864]' : 'bg-gray-100 text-gray-500'}`}>
-                      requires_retake={String(form.requires_retake)}
+                    <span className={`max-w-full rounded-full px-3 py-1 text-left text-[10px] font-black uppercase leading-tight tracking-wide ${form.requires_retake ? 'bg-[#fff0f6] text-[#d22864]' : 'bg-gray-100 text-gray-500'}`}>
+                      {getRetakeLabel(form.requires_retake)}
                     </span>
                   </div>
                 )}
@@ -439,41 +602,65 @@ export const InductionAdminPage = () => {
                   </div>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {isEditingDraft && <button type="button" onClick={handlePublish} disabled={saving} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Publicar</button>}
-                {isEditingDraft && <button type="button" onClick={handleDiscard} disabled={saving} className="rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-600 disabled:opacity-50">Descartar</button>}
+              <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap">
+                {canActivateVersion(selectedVersion) && (
+                  <button type="button" onClick={() => requestActivate(selectedVersion)} disabled={saving} className="w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50 sm:w-auto">
+                    Activar versión
+                  </button>
+                )}
+                {isEditing && <button type="button" onClick={requestDelete} disabled={saving} className="w-full rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-600 disabled:opacity-50 sm:w-auto">Eliminar versión</button>}
               </div>
             </div>
 
-            <fieldset disabled={selectedVersion && selectedVersion.status !== 'draft'} className="mt-6 space-y-5 disabled:opacity-70">
-              <input name="title" value={form.title} onChange={handleFieldChange} required placeholder="Título" className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
-              <textarea name="description" value={form.description} onChange={handleFieldChange} rows="3" placeholder="Descripción" className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
+            <fieldset className="mt-6 min-w-0 space-y-5">
+              <input name="title" value={form.title} onChange={handleFieldChange} required placeholder="Título" className="min-w-0 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
+              <textarea name="description" value={form.description} onChange={handleFieldChange} rows="3" placeholder="Descripción" className="min-w-0 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block text-sm font-bold text-gray-700">
                   Puntaje mínimo
-                  <input name="min_score" type="number" min="1" value={form.min_score} onChange={handleFieldChange} className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
+                  <input name="min_score" type="number" min="1" value={form.min_score} onChange={handleFieldChange} className="mt-2 min-w-0 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
                 </label>
-                <label className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 text-sm font-bold text-gray-700">
-                  <input name="requires_retake" type="checkbox" checked={form.requires_retake} onChange={handleFieldChange} />
-                  Exigir repetición al publicar
-                </label>
+                <div className="rounded-xl border border-gray-200 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-bold text-gray-700">Aprobaciones de versiones anteriores</p>
+                    <RetakeHelp />
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Validez de aprobaciones de versiones anteriores">
+                    <button
+                      type="button"
+                      onClick={() => setForm((current) => ({ ...current, requires_retake: false }))}
+                      className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${!form.requires_retake ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+                      aria-pressed={!form.requires_retake}
+                    >
+                      Mantener vigentes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm((current) => ({ ...current, requires_retake: true }))}
+                      className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${form.requires_retake ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+                      aria-pressed={form.requires_retake}
+                    >
+                      Solicitar nueva aprobación
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-100 p-5">
-                <div className="flex items-center justify-between">
+              <div className="min-w-0 rounded-2xl border border-gray-100 p-4 sm:p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="font-black text-gray-900">Videos</h3>
-                  <button type="button" onClick={() => setForm((current) => ({ ...current, videos: [...current.videos, { ...emptyVideo, order: current.videos.length + 1 }] }))} className="text-sm font-bold text-[#d22864]">Agregar video</button>
+                  <button type="button" onClick={() => setForm((current) => ({ ...current, videos: [...current.videos, { ...emptyVideo, order: current.videos.length + 1 }] }))} className="w-full rounded-xl border border-[#d22864]/20 px-3 py-2 text-sm font-bold text-[#d22864] sm:w-auto">Agregar video</button>
                 </div>
                 <div className="mt-4 space-y-3">
                   {form.videos.map((video, index) => (
-                    <div key={index} className="grid gap-3 md:grid-cols-[80px_1fr_1fr_auto]">
-                      <input type="number" min="0" value={video.order} onChange={(event) => updateVideo(index, 'order', event.target.value)} className="rounded-xl border border-gray-200 px-3 py-2" />
-                      <input value={video.title} onChange={(event) => updateVideo(index, 'title', event.target.value)} placeholder="Título video" className="rounded-xl border border-gray-200 px-3 py-2" />
-                      <input value={video.video_url} onChange={(event) => updateVideo(index, 'video_url', event.target.value)} placeholder="https://..." className="rounded-xl border border-gray-200 px-3 py-2" />
+                    <div key={index} className="grid min-w-0 gap-3 md:grid-cols-[80px_minmax(0,1fr)_minmax(0,1fr)_auto]">
+                      <input type="number" min="0" value={video.order} onChange={(event) => updateVideo(index, 'order', event.target.value)} aria-label={`Orden del video ${index + 1}`} className="min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2" />
+                      <input value={video.title} onChange={(event) => updateVideo(index, 'title', event.target.value)} placeholder="Título video" className="min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2" />
+                      <input value={video.video_url} onChange={(event) => updateVideo(index, 'video_url', event.target.value)} placeholder="https://..." className="min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2" />
                       <button
                         type="button"
                         onClick={() => removeVideo(index)}
-                        className="rounded-xl border border-red-100 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50"
+                        className="w-full rounded-xl border border-red-100 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 md:w-auto"
                       >
                         Eliminar
                       </button>
@@ -485,34 +672,34 @@ export const InductionAdminPage = () => {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-100 p-5">
-                <div className="flex items-center justify-between">
+              <div className="min-w-0 rounded-2xl border border-gray-100 p-4 sm:p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="font-black text-gray-900">Preguntas</h3>
-                  <button type="button" onClick={() => setForm((current) => ({ ...current, questions: [...current.questions, cloneQuestion({ ...emptyQuestion, order: current.questions.length + 1 })] }))} className="text-sm font-bold text-[#d22864]">Agregar pregunta</button>
+                  <button type="button" onClick={() => setForm((current) => ({ ...current, questions: [...current.questions, cloneQuestion({ ...emptyQuestion, order: current.questions.length + 1 })] }))} className="w-full rounded-xl border border-[#d22864]/20 px-3 py-2 text-sm font-bold text-[#d22864] sm:w-auto">Agregar pregunta</button>
                 </div>
                 <div className="mt-4 space-y-5">
                   {form.questions.map((question, index) => (
-                    <div key={index} className="rounded-2xl bg-gray-50 p-4">
-                      <div className="grid gap-3 md:grid-cols-[80px_1fr_auto]">
-                        <input type="number" min="0" value={question.order} onChange={(event) => updateQuestion(index, 'order', event.target.value)} className="rounded-xl border border-gray-200 px-3 py-2" />
-                        <input value={question.question_text} onChange={(event) => updateQuestion(index, 'question_text', event.target.value)} placeholder="Enunciado" className="rounded-xl border border-gray-200 px-3 py-2" />
+                    <div key={index} className="min-w-0 rounded-2xl bg-gray-50 p-3 sm:p-4">
+                      <div className="grid min-w-0 gap-3 md:grid-cols-[80px_minmax(0,1fr)_auto]">
+                        <input type="number" min="0" value={question.order} onChange={(event) => updateQuestion(index, 'order', event.target.value)} aria-label={`Orden de la pregunta ${index + 1}`} className="min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2" />
+                        <input value={question.question_text} onChange={(event) => updateQuestion(index, 'question_text', event.target.value)} placeholder="Enunciado" className="min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2" />
                         <button
                           type="button"
                           onClick={() => removeQuestion(index)}
-                          className="rounded-xl border border-red-100 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50"
+                          className="w-full rounded-xl border border-red-100 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 md:w-auto"
                         >
                           Eliminar
                         </button>
                       </div>
                       <div className="mt-3 grid gap-3 md:grid-cols-2">
                         {Object.entries(question.options).map(([key, value]) => (
-                          <div key={key} className="grid grid-cols-[1fr_auto] gap-2">
-                            <input value={value} onChange={(event) => updateQuestionOption(index, key, event.target.value)} placeholder={`Opción ${key}`} className="rounded-xl border border-gray-200 px-3 py-2" />
+                          <div key={key} className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                            <input value={value} onChange={(event) => updateQuestionOption(index, key, event.target.value)} placeholder={`Opción ${key}`} className="min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2" />
                             <button
                               type="button"
                               onClick={() => removeQuestionOption(index, key)}
                               disabled={Object.keys(question.options).length <= 2}
-                              className="rounded-xl border border-red-100 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="w-full rounded-xl border border-red-100 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
                             >
                               Eliminar
                             </button>
@@ -528,7 +715,7 @@ export const InductionAdminPage = () => {
                       </button>
                       <label className="mt-3 block text-sm font-bold text-gray-700">
                         Respuesta correcta
-                        <select value={question.correct_answer} onChange={(event) => updateQuestion(index, 'correct_answer', event.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2">
+                        <select value={question.correct_answer} onChange={(event) => updateQuestion(index, 'correct_answer', event.target.value)} className="mt-2 min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2">
                           {Object.keys(question.options).map((key) => <option key={key} value={key}>{key}</option>)}
                         </select>
                       </label>
@@ -538,17 +725,38 @@ export const InductionAdminPage = () => {
               </div>
             </fieldset>
 
-            {(!selectedVersion || selectedVersion.status === 'draft') && (
-              <button type="submit" disabled={saving} className="mt-6 w-full rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white hover:bg-[#b01e52] disabled:opacity-50">
-                {saving ? 'Guardando...' : isEditingDraft ? 'Guardar borrador' : 'Crear borrador'}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button type="submit" disabled={saving} className="flex-1 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white hover:bg-[#b01e52] disabled:opacity-50">
+                {saving ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Crear borrador'}
               </button>
-            )}
-          </form>
-        </section>
-      </main>
-      <Footer />
-    </div>
+              <button type="button" onClick={requestPublish} disabled={saving} className="flex-1 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-50">
+                {isEditing ? 'Guardar y publicar' : 'Publicar y activar'}
+              </button>
+            </div>
+          </motion.form>
+        </motion.section>
+      <ConfirmDialog
+        isOpen={Boolean(confirmAction)}
+        title={confirmAction?.title}
+        message={confirmAction?.message}
+        confirmLabel={confirmAction?.confirmLabel}
+        tone={confirmAction?.tone}
+        isLoading={saving}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirmAction}
+      />
+    </>
   );
 };
+
+export const InductionAdminPage = () => (
+  <div className="min-h-screen bg-gray-50 flex flex-col">
+    <UserHeader />
+    <main className="mx-auto w-full max-w-7xl flex-grow px-4 py-8">
+      <InductionAdminPanel />
+    </main>
+    <Footer />
+  </div>
+);
 
 export default InductionAdminPage;

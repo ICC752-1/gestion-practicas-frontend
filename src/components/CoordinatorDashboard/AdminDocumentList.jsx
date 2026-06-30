@@ -140,16 +140,16 @@ export const AdminDocumentList = ({
             key={doc.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all"
+            className="rounded-[2rem] border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md sm:p-6"
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               {/* Info del Documento */}
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                <div className="w-14 h-14 bg-[#fff0f6] rounded-2xl flex items-center justify-center text-[#d22864] flex-shrink-0">
+              <div className="flex min-w-0 flex-1 items-start gap-4 sm:items-center">
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d22864] sm:h-14 sm:w-14">
                   <FileText size={28} />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="font-bold text-gray-900 truncate text-base">
+                  <h4 className="break-words text-base font-bold text-gray-900 sm:truncate">
                     {doc.document_type?.name || 'Documento'}
                   </h4>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
@@ -167,20 +167,21 @@ export const AdminDocumentList = ({
               </div>
 
               {/* Acciones */}
-              <div className="flex items-center gap-3">
+              <div className={`grid w-full gap-3 sm:flex sm:w-auto sm:items-center ${canReview ? 'grid-cols-[48px_1fr]' : 'grid-cols-1'}`}>
                 <button
                   onClick={() => onDownload(doc)}
-                  className="p-3 rounded-xl bg-gray-50 text-gray-600 hover:bg-[#d22864]/5 hover:text-[#d22864] transition-colors"
+                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 text-gray-600 transition-colors hover:bg-[#d22864]/5 hover:text-[#d22864]"
                   title="Descargar"
+                  aria-label="Descargar documento"
                 >
                   <Download size={20} />
                 </button>
 
                 {canReview && (
-                  <div className="relative">
+                  <div className="relative min-w-0">
                     <button
                       onClick={() => openReview(doc)}
-                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                      className={`flex h-12 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all sm:w-auto ${
                         showStatusMenu === doc.id ? 'bg-gray-900 text-white' : 'bg-[#d22864] text-white hover:opacity-90 shadow-lg shadow-[#d22864]/20'
                       }`}
                     >
@@ -194,7 +195,7 @@ export const AdminDocumentList = ({
                           initial={{ opacity: 0, y: 10, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden"
+                          className="absolute right-0 z-50 mt-2 w-full min-w-[260px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl sm:w-64"
                         >
                           <div className="p-4 space-y-3">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Revisar documento</p>
