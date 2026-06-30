@@ -358,7 +358,7 @@ export const SeguimientoPage = ({
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-full ${statusStyle.color} flex items-center justify-center text-white shadow-sm`}>
+                  <div className={`w-12 h-12 rounded-full ${statusStyle.color} flex items-center justify-center text-white shadow-sm flex-shrink-0`}>
                     {currentStatusLabel.toLowerCase().includes('finalizad') || currentStatusLabel.toLowerCase().includes('aprobad') ? (
                       <CheckCircle2 className="w-6 h-6" />
                     ) : (
