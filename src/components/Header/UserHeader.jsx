@@ -11,17 +11,17 @@ import {
   getRedirectPathForRoles,
   normalizeRoleNames,
   STUDENT_ROLE,
+  CAREER_DIRECTOR_ROLE,
   SUPERADMIN_ROLE,
+  SECRETARY_ROLE,
+  SUPERVISOR_ROLE,
+  FICA_ROLE,
 } from "../../services/roleRouting";
 
 const ADMIN_TOGGLE_ROLES = new Set([
   "Encargado de practica",
   "Director de carrera",
 ]);
-
-const DIRECTOR_ROLE = "Director de carrera";
-const SECRETARIA_ROLE = "Secretaria de Carrera";
-const SUPERVISOR_ROLE = "Supervisor de practica"
 
 export const UserHeader = () => {
     const { user, logout } = useAuth();
@@ -37,11 +37,12 @@ export const UserHeader = () => {
     const dashboardPath = getRedirectPathForRoles(roleNames);
 
     const isAdminToggle = roleNames.some((role) => ADMIN_TOGGLE_ROLES.has(role));
-    const isDirector = roleNames.includes(DIRECTOR_ROLE);
+    const isDirector = roleNames.includes(CAREER_DIRECTOR_ROLE);
     const isSuperadmin = roleNames.includes(SUPERADMIN_ROLE);
     const isStudent = roleNames.includes(STUDENT_ROLE);
-    const isSecretaria = roleNames.includes(SECRETARIA_ROLE);
+    const isSecretaria = roleNames.includes(SECRETARY_ROLE);
     const isSupervisor = roleNames.includes(SUPERVISOR_ROLE);
+    const isFica = roleNames.includes(FICA_ROLE);
     const isDashboardActive = location.pathname === dashboardPath
         || location.pathname.startsWith(`${dashboardPath}/`)
         || (
@@ -71,7 +72,7 @@ export const UserHeader = () => {
         active: location.pathname === "/faq",
       },
       {
-        label: isSuperadmin || isAdminToggle || isStudent || isSecretaria || isSupervisor ? null : "Carta de Presentación",
+        label: isSuperadmin || isAdminToggle || isStudent || isSecretaria || isSupervisor || isFica ? null : "Carta de Presentación",
         to: "/cartas-presentacion",
         active: location.pathname === "/cartas-presentacion",
       },
