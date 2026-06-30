@@ -418,6 +418,11 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
         });
     }, [appointments, appointmentsDateFilter]);
 
+    const visibleMyRequests = useMemo(
+        () => myRequests.filter(req => req.status !== 'scheduled'),
+        [myRequests]
+    );
+
     const handleCalendarDateSelect = (date) => {
         setSelectedDate(date);
         const dateKey = toDateKey(date.year, date.month, date.day);
@@ -1035,7 +1040,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                                         onClick={() => setActiveTab('requests')}
                                         className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'requests' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                                     >
-                                        Mis Solicitudes ({myRequests.length})
+                                        Mis Solicitudes ({visibleMyRequests.length})
                                     </button>
                                 </>
                             )}
@@ -1291,7 +1296,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                                     </div>
                                 )}
 
-                                {isStudent && myRequests.filter(req => req.status !== 'scheduled').map((req) => {
+                                {isStudent && visibleMyRequests.map((req) => {
                                     const preferredDatesList = parsePreferredDates(req.preferred_dates);
                                     return (
                                         <div key={req.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm space-y-4">

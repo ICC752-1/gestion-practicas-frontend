@@ -464,7 +464,7 @@ export const PreRegistrationPage = ({
           className="mb-8"
           {...getPracticeCardEntryMotion()}
         >
-          <p className="text-sm font-black uppercase tracking-wider text-[#d22864]">
+          <p className="text-sm font-black uppercase tracking-wider text-[#d22864] ">
             Nueva inscripción
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-gray-950 md:text-4xl">
@@ -530,7 +530,7 @@ export const PreRegistrationPage = ({
                 className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8"
                 {...getPracticeCardEntryMotion()}
               >
-                <div className="mb-6 flex items-start gap-4">
+                <div className="mb-1 flex items-start gap-4">
                   <div className="rounded-2xl bg-[#d22864]/10 p-3 text-[#d22864]">
                     <FileText size={28} />
                   </div>
@@ -542,7 +542,7 @@ export const PreRegistrationPage = ({
                     <button
                       type="button"
                       onClick={() => navigate(embedded ? '/dashboard/cartas-presentacion' : '/cartas-presentacion')}
-                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white transition hover:bg-[#b01e52]"
+                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#b01e52]"
                     >
                       Gestionar carta
                       <ExternalLink size={16} />
