@@ -858,7 +858,7 @@ export const StudentDashboardPage = () => {
               )}
 
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2 px-3">
                   Mis Prácticas
                   <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-1 rounded-md">{internships.length} TOTAL</span>
                 </h3>
