@@ -149,7 +149,6 @@ export const NotificationBell = () => {
                         <p className="mt-1 text-xs text-gray-400">{formatDate(notification.created_at)}</p>
                       </div>
                     </div>
-                    
                     {(notification.status === 'failed' || !notification.is_read) && (
                       <div className="mt-2 flex items-center justify-end gap-2 pl-12">
                         {notification.status === 'failed' && (

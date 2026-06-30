@@ -30,6 +30,19 @@ const initialSort = {
   sort_dir: 'desc',
 };
 
+const MOBILE_SORT_OPTIONS = [
+  { label: 'Más recientes', sort_by: 'created_at', sort_dir: 'desc' },
+  { label: 'Más antiguos', sort_by: 'created_at', sort_dir: 'asc' },
+  { label: 'Apellido A-Z', sort_by: 'last_name', sort_dir: 'asc' },
+  { label: 'Apellido Z-A', sort_by: 'last_name', sort_dir: 'desc' },
+  { label: 'Matrícula ascendente', sort_by: 'enrollment', sort_dir: 'asc' },
+  { label: 'Matrícula descendente', sort_by: 'enrollment', sort_dir: 'desc' },
+  { label: 'Ingreso más reciente', sort_by: 'admission_year', sort_dir: 'desc' },
+  { label: 'Ingreso más antiguo', sort_by: 'admission_year', sort_dir: 'asc' },
+  { label: 'Estado activo primero', sort_by: 'is_active', sort_dir: 'desc' },
+  { label: 'Estado inactivo primero', sort_by: 'is_active', sort_dir: 'asc' },
+];
+
 const initialForm = {
   email: '',
   first_name: '',
@@ -183,6 +196,93 @@ const SortHeader = ({ label, field, sort, onSort, align = 'left' }) => {
   );
 };
 
+const StudentAccountMobileCard = ({
+  student,
+  index,
+  saving,
+  onShowProgress,
+  onToggleStatus,
+}) => {
+  const progress = getAcademicProgress(student);
+  const progressPercent = getProgressPercent(progress);
+
+  return (
+    <motion.article
+      className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
+      {...getEntryMotion(0.28 + index * 0.035)}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="break-words text-base font-black text-gray-900">
+            {student.first_name} {student.last_name}
+          </h3>
+          <p className="mt-1 break-all text-xs font-semibold text-gray-500">
+            {student.email}
+          </p>
+        </div>
+        <span className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${student.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+          {student.is_active ? 'Activo' : 'Inactivo'}
+        </span>
+      </div>
+
+      {student.must_change_password && (
+        <span className="mt-3 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-black text-amber-700">
+          Activación pendiente
+        </span>
+      )}
+
+      <dl className="mt-4 grid grid-cols-2 gap-3 rounded-2xl bg-gray-50 p-3">
+        <div className="min-w-0">
+          <dt className="text-[10px] font-black uppercase tracking-wide text-gray-400">Matrícula</dt>
+          <dd className="mt-1 break-all text-sm font-bold text-gray-700">{student.enrollment || '-'}</dd>
+        </div>
+        <div>
+          <dt className="text-[10px] font-black uppercase tracking-wide text-gray-400">Año de ingreso</dt>
+          <dd className="mt-1 text-sm font-bold text-gray-700">{student.admission_year || '-'}</dd>
+        </div>
+        <div className="col-span-2">
+          <dt className="text-[10px] font-black uppercase tracking-wide text-gray-400">Cuenta creada</dt>
+          <dd className="mt-1 text-sm font-bold text-gray-700">{formatDateTime(student.created_at)}</dd>
+        </div>
+      </dl>
+
+      <button
+        type="button"
+        onClick={() => onShowProgress(student)}
+        className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-left transition hover:border-[#d22864] hover:bg-[#fff0f6]"
+        aria-label={`Ver avance académico de ${student.first_name} ${student.last_name}`}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-black text-gray-900">
+            Avance {progress.completed_count}/{progress.total_count}
+          </span>
+          <span className="text-xs font-black text-[#d22864]">{progressPercent}%</span>
+        </div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
+          <div
+            className="h-full rounded-full bg-[#d22864]"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        <p className="mt-2 break-words text-xs font-semibold text-gray-500">
+          {progress.current_type
+            ? `${getShortPracticeType(progress.current_type)} · ${progress.current_status}`
+            : 'Sin práctica activa'}
+        </p>
+      </button>
+
+      <button
+        type="button"
+        disabled={saving}
+        onClick={() => onToggleStatus(student)}
+        className="mt-3 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-black text-gray-700 transition hover:border-[#d22864] hover:text-[#d22864] disabled:opacity-50"
+      >
+        {student.is_active ? 'Desactivar estudiante' : 'Reactivar estudiante'}
+      </button>
+    </motion.article>
+  );
+};
+
 export const StudentAccountsPanel = () => {
   const [students, setStudents] = useState([]);
   const [filters, setFilters] = useState(initialFilters);
@@ -257,6 +357,12 @@ export const StudentAccountsPanel = () => {
   const applyRecentSort = (direction) => {
     setOffset(0);
     setSort({ sort_by: 'created_at', sort_dir: direction });
+  };
+
+  const handleMobileSortChange = (event) => {
+    const [sortBy, sortDir] = event.target.value.split(':');
+    setOffset(0);
+    setSort({ sort_by: sortBy, sort_dir: sortDir });
   };
 
   const openCreateModal = () => {
@@ -347,26 +453,26 @@ export const StudentAccountsPanel = () => {
   return (
     <>
         <motion.section
-          className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm"
+          className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-8"
           {...getEntryMotion()}
         >
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d22864]">
+            <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d22864] sm:h-14 sm:w-14">
                 <Users size={28} />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Cuentas estudiante</p>
-                <h1 className="mt-2 text-3xl font-black text-gray-900">Vinculacion de estudiantes</h1>
+                <h1 className="mt-2 break-words text-2xl font-black text-gray-900 sm:text-3xl">Vinculación de estudiantes</h1>
                 <p className="mt-3 max-w-3xl text-gray-600">
-                  Crea cuentas de rol estudiante y envia enlaces de activacion. La administracion global de roles queda reservada para superadmin.
+                  Crea cuentas de estudiante y envía enlaces de activación. La administración global de roles queda reservada para superadmin.
                 </p>
               </div>
             </div>
             <button
               type="button"
               onClick={openCreateModal}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52]"
+              className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] sm:w-auto"
             >
               <UserPlus size={18} />
               Nuevo estudiante
@@ -395,10 +501,10 @@ export const StudentAccountsPanel = () => {
           className="mt-6"
           {...getEntryMotion(0.12)}
         >
-          <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="lg:rounded-3xl lg:border lg:border-gray-100 lg:bg-white lg:p-6 lg:shadow-sm">
             <motion.form
               onSubmit={handleApplyFilters}
-              className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_300px_140px]"
+              className="grid min-w-0 gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm lg:grid-cols-[minmax(0,1fr)_300px_140px] lg:rounded-none lg:border-0 lg:p-0 lg:shadow-none"
               {...getEntryMotion(0.16)}
             >
               <label className="relative block">
@@ -408,7 +514,7 @@ export const StudentAccountsPanel = () => {
                   value={filters.search}
                   onChange={handleFilterChange}
                   placeholder="Nombre, correo o matrícula"
-                  className="w-full rounded-xl border border-gray-200 py-3 pl-11 pr-4 text-sm outline-none focus:border-[#d22864]"
+                  className="min-w-0 w-full rounded-xl border border-gray-200 py-3 pl-11 pr-4 text-sm outline-none focus:border-[#d22864]"
                 />
               </label>
               <div
@@ -440,7 +546,7 @@ export const StudentAccountsPanel = () => {
             </motion.form>
 
             <motion.div
-              className="mt-5 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 text-sm font-semibold text-gray-600 sm:flex-row sm:items-center sm:justify-between"
+              className="mt-4 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-3 text-sm font-semibold text-gray-600 shadow-sm lg:mt-5 lg:bg-gray-50/60 lg:shadow-none sm:flex-row sm:items-center sm:justify-between"
               {...getEntryMotion(0.22)}
             >
               <div>
@@ -451,7 +557,24 @@ export const StudentAccountsPanel = () => {
                   Mostrando {start}-{end} · Página {currentPage} de {totalPages}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <label className="block text-xs font-black text-gray-600 lg:hidden">
+                Ordenar resultados
+                <select
+                  value={`${sort.sort_by}:${sort.sort_dir}`}
+                  onChange={handleMobileSortChange}
+                  className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-bold text-gray-700 outline-none focus:border-[#d22864]"
+                >
+                  {MOBILE_SORT_OPTIONS.map((option) => (
+                    <option
+                      key={`${option.sort_by}:${option.sort_dir}`}
+                      value={`${option.sort_by}:${option.sort_dir}`}
+                    >
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="hidden flex-wrap gap-2 lg:flex">
                 <button
                   type="button"
                   onClick={() => applyRecentSort('desc')}
@@ -480,10 +603,34 @@ export const StudentAccountsPanel = () => {
             </motion.div>
 
             <motion.div
-              className="mt-6 min-h-[560px] overflow-hidden rounded-xl border border-gray-100"
+              className="mt-6"
               {...getEntryMotion(0.28)}
             >
-              <table className="w-full table-fixed divide-y divide-gray-100 text-sm">
+              <div className="space-y-3 lg:hidden">
+                {loading && (
+                  <div className="flex min-h-52 items-center justify-center rounded-2xl border border-gray-100 bg-white p-6 text-center text-sm font-semibold text-gray-500 shadow-sm">
+                    Cargando estudiantes...
+                  </div>
+                )}
+                {!loading && students.length === 0 && (
+                  <div className="flex min-h-52 items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm font-semibold text-gray-500">
+                    No hay estudiantes para los filtros seleccionados.
+                  </div>
+                )}
+                {!loading && students.map((student, index) => (
+                  <StudentAccountMobileCard
+                    key={student.id}
+                    student={student}
+                    index={index}
+                    saving={saving}
+                    onShowProgress={setProgressStudent}
+                    onToggleStatus={handleToggleStatus}
+                  />
+                ))}
+              </div>
+
+              <div className="hidden min-h-[560px] overflow-hidden rounded-xl border border-gray-100 lg:block">
+                <table className="w-full table-fixed divide-y divide-gray-100 text-sm">
                 <colgroup>
                   <col className="w-[32%] md:w-[27%] lg:w-[24%]" />
                   <col className="hidden lg:table-column lg:w-[13%]" />
@@ -598,17 +745,18 @@ export const StudentAccountsPanel = () => {
                     );
                   })}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </motion.div>
 
             <motion.div
               className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between"
               {...getEntryMotion(0.34)}
             >
-              <span>
+              <span className="text-center sm:text-left">
                 Mostrando {start}-{end} de {total} · Página {currentPage} de {totalPages}
               </span>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                 <button
                   type="button"
                   disabled={offset === 0 || loading}

@@ -38,6 +38,15 @@ export const presentationLetterService = {
     return response.data;
   },
 
+  async previewTemplate(practiceType, payload) {
+    const response = await api.post(
+      `/presentation-letters/templates/${encodeURIComponent(practiceType)}/preview`,
+      payload,
+      { responseType: 'blob' },
+    );
+    return response.data;
+  },
+
   async uploadSignatureImage(practiceType, file) {
     const formData = new FormData();
     formData.append('file', file);

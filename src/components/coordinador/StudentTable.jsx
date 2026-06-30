@@ -82,6 +82,68 @@ const SortHeader = ({ label, field, sort, onSort, align = 'left' }) => {
   );
 };
 
+const PracticeRequestMobileCard = ({
+  student,
+  index,
+  normalizedStatus,
+  openingId,
+  onOpenDetails,
+}) => {
+  const requestDate = formatDateTime(getRequestDate(student));
+  const degree = getStudentDegree(student) || 'N/A';
+  const practiceType = getPracticeType(student) || 'N/A';
+  const company = student.org_name || 'N/A';
+
+  return (
+    <motion.article
+      className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
+      {...getEntryMotion(0.32 + index * 0.025)}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-base font-black text-gray-900">
+            {getStudentName(student)}
+          </h3>
+          <p className="mt-1 break-words text-xs font-semibold text-gray-500">
+            {student.student?.email || 'Correo no registrado'}
+          </p>
+        </div>
+        <span className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-bold text-white shadow-sm ${normalizedStatus.color}`}>
+          {normalizedStatus.label}
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 rounded-2xl bg-gray-50 p-3 text-sm sm:grid-cols-2">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">Solicitud</p>
+          <p className="mt-1 font-bold text-gray-700">{requestDate}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">Tipo</p>
+          <p className="mt-1 font-bold text-gray-700">{practiceType}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">Carrera</p>
+          <p className="mt-1 break-words font-bold text-gray-700">{degree}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">Empresa</p>
+          <p className="mt-1 break-words font-bold text-gray-700">{company}</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onOpenDetails(student)}
+        disabled={openingId === student.id}
+        className="mt-4 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-black text-[#d22864] transition-all hover:border-[#d22864] hover:bg-[#fff0f6] disabled:opacity-50"
+      >
+        {openingId === student.id ? 'Abriendo...' : 'Ver detalles'}
+      </button>
+    </motion.article>
+  );
+};
+
 export const StudentTable = ({ students = [] }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -295,10 +357,10 @@ export const StudentTable = ({ students = [] }) => {
 
         {/* Fila de Selectores */}
         <motion.div
-          className="flex flex-wrap items-center gap-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100 w-full"
+          className="grid w-full gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm text-gray-600 sm:flex sm:flex-wrap sm:items-center"
           {...getEntryMotion(0.1)}
         >
-          <div className="flex items-center gap-1.5 font-bold text-gray-500 mr-1 flex-shrink-0">
+          <div className="flex items-center gap-1.5 font-bold text-gray-500 sm:mr-1 sm:flex-shrink-0">
             <Filter size={16} />
             <span>Filtros:</span>
           </div>
@@ -306,7 +368,7 @@ export const StudentTable = ({ students = [] }) => {
           <select 
             value={degreeFilter}
             onChange={handleDegreeFilterChange}
-            className="h-9 px-2 bg-white border border-gray-200 rounded-lg outline-none text-xs font-medium focus:border-[#d22864] max-w-[160px] truncate cursor-pointer"
+            className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
           >
             <option value="">Todas las Carreras</option>
             {uniqueDegrees.map(degree => (
@@ -317,7 +379,7 @@ export const StudentTable = ({ students = [] }) => {
           <select 
             value={companyFilter}
             onChange={handleCompanyFilterChange}
-            className="h-9 px-2 bg-white border border-gray-200 rounded-lg outline-none text-xs font-medium focus:border-[#d22864] max-w-[160px] truncate cursor-pointer"
+            className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
           >
             <option value="">Todas las Empresas</option>
             {uniqueCompanies.map(company => (
@@ -328,7 +390,7 @@ export const StudentTable = ({ students = [] }) => {
           {(degreeFilter || companyFilter || practiceTypeFilter) && (
             <button 
               onClick={clearFilters}
-              className="text-xs text-[#d22864] font-bold hover:underline sm:ml-auto flex-shrink-0"
+              className="text-left text-xs font-bold text-[#d22864] hover:underline sm:ml-auto sm:flex-shrink-0"
             >
               Limpiar filtros
             </button>
@@ -336,24 +398,25 @@ export const StudentTable = ({ students = [] }) => {
         </motion.div>
 
         <motion.div
-          className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-100 bg-white p-3 text-sm text-gray-600"
+          className="rounded-xl border border-gray-100 bg-white p-3 text-sm text-gray-600"
           {...getEntryMotion(0.16)}
         >
-          <span className="mr-1 text-xs font-black uppercase tracking-wide text-gray-500">
+          <span className="block text-xs font-black uppercase tracking-wide text-gray-500 sm:inline sm:mr-1">
             Tipo de práctica:
           </span>
-          <button
-            type="button"
-            onClick={() => handlePracticeTypeFilterChange('')}
-            className={`rounded-lg border px-3 py-2 text-xs font-black transition ${
-              practiceTypeFilter === ''
-                ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
-                : 'border-gray-200 bg-white text-gray-600 hover:border-[#d22864] hover:text-[#d22864]'
-            }`}
-          >
-            Todas
-          </button>
-          {uniquePracticeTypes.map((practiceType) => (
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-0 sm:inline-flex sm:flex-wrap">
+            <button
+              type="button"
+              onClick={() => handlePracticeTypeFilterChange('')}
+              className={`rounded-lg border px-3 py-2 text-xs font-black transition ${
+                practiceTypeFilter === ''
+                  ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-[#d22864] hover:text-[#d22864]'
+              }`}
+            >
+              Todas
+            </button>
+            {uniquePracticeTypes.map((practiceType) => (
             <button
               key={practiceType}
               type="button"
@@ -366,7 +429,8 @@ export const StudentTable = ({ students = [] }) => {
             >
               {practiceType}
             </button>
-          ))}
+            ))}
+          </div>
         </motion.div>
       </motion.div>
 
@@ -382,11 +446,11 @@ export const StudentTable = ({ students = [] }) => {
             Mostrando {start}-{end} · Página {currentPage} de {totalPages}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <button
             type="button"
             onClick={() => applyRecentSort('desc')}
-            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
               sort.sort_by === 'upload_date' && sort.sort_dir === 'desc'
                 ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
                 : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
@@ -398,7 +462,7 @@ export const StudentTable = ({ students = [] }) => {
           <button
             type="button"
             onClick={() => applyRecentSort('asc')}
-            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
               sort.sort_by === 'upload_date' && sort.sort_dir === 'asc'
                 ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
                 : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
@@ -412,7 +476,7 @@ export const StudentTable = ({ students = [] }) => {
 
       {/* Contenedor de la Tabla Estructurada - SIN OVERFLOW NI MIN-W */}
       <motion.div
-        className="w-full rounded-xl border border-gray-100 bg-white shadow-sm"
+        className="hidden w-full rounded-xl border border-gray-100 bg-white shadow-sm lg:block"
         {...getEntryMotion(0.28)}
       >
         <div className="w-full table-layout-fixed">
@@ -506,6 +570,27 @@ export const StudentTable = ({ students = [] }) => {
         </div>
       </motion.div>
 
+      <div className="min-h-[560px] lg:hidden">
+        {paginatedStudents.length > 0 ? (
+          <div className="grid gap-3">
+            {paginatedStudents.map((student, index) => (
+              <PracticeRequestMobileCard
+                key={student.id}
+                student={student}
+                index={index}
+                normalizedStatus={getNormalizedStatus(student)}
+                openingId={openingId}
+                onOpenDetails={handleOpenDetails}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex h-[480px] items-center justify-center rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm font-semibold text-gray-500">
+            No se encontraron solicitudes que coincidan con los filtros.
+          </div>
+        )}
+      </div>
+
       <motion.div
         className="flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between"
         {...getEntryMotion(0.36)}
@@ -513,7 +598,7 @@ export const StudentTable = ({ students = [] }) => {
         <span>
           Mostrando {start}-{end} de {total} · Página {currentPage} de {totalPages}
         </span>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
           <button
             type="button"
             disabled={offset === 0}

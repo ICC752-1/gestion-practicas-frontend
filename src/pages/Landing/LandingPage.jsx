@@ -100,20 +100,17 @@ export const LandingPage = () => {
 
           {/* Info columns */}
           <section className="bg-brand-medium py-18 px-6 text-white">
-            {/* CORRECCIÓN: Se añade items-start para emparejar la alineación vertical superior de las dos columnas */}
             <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-32 items-start">
               
               {/* Columna Estudiantes */}
-              {/* CORRECCIÓN: Añadido flex flex-col items-start w-full para asegurar consistencia simétrica al renderizar */}
-              <motion.div 
-                initial={{ x: -20, opacity: 0 }} 
-                whileInView={{ x: 0, opacity: 1 }} 
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
                 viewport={{ once: true }}
                 className="flex flex-col items-start w-full"
               >
                 <h3 className="text-2xl font-bold mb-8 text-left">Para Estudiantes</h3>
                 <ul className="space-y-6 w-full">
-                  {/* CORRECCIÓN INTERNA: Corrección de typo "gertiona" por "gestiona" */}
                   {["Inscribe tu práctica de forma rápida y sencilla", "Sube y gestiona todos tus documentos en un solo lugar", "Recibe notificaciones sobre el estado de tu práctica", "Accede a preguntas frecuentes y soporte"].map((item, idx) => (
                     <li key={idx} className="flex items-start gap-4 group w-full">
                       <div className="flex items-center h-[28px] flex-shrink-0">
@@ -128,10 +125,9 @@ export const LandingPage = () => {
               </motion.div>
               
               {/* Columna Encargados y Supervisores */}
-              {/* CORRECCIÓN: Añadido flex flex-col items-start w-full para evitar que el ancho dinámico del string mueva el margen */}
-              <motion.div 
-                initial={{ x: 20, opacity: 0 }} 
-                whileInView={{ x: 0, opacity: 1 }} 
+              <motion.div
+                initial={{ x: 20, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
                 viewport={{ once: true }}
                 className="flex flex-col items-start w-full"
               >

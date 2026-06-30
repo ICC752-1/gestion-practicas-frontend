@@ -524,7 +524,6 @@ export const PreRegistrationPage = ({
             </button>
           </motion.div>
         ) : (
-
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
             <section className="space-y-6">
               <motion.div
@@ -542,7 +541,6 @@ export const PreRegistrationPage = ({
                     </p>
                     <button
                       type="button"
-
                       onClick={() => navigate(embedded ? '/dashboard/cartas-presentacion' : '/cartas-presentacion')}
                       className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white transition hover:bg-[#b01e52]"
                     >

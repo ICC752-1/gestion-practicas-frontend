@@ -64,7 +64,7 @@ export const RequirementsPage = () => {
 
   return (
     <div className="min-h-screen bg-[#f3f3f3] font-sans">
-      ={isAuthenticated ? <UserHeader /> : <Header />}
+      {isAuthenticated ? <UserHeader /> : <Header />}
 
       <main className="bg-white">
         {/* Botón volver */}

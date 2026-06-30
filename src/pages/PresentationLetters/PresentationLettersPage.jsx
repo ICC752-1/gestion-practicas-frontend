@@ -2,16 +2,15 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { motion } from 'framer-motion';
 import {
   Braces,
-  CalendarDays,
   Check,
   CheckCircle2,
+  ChevronDown,
   Copy,
   Download,
   Eye,
   FileText,
   Hash,
   ImagePlus,
-  ListChecks,
   Loader2,
   Mail,
   RefreshCw,
@@ -34,7 +33,7 @@ import {
 const PRACTICE_TYPES = [
   'Práctica de Estudio I',
   'Práctica de Estudio II',
-  'Práctica Controlled',
+  'Práctica Controlada',
 ];
 
 const getPracticeCardEntryMotion = (delay = 0) => ({
@@ -55,7 +54,7 @@ const TEMPLATE_VARIABLES = [
   {
     token: '{{student_identifier}}',
     title: 'Número de matrícula',
-    description: 'Matrícula calculada con RUT sin formato y los dos últimos dígitos del año de ingreso.',
+    description: 'Matrícula registrada en la cuenta del estudiante.',
     example: 'Ej.: 12345678924',
     recommendedFields: 'Presentación del estudiante.',
     icon: Hash,
@@ -69,29 +68,17 @@ const TEMPLATE_VARIABLES = [
     icon: FileText,
   },
   {
-    token: '{{current_date}}',
-    title: 'Fecha de emisión',
-    description: 'Fecha exacta en que se genera la carta.',
-    example: 'Ej.: 28 de junio del 2026',
-    recommendedFields: 'Introducción, cierre o referencias formales.',
-    icon: CalendarDays,
-  },
-  {
     token: '{{minimum_hours}}',
     title: 'Horas mínimas',
-    description: 'Valor configurado en el campo “Horas mínimas” de esta plantilla.',
+    description: 'Cantidad de horas configurada para la plantilla seleccionada.',
     example: 'Ej.: 168',
-    recommendedFields: 'Descripción de práctica o cláusulas académicas.',
+    recommendedFields: 'Párrafo de duración y aprendizajes.',
     icon: Hash,
   },
-  {
-    token: '{{learning_outcomes}}',
-    title: 'Aprendizajes esperados',
-    description: 'Lista generada desde el campo “Aprendizajes esperados”.',
-    example: 'Ej.: listado con viñetas',
-    recommendedFields: 'Descripción de práctica o cierre académico.',
-    icon: ListChecks,
-  },
+];
+const INTERNAL_VARIABLE_TOKENS = [
+  '{{current_date}}',
+  '{{learning_outcomes}}',
 ];
 
 const DIRECTOR_ROLE = 'Director de carrera';
@@ -100,6 +87,11 @@ const TEMPLATE_READER_ROLES = new Set([
   'Director de carrera',
   'Secretaria de Carrera',
 ]);
+const DEFAULT_MINIMUM_HOURS_CLAUSE = (
+  'Es importante destacar que la duración mínima de la Práctica de Estudios I '
+  + 'es de {{minimum_hours}} horas cronológicas, y que una vez completada con éxito el/la '
+  + 'estudiante debe ser capaz de evidenciar los siguientes aprendizajes:'
+);
 
 const DEFAULT_TEMPLATE_FORM = {
   title: '',
@@ -108,6 +100,7 @@ const DEFAULT_TEMPLATE_FORM = {
   student_presentation_template: '',
   practice_description: '',
   minimum_hours: 168,
+  minimum_hours_clause: DEFAULT_MINIMUM_HOURS_CLAUSE,
   learning_outcomes: '',
   insurance_clause: '',
   closing_text: '',
@@ -126,6 +119,24 @@ const getErrorMessage = (error) => {
   if (Array.isArray(detail)) return detail.map((item) => item.msg).join(', ');
 
   return 'No se pudo completar la operación.';
+};
+
+const getBlobErrorMessage = async (error) => {
+  const responseData = error?.response?.data;
+  if (!(responseData instanceof Blob)) return getErrorMessage(error);
+
+  try {
+    const parsed = JSON.parse(await responseData.text());
+    return getErrorMessage({
+      ...error,
+      response: {
+        ...error.response,
+        data: parsed,
+      },
+    });
+  } catch {
+    return 'No se pudo renderizar la previsualización en PDF.';
+  }
 };
 
 const formatDateTime = (value) => {
@@ -147,6 +158,7 @@ const toTemplateForm = (template) => ({
   student_presentation_template: template?.student_presentation_template || '',
   practice_description: template?.practice_description || '',
   minimum_hours: template?.minimum_hours || 168,
+  minimum_hours_clause: template?.minimum_hours_clause || DEFAULT_MINIMUM_HOURS_CLAUSE,
   learning_outcomes: Array.isArray(template?.learning_outcomes)
     ? template.learning_outcomes.join('\n')
     : '',
@@ -172,34 +184,11 @@ const buildTemplatePayload = (form) => {
   };
 };
 
-const MONTHS_ES = [
-  'enero',
-  'febrero',
-  'marzo',
-  'abril',
-  'mayo',
-  'junio',
-  'julio',
-  'agosto',
-  'septiembre',
-  'octubre',
-  'noviembre',
-  'diciembre',
-];
-
-const formatPreviewDate = (date) => (
-  `${date.getDate()} de ${MONTHS_ES[date.getMonth()]} del ${date.getFullYear()}`
-);
-
-const renderTemplateText = (text, variables) => (
-  Object.entries(variables).reduce(
-    (rendered, [key, value]) => rendered.replaceAll(`{{${key}}}`, value),
-    text || '',
-  )
-);
-
 const VARIABLE_TOKEN_PATTERN = /({{[a-z_]+}})/g;
-const KNOWN_VARIABLE_TOKENS = new Set(TEMPLATE_VARIABLES.map((variable) => variable.token));
+const KNOWN_VARIABLE_TOKENS = new Set([
+  ...TEMPLATE_VARIABLES.map((variable) => variable.token),
+  ...INTERNAL_VARIABLE_TOKENS,
+]);
 
 const renderHighlightedTemplateText = (value, placeholder) => {
   const text = value || placeholder || ' ';
@@ -220,66 +209,6 @@ const renderHighlightedTemplateText = (value, placeholder) => {
 
     return <span key={`${part}-${index}`}>{part}</span>;
   });
-};
-
-const getPreviewLearningOutcomes = (form) => {
-  const outcomes = form.learning_outcomes
-    .split('\n')
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  if (outcomes.length > 0) {
-    return outcomes;
-  }
-
-  return [
-    'Aplicar conocimientos disciplinares en un contexto profesional.',
-    'Comunicar avances y resultados de manera clara y responsable.',
-  ];
-};
-
-const buildLetterPreview = (form, selectedType) => {
-  const generatedAt = new Date();
-  const learningOutcomes = getPreviewLearningOutcomes(form);
-  const learningOutcomesText = learningOutcomes
-    .map((outcome) => `• ${outcome}`)
-    .join('\n');
-  const variables = {
-    student_name: 'Camila Rojas Soto',
-    student_identifier: '12345678924',
-    practice_type: selectedType,
-    current_date: formatPreviewDate(generatedAt),
-    minimum_hours: String(form.minimum_hours || 168),
-    learning_outcomes: learningOutcomesText,
-  };
-  const practiceLabel = renderTemplateText(
-    form.subtitle || `Estudiante en ${selectedType}`,
-    variables,
-  ).replace('Estudiante en ', '');
-  const minimumHoursClause = (
-    'Es importante destacar que la duración mínima de la '
-    + `${practiceLabel} es de ${variables.minimum_hours} horas cronológicas, `
-    + 'y que una vez completada con éxito el/la estudiante debe ser '
-    + 'capaz de evidenciar los siguientes aprendizajes:'
-  );
-
-  return {
-    date: `Temuco, ${variables.current_date}`,
-    title: renderTemplateText(form.title || 'Carta de presentación', variables).toUpperCase(),
-    subtitle: renderTemplateText(form.subtitle || `Estudiante en ${selectedType}`, variables),
-    paragraphs: [
-      renderTemplateText(form.base_intro, variables),
-      renderTemplateText(form.student_presentation_template, variables),
-      renderTemplateText(form.practice_description, variables),
-      minimumHoursClause,
-    ].filter(Boolean),
-    learningOutcomes,
-    insuranceClause: renderTemplateText(form.insurance_clause, variables),
-    closingText: renderTemplateText(form.closing_text, variables),
-    signatureName: renderTemplateText(form.signature_name, variables),
-    signatureRole: renderTemplateText(form.signature_role, variables),
-    signatureInstitution: renderTemplateText(form.signature_institution, variables),
-  };
 };
 
 const TemplateTextarea = ({
@@ -503,6 +432,7 @@ const TemplateEditor = ({
   onSelectedTypeChange,
   form,
   onFormChange,
+  onPreview,
   onSave,
   onSignatureImageDelete,
   onSignatureImageUpload,
@@ -513,11 +443,46 @@ const TemplateEditor = ({
 }) => {
   const updateField = (field, value) => onFormChange({ ...form, [field]: value });
   const [copiedVariable, setCopiedVariable] = useState('');
+  const [variablesExpanded, setVariablesExpanded] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const letterPreview = useMemo(
-    () => buildLetterPreview(form, selectedType),
-    [form, selectedType],
-  );
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
+  const [previewPdfUrl, setPreviewPdfUrl] = useState('');
+  const previewPdfUrlRef = useRef('');
+
+  const revokePreviewPdfUrl = useCallback(() => {
+    if (previewPdfUrlRef.current) {
+      window.URL.revokeObjectURL(previewPdfUrlRef.current);
+      previewPdfUrlRef.current = '';
+    }
+    setPreviewPdfUrl('');
+  }, []);
+
+  useEffect(() => () => revokePreviewPdfUrl(), [revokePreviewPdfUrl]);
+
+  const handleOpenPreview = async () => {
+    setIsPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewError('');
+    revokePreviewPdfUrl();
+
+    try {
+      const blob = await onPreview();
+      const objectUrl = window.URL.createObjectURL(blob);
+      previewPdfUrlRef.current = objectUrl;
+      setPreviewPdfUrl(objectUrl);
+    } catch (error) {
+      setPreviewError(await getBlobErrorMessage(error));
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleClosePreview = () => {
+    setIsPreviewOpen(false);
+    setPreviewError('');
+    revokePreviewPdfUrl();
+  };
 
   const handleCopyVariable = async (token) => {
     try {
@@ -584,58 +549,80 @@ const TemplateEditor = ({
             </div>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-xl border border-gray-100">
-            {TEMPLATE_VARIABLES.map((variable, index) => {
-              const Icon = variable.icon;
-              const isCopied = copiedVariable === variable.token;
+          <div
+            className={`relative mt-4 overflow-hidden rounded-xl border border-gray-100 transition-[max-height] duration-300 ${
+              variablesExpanded ? 'max-h-[720px]' : 'max-h-48'
+            } lg:max-h-none`}
+          >
+            <div>
+              {TEMPLATE_VARIABLES.map((variable, index) => {
+                const Icon = variable.icon;
+                const isCopied = copiedVariable === variable.token;
 
-              return (
-                <motion.div
-                  key={variable.token}
-                  className="border-b border-gray-100 bg-gray-50/70 p-3 last:border-b-0"
-                  {...getPracticeCardEntryMotion(0.18 + index * 0.035)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#d22864] ring-1 ring-gray-100">
-                      <Icon size={16} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-sm font-black text-gray-900">{variable.title}</p>
-                          <code className="mt-1 inline-block max-w-full rounded-lg bg-white px-2 py-1 text-xs font-black text-gray-700 ring-1 ring-gray-100">
-                            {variable.token}
-                          </code>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleCopyVariable(variable.token)}
-                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs transition cursor-pointer ${
-                            isCopied
-                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                              : 'border-gray-200 bg-white text-gray-500 hover:border-[#d22864] hover:text-[#d22864]'
-                          }`}
-                          aria-label={`Copiar ${variable.token}`}
-                          title={`Copiar ${variable.token}`}
-                        >
-                          {isCopied ? <Check size={15} /> : <Copy size={15} />}
-                        </button>
+                return (
+                  <motion.div
+                    key={variable.token}
+                    className="border-b border-gray-100 bg-gray-50/70 p-3 last:border-b-0"
+                    {...getPracticeCardEntryMotion(0.18 + index * 0.035)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#d22864] ring-1 ring-gray-100">
+                        <Icon size={16} />
                       </div>
-                      <p className="mt-2 text-xs leading-relaxed text-gray-600">
-                        {variable.description}
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-gray-400">
-                        {variable.example}
-                      </p>
-                      <p className="mt-2 text-[11px] font-bold uppercase tracking-wide text-gray-500">
-                        Útil en: {variable.recommendedFields}
-                      </p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-black text-gray-900">{variable.title}</p>
+                            <code className="mt-1 inline-block max-w-full rounded-lg bg-white px-2 py-1 text-xs font-black text-gray-700 ring-1 ring-gray-100">
+                              {variable.token}
+                            </code>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyVariable(variable.token)}
+                            className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border text-xs transition ${
+                              isCopied
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                : 'border-gray-200 bg-white text-gray-500 hover:border-[#d22864] hover:text-[#d22864]'
+                            }`}
+                            aria-label={`Copiar ${variable.token}`}
+                            title={`Copiar ${variable.token}`}
+                          >
+                            {isCopied ? <Check size={15} /> : <Copy size={15} />}
+                          </button>
+                        </div>
+                        <p className="mt-2 text-xs leading-relaxed text-gray-600">
+                          {variable.description}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold text-gray-400">
+                          {variable.example}
+                        </p>
+                        <p className="mt-2 text-[11px] font-bold uppercase tracking-wide text-gray-500">
+                          Útil en: {variable.recommendedFields}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+                  </motion.div>
+                );
+              })}
+            </div>
+            {!variablesExpanded && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 border-t border-gray-100 bg-white/95 lg:hidden" />
+            )}
           </div>
+
+          <button
+            type="button"
+            onClick={() => setVariablesExpanded((current) => !current)}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-black text-gray-600 transition hover:border-[#d22864] hover:text-[#d22864] lg:hidden"
+            aria-expanded={variablesExpanded}
+          >
+            {variablesExpanded ? 'Mostrar menos' : `Ver las ${TEMPLATE_VARIABLES.length} variables`}
+            <ChevronDown
+              size={16}
+              className={`transition-transform ${variablesExpanded ? 'rotate-180' : ''}`}
+            />
+          </button>
         </motion.section>
       </motion.aside>
 
@@ -669,11 +656,12 @@ const TemplateEditor = ({
               </div>
               <button
                 type="button"
-                onClick={() => setIsPreviewOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-black text-white transition hover:bg-gray-800 cursor-pointer"
+                onClick={handleOpenPreview}
+                disabled={previewLoading}
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-black text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                <Eye size={17} />
-                Previsualizar carta
+                {previewLoading ? <Loader2 className="animate-spin" size={17} /> : <Eye size={17} />}
+                Previsualizar PDF
               </button>
             </motion.div>
 
@@ -737,11 +725,11 @@ const TemplateEditor = ({
             </motion.div>
 
             <motion.div
-              className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]"
+              className="grid items-start gap-4 md:grid-cols-[180px_minmax(0,1fr)]"
               {...getPracticeCardEntryMotion(0.46)}
             >
               <label className="text-sm font-bold text-gray-700">
-                Horas mínimas
+                Valor de horas mínimas
                 <input
                   type="number"
                   min="1"
@@ -753,6 +741,17 @@ const TemplateEditor = ({
                   required
                 />
               </label>
+              <TemplateTextarea
+                label="Párrafo de duración y aprendizajes"
+                rows={4}
+                value={form.minimum_hours_clause}
+                onValueChange={(value) => updateField('minimum_hours_clause', value)}
+                disabled={!canEdit}
+                required
+              />
+            </motion.div>
+
+            <motion.div {...getPracticeCardEntryMotion(0.5)}>
               <TemplateTextarea
                 label="Aprendizajes esperados"
                 rows={5}
@@ -897,105 +896,64 @@ const TemplateEditor = ({
       </motion.section>
 
       {isPreviewOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4 py-6">
-          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
-            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 p-2 sm:p-6">
+          <div
+            className="flex h-[96vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:h-[92vh] sm:rounded-3xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="presentation-letter-preview-title"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-4 py-4 sm:px-6 sm:py-5">
               <div>
                 <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
                   Previsualización
                 </p>
-                <h2 className="mt-1 text-2xl font-black text-gray-950">
-                  Carta de presentación
+                <h2
+                  id="presentation-letter-preview-title"
+                  className="mt-1 text-xl font-black text-gray-950 sm:text-2xl"
+                >
+                  Carta de presentación en PDF
                 </h2>
                 <p className="mt-1 text-sm font-semibold text-gray-500">
-                  Vista referencial con datos de ejemplo.
+                  Documento renderizado con la edición actual y datos representativos.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setIsPreviewOpen(false)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition hover:border-[#d22864] hover:text-[#d22864] cursor-pointer"
+                onClick={handleClosePreview}
+                className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition hover:border-[#d22864] hover:text-[#d22864]"
                 aria-label="Cerrar previsualización"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="overflow-y-auto bg-gray-100 px-4 py-6 sm:px-8">
-              <article className="mx-auto min-h-[760px] max-w-3xl bg-white px-8 py-10 text-gray-900 shadow-sm ring-1 ring-gray-200 sm:px-12">
-                <p className="text-right text-sm font-semibold text-gray-600">
-                  {letterPreview.date}
-                </p>
-                <header className="mt-8 text-center">
-                  <h3 className="text-xl font-black uppercase tracking-wide text-gray-950">
-                    {letterPreview.title}
-                  </h3>
-                  <p className="mt-2 text-sm font-bold text-gray-600">
-                    {letterPreview.subtitle}
-                  </p>
-                </header>
-
-                <p className="mt-10 text-sm font-bold text-gray-800">
-                  A quien corresponda:
-                </p>
-
-                <div className="mt-5 space-y-4 text-sm leading-7 text-gray-700">
-                  {letterPreview.paragraphs.map((paragraph) => (
-                    <p key={paragraph}>{paragraph}</p>
-                  ))}
+            <div className="min-h-0 flex-1 bg-gray-200 p-2 sm:p-4">
+              {previewLoading ? (
+                <div className="flex h-full flex-col items-center justify-center rounded-xl bg-white">
+                  <Loader2 className="animate-spin text-[#d22864]" size={38} />
+                  <p className="mt-3 text-sm font-bold text-gray-500">Renderizando PDF...</p>
                 </div>
-
-                {letterPreview.learningOutcomes.length > 0 && (
-                  <div className="mt-5">
-                    <p className="text-sm font-black text-gray-800">Aprendizajes esperados</p>
-                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-7 text-gray-700">
-                      {letterPreview.learningOutcomes.map((outcome) => (
-                        <li key={outcome}>{outcome}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="mt-5 space-y-4 text-sm leading-7 text-gray-700">
-                  {letterPreview.insuranceClause && (
-                    <p>{letterPreview.insuranceClause}</p>
-                  )}
-                  {letterPreview.closingText && (
-                    <p>{letterPreview.closingText}</p>
-                  )}
+              ) : previewError ? (
+                <div className="flex h-full flex-col items-center justify-center rounded-xl bg-white px-6 text-center">
+                  <FileText className="text-red-300" size={42} />
+                  <p className="mt-4 max-w-lg text-sm font-bold text-red-700">{previewError}</p>
+                  <button
+                    type="button"
+                    onClick={handleOpenPreview}
+                    className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white"
+                  >
+                    <RefreshCw size={16} />
+                    Reintentar
+                  </button>
                 </div>
-
-                <footer className="mt-14 text-center text-sm text-gray-700">
-                  {signatureImageUrl ? (
-                    <img
-                      src={signatureImageUrl}
-                      alt="Firma configurada"
-                      className="mx-auto mb-3 max-h-20 max-w-56 object-contain"
-                    />
-                  ) : (
-                    <div className="mx-auto mb-3 h-px w-56 bg-gray-300" />
-                  )}
-                  <p className="font-black text-gray-950">
-                    {letterPreview.signatureName || 'Nombre de firma'}
-                  </p>
-                  <p className="font-semibold">
-                    {letterPreview.signatureRole || 'Cargo'}
-                  </p>
-                  <p className="font-semibold">
-                    {letterPreview.signatureInstitution || 'Institución'}
-                  </p>
-                </footer>
-              </article>
-            </div>
-
-            <div className="flex justify-end border-t border-gray-100 px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setIsPreviewOpen(false)}
-                className="rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] cursor-pointer"
-              >
-                Cerrar
-              </button>
+              ) : previewPdfUrl ? (
+                <iframe
+                  src={previewPdfUrl}
+                  title="Vista previa PDF de la carta de presentación"
+                  className="h-full w-full rounded-xl border-0 bg-white"
+                />
+              ) : null}
             </div>
           </div>
         </div>
@@ -1156,6 +1114,13 @@ export const PresentationLettersPanel = () => {
     }
   };
 
+  const handlePreviewTemplate = () => (
+    presentationLetterService.previewTemplate(
+      selectedType,
+      buildTemplatePayload(templateForm),
+    )
+  );
+
   const handleSignatureImageUpload = async (file) => {
     setSavingTemplate(true);
     try {
@@ -1221,31 +1186,32 @@ export const PresentationLettersPanel = () => {
         </p>
       </motion.div>
 
-      {isStudent ? (
-        <StudentView
-          letters={letters}
-          loading={lettersLoading}
-          onRefresh={loadLetters}
-          onGenerate={handleGenerate}
-          onDownload={handleDownload}
-          generating={generating}
-          downloadingId={downloadingId}
-        />
-      ) : (
-        <TemplateEditor
-          selectedType={selectedType}
-          onSelectedTypeChange={setSelectedType}
-          form={templateForm}
-          onFormChange={setTemplateForm}
-          onSave={handleSaveTemplate}
-          onSignatureImageDelete={handleSignatureImageDelete}
-          onSignatureImageUpload={handleSignatureImageUpload}
-          signatureImageUrl={signatureImageUrl}
-          loading={templateLoading}
-          saving={savingTemplate}
-          canEdit={canEditTemplates}
-        />
-      )}
+        {isStudent ? (
+          <StudentView
+            letters={letters}
+            loading={lettersLoading}
+            onRefresh={loadLetters}
+            onGenerate={handleGenerate}
+            onDownload={handleDownload}
+            generating={generating}
+            downloadingId={downloadingId}
+          />
+        ) : (
+          <TemplateEditor
+            selectedType={selectedType}
+            onSelectedTypeChange={setSelectedType}
+            form={templateForm}
+            onFormChange={setTemplateForm}
+            onPreview={handlePreviewTemplate}
+            onSave={handleSaveTemplate}
+            onSignatureImageDelete={handleSignatureImageDelete}
+            onSignatureImageUpload={handleSignatureImageUpload}
+            signatureImageUrl={signatureImageUrl}
+            loading={templateLoading}
+            saving={savingTemplate}
+            canEdit={canEditTemplates}
+          />
+        )}
     </>
   );
 };

@@ -144,6 +144,32 @@ const getErrorMessage = (error) => {
     return 'No se pudo completar la operación. Intenta nuevamente.';
 };
 
+const InlineMessage = ({ message, className = '' }) => {
+    if (!message) return null;
+
+    const isSuccess = message.type === 'success';
+
+    return (
+        <div
+            className={[
+                'flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold',
+                isSuccess
+                    ? 'border-green-200 bg-green-50 text-green-800'
+                    : 'border-red-200 bg-red-50 text-red-800',
+                className,
+            ].join(' ')}
+            role={isSuccess ? 'status' : 'alert'}
+        >
+            {isSuccess ? (
+                <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" />
+            ) : (
+                <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
+            )}
+            <span className="min-w-0 break-words">{message.text}</span>
+        </div>
+    );
+};
+
 const normalizeText = (value) =>
     String(value || '')
         .normalize('NFD')
@@ -201,7 +227,7 @@ const parsePreferredDates = (dates) => {
     if (typeof dates === 'string') {
         try {
             return JSON.parse(dates);
-        } catch (e) {
+        } catch {
             return [];
         }
     }
@@ -218,6 +244,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
     const isStudent = roleNames.includes('Estudiante');
 
     const [selectedDate, setSelectedDate] = useState(dateToCalendarValue(today));
+    const [appointmentsDateFilter, setAppointmentsDateFilter] = useState(null);
     const [appointments, setAppointments] = useState([]);
     const [myRequests, setMyRequests] = useState([]);
     const [pendingRequests, setPendingRequests] = useState([]);
@@ -228,7 +255,9 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
     const [activeTab, setActiveTab] = useState(isStudent ? 'request' : 'requests');
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [message, setMessage] = useState(null);
+    const [pageMessage, setPageMessage] = useState(null);
+    const [requestMessage, setRequestMessage] = useState(null);
+    const [appointmentMessage, setAppointmentMessage] = useState(null);
 
     // Student Form State
     const [formPurpose, setFormPurpose] = useState('general_consultation');
@@ -277,10 +306,10 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
     );
 
     // Load data from endpoints
-    const loadData = useCallback(async ({ clearMessage = true } = {}) => {
+    const loadData = useCallback(async ({ clearPageMessage = true } = {}) => {
         setLoading(true);
-        if (clearMessage) {
-            setMessage(null);
+        if (clearPageMessage) {
+            setPageMessage(null);
         }
 
         try {
@@ -304,7 +333,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                         try {
                             const lifecycle = await internshipService.getInternshipLifecycle(internship.id);
                             return { ...internship, lifecycle };
-                        } catch (e) {
+                        } catch {
                             return { ...internship, lifecycle: null };
                         }
                     })
@@ -329,7 +358,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                 }
             }
         } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
+            setPageMessage({ type: 'error', text: getErrorMessage(error) });
         } finally {
             setLoading(false);
         }
@@ -371,14 +400,39 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
         [appointments, selectedDateKey]
     );
 
-    // Sort appointments chronologically
+    const scheduledAppointmentsCount = useMemo(
+        () => appointments.filter((appointment) => appointment.status === 'scheduled').length,
+        [appointments]
+    );
+
+    // Sort appointments chronologically and apply the selected calendar day when needed.
     const orderedAppointments = useMemo(() => {
-        return [...appointments].sort((a, b) => {
+        const visibleAppointments = appointmentsDateFilter
+            ? appointments.filter((appointment) => appointment.date === appointmentsDateFilter)
+            : appointments;
+
+        return [...visibleAppointments].sort((a, b) => {
             const cmp = a.date.localeCompare(b.date);
             if (cmp !== 0) return cmp;
             return a.start_time.localeCompare(b.start_time);
         });
-    }, [appointments]);
+    }, [appointments, appointmentsDateFilter]);
+
+    const handleCalendarDateSelect = (date) => {
+        setSelectedDate(date);
+        const dateKey = toDateKey(date.year, date.month, date.day);
+
+        if (calendarMarkers[dateKey]?.length) {
+            setAppointmentsDateFilter(dateKey);
+            setAppointmentMessage(null);
+            setActiveTab('appointments');
+        }
+    };
+
+    const showAllAppointments = () => {
+        setAppointmentsDateFilter(null);
+        setActiveTab('appointments');
+    };
 
     // Check if the student meets presentation requirements
     const selectedInternship = useMemo(() => {
@@ -405,12 +459,12 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
     // Submit Scheduling Request (Student)
     const handleCreateRequest = async (event) => {
         event.preventDefault();
-        setMessage(null);
+        setRequestMessage(null);
         setSubmitting(true);
 
         const filteredDates = formPreferredDates.filter(Boolean);
         if (filteredDates.length === 0) {
-            setMessage({ type: 'error', text: 'Debes seleccionar al menos una fecha preferida.' });
+            setRequestMessage({ type: 'error', text: 'Debes seleccionar al menos una fecha preferida.' });
             setSubmitting(false);
             return;
         }
@@ -455,9 +509,9 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
             setFormPreferredDates(['', '', '']);
             setSlidesFile(null);
             setActiveTab('requests');
-            await loadData({ clearMessage: false });
+            await loadData({ clearPageMessage: false });
         } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
+            setRequestMessage({ type: 'error', text: getErrorMessage(error) });
         } finally {
             setSubmitting(false);
         }
@@ -467,7 +521,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
     const handleCancelRequest = async (requestId) => {
         if (!window.confirm('¿Estás seguro de que deseas cancelar esta solicitud?')) return;
         setSubmitting(true);
-        setMessage(null);
+        setRequestMessage(null);
 
         try {
             await schedulingService.cancelRequest(requestId);
@@ -476,9 +530,9 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                 title: 'Solicitud cancelada',
                 message: 'La solicitud ha sido cancelada correctamente.',
             });
-            await loadData({ clearMessage: false });
+            await loadData({ clearPageMessage: false });
         } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
+            setRequestMessage({ type: 'error', text: getErrorMessage(error) });
         } finally {
             setSubmitting(false);
         }
@@ -487,7 +541,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
     // Cancel Appointment (Student/Coordinator)
     const handleCancelAppointment = async (appointmentId, reason) => {
     setSubmitting(true);
-    setMessage(null);
+    setAppointmentMessage(null);
 
     try {
         await schedulingService.cancelAppointment(appointmentId, reason);
@@ -497,11 +551,10 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
             message: 'La cita agendada ha sido cancelada.',
         });
         // Forzar recarga completa desde cero
-        await loadData({ clearMessage: false });
-        // Redirigir al tab de solicitudes para que vea el estado actualizado
-        setActiveTab('requests');
+        await loadData({ clearPageMessage: false });
+        setActiveTab('appointments');
     } catch (error) {
-        setMessage({ type: 'error', text: getErrorMessage(error) });
+        setAppointmentMessage({ type: 'error', text: getErrorMessage(error) });
     } finally {
         setSubmitting(false);
     }
@@ -509,7 +562,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
 
     const handleConfirmAppointment = async (appointmentId) => {
         setSubmitting(true);
-        setMessage(null);
+        setAppointmentMessage(null);
         try {
             await schedulingService.confirmAppointment(appointmentId);
             showToast({
@@ -517,9 +570,9 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                 title: 'Asistencia confirmada',
                 message: 'Tu asistencia a la cita ha sido confirmada exitosamente.',
             });
-            await loadData({ clearMessage: false });
+            await loadData({ clearPageMessage: false });
         } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
+            setAppointmentMessage({ type: 'error', text: getErrorMessage(error) });
         } finally {
             setSubmitting(false);
         }
@@ -528,7 +581,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
     const handleUploadSlides = async (appointment, file) => {
         if (!file) return;
         setSubmitting(true);
-        setMessage(null);
+        setAppointmentMessage(null);
         try {
             const docTypes = await documentService.getDocumentTypes();
             const slidesType = findSlidesDocumentType(docTypes);
@@ -549,9 +602,9 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                 title: 'Diapositivas subidas',
                 message: 'Tus diapositivas han sido cargadas y vinculadas exitosamente.',
             });
-            await loadData({ clearMessage: false });
+            await loadData({ clearPageMessage: false });
         } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
+            setAppointmentMessage({ type: 'error', text: getErrorMessage(error) });
         } finally {
             setSubmitting(false);
         }
@@ -570,7 +623,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-        } catch (error) {
+        } catch {
             showToast({
                 type: 'error',
                 title: 'Error de descarga',
@@ -586,7 +639,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
         setCancellingAppointment(appointment);
         setCancelMode('cancel');
         setCancelReason('');
-        setMessage(null);
+        setAppointmentMessage(null);
     };
 
     const closeCancelModal = () => {
@@ -601,7 +654,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
 
         const trimmedReason = cancelReason.trim();
         if (!trimmedReason) {
-            setMessage({ type: 'error', text: 'Debes indicar una justificación.' });
+            setAppointmentMessage({ type: 'error', text: 'Debes indicar una justificación.' });
             return;
         }
 
@@ -629,7 +682,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
             location: '',
             comments: '',
         });
-        setMessage(null);
+        setRequestMessage(null);
     };
 
     // Submit Response (Coordinator)
@@ -639,12 +692,12 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
 
         const trimmedLocation = (responseForm.location || '').trim();
         if (!trimmedLocation) {
-            setMessage({ type: 'error', text: 'La ubicación o enlace de reunión es obligatorio.' });
+            setRequestMessage({ type: 'error', text: 'La ubicación o enlace de reunión es obligatorio.' });
             return;
         }
 
         setSubmitting(true);
-        setMessage(null);
+        setRequestMessage(null);
 
         try {
             await schedulingService.respondToRequest(respondingRequest.id, {
@@ -663,9 +716,9 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
             });
 
             setRespondingRequest(null);
-            await loadData({ clearMessage: false });
+            await loadData({ clearPageMessage: false });
         } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
+            setRequestMessage({ type: 'error', text: getErrorMessage(error) });
         } finally {
             setSubmitting(false);
         }
@@ -675,7 +728,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
     const startRejection = (request) => {
         setRejectingRequest(request);
         setRejectionReason('');
-        setMessage(null);
+        setRequestMessage(null);
     };
 
     // Submit Rejection (Coordinator)
@@ -683,12 +736,12 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
         event.preventDefault();
         if (!rejectingRequest) return;
         if (!rejectionReason.trim()) {
-            setMessage({ type: 'error', text: 'Debes indicar un motivo de rechazo.' });
+            setRequestMessage({ type: 'error', text: 'Debes indicar un motivo de rechazo.' });
             return;
         }
 
         setSubmitting(true);
-        setMessage(null);
+        setRequestMessage(null);
 
         try {
             await schedulingService.rejectRequest(rejectingRequest.id, rejectionReason);
@@ -698,9 +751,9 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                 message: 'Se ha rechazado la solicitud de agendamiento.',
             });
             setRejectingRequest(null);
-            await loadData({ clearMessage: false });
+            await loadData({ clearPageMessage: false });
         } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
+            setRequestMessage({ type: 'error', text: getErrorMessage(error) });
         } finally {
             setSubmitting(false);
         }
@@ -738,7 +791,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
     const handleRegisterOutcome = async (appointmentId) => {
         const outcome = outcomeForms[appointmentId] || DEFAULT_OUTCOME_FORM;
         setSubmitting(true);
-        setMessage(null);
+        setAppointmentMessage(null);
 
         try {
             await schedulingService.registerAppointmentOutcome(appointmentId, {
@@ -760,9 +813,9 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                 title: 'Resultado registrado',
                 message: 'Se ha registrado el resultado de la cita correctamente.',
             });
-            await loadData({ clearMessage: false });
+            await loadData({ clearPageMessage: false });
         } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
+            setAppointmentMessage({ type: 'error', text: getErrorMessage(error) });
         } finally {
             setSubmitting(false);
         }
@@ -809,14 +862,18 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
             return;
         }
 
+        setDirectFormErrors({});
         const trimmedLocation = (directForm.location || '').trim();
         if (!trimmedLocation) {
-            setMessage({ type: 'error', text: 'La ubicación o enlace de reunión es obligatorio.' });
+            setDirectFormErrors((current) => ({
+                ...current,
+                location: 'La ubicación o enlace de reunión es obligatorio.',
+            }));
             return;
         }
 
         setSubmitting(true);
-        setMessage(null);
+        setAppointmentMessage(null);
 
         try {
             await schedulingService.scheduleDirectAppointment({
@@ -846,9 +903,14 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                 location: '',
                 comments: '',
             });
-            await loadData({ clearMessage: false });
+            setActiveTab('appointments');
+            setAppointmentsDateFilter(directForm.date);
+            await loadData({ clearPageMessage: false });
         } catch (error) {
-            setMessage({ type: 'error', text: getErrorMessage(error) });
+            setDirectFormErrors((current) => ({
+                ...current,
+                form: getErrorMessage(error),
+            }));
         } finally {
             setSubmitting(false);
         }
@@ -860,6 +922,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
 
             <motion.main
                 className={embedded ? 'flex w-full flex-col' : 'mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 py-8 sm:px-8'}
+                aria-busy={loading}
                 variants={ENTRY_CONTAINER_VARIANTS}
                 initial="hidden"
                 animate="visible"
@@ -902,104 +965,101 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                     )}
                 </motion.div>
 
-                {/* Notifications Panel */}
-                {message && (
-                    <motion.div
-                        className={[
-                            'mb-6 flex items-center gap-3 rounded-2xl border px-5 py-4 text-sm font-semibold shadow-sm',
-                            message.type === 'success'
-                                ? 'border-green-200 bg-green-50 text-green-800'
-                                : 'border-red-200 bg-red-50 text-red-800',
-                        ].join(' ')}
-                        variants={ENTRY_ITEM_VARIANTS}
-                    >
-                        {message.type === 'success' ? (
-                            <CheckCircle2 className="text-green-600 h-5 w-5 flex-shrink-0" />
-                        ) : (
-                            <AlertCircle className="text-red-600 h-5 w-5 flex-shrink-0" />
-                        )}
-                        <span>{message.text}</span>
-                    </motion.div>
-                )}
-
-                {/* Navigation Tabs */}
-                <motion.div
-                    className="mb-6 flex border-b border-slate-200"
-                    variants={ENTRY_ITEM_VARIANTS}
-                >
-                    {isStudent && (
-                        <>
-                            <button
-                                onClick={() => setActiveTab('request')}
-                                className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'request' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                            >
-                                Solicitar Hora
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('requests')}
-                                className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'requests' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                            >
-                                Mis Solicitudes ({myRequests.filter(req => req.status !== 'scheduled').length})
-                            </button>
-                        </>
-                    )}
-                    {isAdmin && (
-                        <button
-                            onClick={() => setActiveTab('requests')}
-                            className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'requests' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                        >
-                            Solicitudes Pendientes ({pendingRequests.length})
-                        </button>
-                    )}
-                    <button
-                        onClick={() => setActiveTab('appointments')}
-                        className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'appointments' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                    >
-                        Citas Agendadas ({appointments.filter(a => a.status !== 'cancelled').length})
-                    </button>
+                <motion.div variants={ENTRY_ITEM_VARIANTS}>
+                    <InlineMessage message={pageMessage} className="mb-6 shadow-sm" />
                 </motion.div>
 
-                {/* Dashboard Grid Layout */}
                 <motion.div
                     className="grid items-start gap-6 xl:grid-cols-[380px_minmax(0,1fr)]"
                     variants={ENTRY_CONTAINER_VARIANTS}
                 >
-                    
-                    {/* Sidebar: Calendar & Stats */}
+                    {/* Agenda mensual independiente de las vistas tabuladas */}
                     <motion.aside
                         className="w-full space-y-4 xl:sticky xl:top-24"
                         variants={ENTRY_ITEM_VARIANTS}
                     >
-                        
-                        <div className="w-full max-w-[460px] mx-auto">
+                        <div className="flex items-center gap-3">
+                            <div className="rounded-2xl bg-[#fff0f6] p-3 text-[#d22864]">
+                                <CalendarIcon size={22} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900">Agenda mensual</h3>
+                                <p className="mt-1 text-sm font-medium text-slate-500">
+                                    {formatDisplayDate(selectedDateKey)}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-md sm:p-6">
                             <CalendarView
                                 selectedDate={selectedDate}
-                                onSelectDate={setSelectedDate}
+                                onSelectDate={handleCalendarDateSelect}
                                 savedDates={calendarMarkers}
                             />
                         </div>
 
-                        {/* Las estadísticas sí pueden expandirse de forma responsiva normal */}
-                        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 max-w-[380px] sm:max-w-none mx-auto">
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                             <StatsCard
-                                title="Citas del Día"
+                                title="Citas del día"
                                 value={selectedDayAppointments.length}
                                 icon={Clock}
                             />
                             <StatsCard
-                                title="Días con Actividad"
+                                title="Citas agendadas"
+                                value={scheduledAppointmentsCount}
+                                icon={CalendarCheck}
+                            />
+                            <StatsCard
+                                title="Días con actividad"
                                 value={Object.keys(calendarMarkers).length}
                                 icon={CalendarIcon}
                             />
-                        </section>
+                        </div>
                     </motion.aside>
 
-                    {/* Main Content Area */}
-                    <motion.div
-                        className="min-w-0 space-y-6"
+                    <motion.section
+                        className="min-w-0"
                         variants={ENTRY_ITEM_VARIANTS}
                     >
+                        {/* Navigation Tabs */}
+                        <div className="mb-6 flex overflow-x-auto border-b border-slate-200">
+                            {isStudent && (
+                                <>
+                                    <button
+                                        onClick={() => setActiveTab('request')}
+                                        className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'request' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        Solicitar Hora
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('requests')}
+                                        className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'requests' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        Mis Solicitudes ({myRequests.length})
+                                    </button>
+                                </>
+                            )}
+                            {isAdmin && (
+                                <button
+                                    onClick={() => setActiveTab('requests')}
+                                    className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'requests' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Solicitudes Pendientes ({pendingRequests.length})
+                                </button>
+                            )}
+                            <button
+                                onClick={showAllAppointments}
+                                className={`whitespace-nowrap px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'appointments' ? 'border-[#d22864] text-[#d22864]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Citas y resultados ({appointments.length})
+                            </button>
+                        </div>
 
+                        {/* Main Content Area */}
+                        <motion.div
+                            className="min-w-0 space-y-6"
+                            variants={ENTRY_ITEM_VARIANTS}
+                        >
                         {/* TAB 1: Request Scheduling Form (Student only) */}
                         {isStudent && activeTab === 'request' && (
                             <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-md">
@@ -1010,6 +1070,8 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                                 <p className="text-sm text-slate-500 mb-6">
                                     Completa la información para proponer tu disponibilidad. El coordinador asignará una hora oficial en base a tus sugerencias.
                                 </p>
+
+                                <InlineMessage message={requestMessage} className="mb-5" />
 
                                 <form onSubmit={handleCreateRequest} className="space-y-5">
                                     <div className="grid gap-4 sm:grid-cols-2">
@@ -1215,6 +1277,8 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                                     {isAdmin ? 'Solicitudes Pendientes de Estudiantes' : 'Mis Solicitudes de Agendamiento'}
                                 </h3>
 
+                                <InlineMessage message={requestMessage} />
+
                                 {isAdmin && pendingRequests.length === 0 && (
                                     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-500 text-sm">
                                         No hay solicitudes pendientes en este momento.
@@ -1358,13 +1422,35 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                         {/* TAB 3: Confirmed Appointments (Citas agendadas) */}
                         {activeTab === 'appointments' && (
                             <section className="space-y-4">
-                                <h3 className="text-xl font-black text-slate-900">
-                                    Citas Confirmadas en el Sistema
-                                </h3>
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900">
+                                            Citas confirmadas y resultados
+                                        </h3>
+                                        {appointmentsDateFilter && (
+                                            <p className="mt-1 text-sm font-semibold text-slate-500">
+                                                {formatDisplayDate(appointmentsDateFilter)}
+                                            </p>
+                                        )}
+                                    </div>
+                                    {appointmentsDateFilter && (
+                                        <button
+                                            type="button"
+                                            onClick={showAllAppointments}
+                                            className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:border-[#d22864] hover:text-[#d22864] sm:w-auto"
+                                        >
+                                            Ver todas las citas
+                                        </button>
+                                    )}
+                                </div>
 
-                                {appointments.length === 0 && (
+                                <InlineMessage message={appointmentMessage} />
+
+                                {orderedAppointments.length === 0 && (
                                     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-500 text-sm">
-                                        No tienes citas confirmadas registradas.
+                                        {appointmentsDateFilter
+                                            ? 'No hay citas registradas para el día seleccionado.'
+                                            : 'No tienes citas confirmadas ni resultados registrados.'}
                                     </div>
                                 )}
 
@@ -1584,7 +1670,8 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                                 ))}
                             </section>
                         )}
-                    </motion.div>
+                        </motion.div>
+                    </motion.section>
                 </motion.div>
             </motion.main>
 
@@ -1610,6 +1697,8 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                                 Fechas sugeridas: {parsePreferredDates(respondingRequest.preferred_dates).map(d => formatDisplayDate(d)).join(', ')}
                             </p>
                         </div>
+
+                        <InlineMessage message={requestMessage} />
 
                         <form onSubmit={handleSendResponse} className="space-y-4">
                             <div className="grid gap-3 sm:grid-cols-2">
@@ -1721,6 +1810,8 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                             Estás por rechazar la solicitud de consulta/presentación de <strong>{rejectingRequest.student?.first_name} {rejectingRequest.student?.last_name}</strong>.
                         </div>
 
+                        <InlineMessage message={requestMessage} />
+
                         <form onSubmit={handleSendRejection} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-1">Motivo de Rechazo</label>
@@ -1773,6 +1864,8 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                             <strong>{formatDisplayDate(cancellingAppointment.date)}</strong> a las{' '}
                             <strong>{formatSlotTime(cancellingAppointment)}</strong>. La coordinación revisará tu solicitud.
                         </div>
+
+                        <InlineMessage message={appointmentMessage} />
 
                         <form onSubmit={handleConfirmCancel} className="space-y-4">
                             <div className="grid grid-cols-2 gap-3">
@@ -1872,6 +1965,10 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                         </div>
 
                         <form onSubmit={handleDirectSchedule} noValidate className="space-y-4">
+                            {directFormErrors.form && (
+                                <InlineMessage message={{ type: 'error', text: directFormErrors.form }} />
+                            )}
+
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <div className="sm:col-span-2">
                                     <label className="block text-sm font-bold text-slate-700 mb-1">

@@ -103,9 +103,15 @@ export const ActionButtons = ({ practice, onActionSuccess }) => {
 
   return (
     <>
-      <div className="flex flex-col gap-3 mt-6 border-t border-gray-100 pt-6">
+      <section className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4 sm:p-5">
+        <div className="mb-4">
+          <h3 className="text-base font-black text-gray-900">Acciones administrativas</h3>
+          <p className="mt-1 text-sm font-semibold text-gray-500">
+            Revisa la solicitud y registra la decisión correspondiente.
+          </p>
+        </div>
         {actionError && (
-          <div className="p-4 text-sm text-red-600 bg-red-50/50 border border-red-200 rounded-2xl flex items-start gap-3 shadow-inner animate-fade-in">
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50/50 p-4 text-sm text-red-600 shadow-inner animate-fade-in">
             <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold">No se pudo completar la acción:</span>
@@ -113,13 +119,13 @@ export const ActionButtons = ({ practice, onActionSuccess }) => {
             </div>
           </div>
         )}
-        <div className="flex flex-wrap gap-4">
+        <div className="grid gap-3 sm:flex sm:flex-wrap">
           {canApproveReject && (
             <>
               <button
                 onClick={() => handleOpenModal('approve')}
                 disabled={isSubmitting}
-                className="px-6 h-12 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 font-bold text-white shadow-md transition-all hover:bg-emerald-700 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 <Check size={18} strokeWidth={2.5} />
                 {approveStartsReview ? 'Enviar a revisión' : 'Aprobar solicitud'}
@@ -127,7 +133,7 @@ export const ActionButtons = ({ practice, onActionSuccess }) => {
               <button
                 onClick={() => handleOpenModal('reject')}
                 disabled={isSubmitting}
-                className="px-6 h-12 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 active:scale-95 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-6 font-bold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 <XCircle size={18} strokeWidth={2.5} />
                 Rechazar solicitud
@@ -138,14 +144,14 @@ export const ActionButtons = ({ practice, onActionSuccess }) => {
             <button
               onClick={() => handleOpenModal('derive')}
               disabled={isSubmitting}
-              className="px-6 h-12 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 font-bold text-white shadow-md transition-all hover:bg-blue-700 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
               <FileInput size={18} strokeWidth={2.5} />
               Derivar a DIRAE
             </button>
           )}
         </div>
-      </div>
+      </section>
 
       <ActionModal
         isOpen={modalConfig.isOpen}

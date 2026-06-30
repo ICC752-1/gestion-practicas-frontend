@@ -17,7 +17,7 @@ const getEntryMotion = (delay = 0) => ({
 
 const Management = ({ students, statusFilter, onStatusFilterChange }) => {
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] border border-gray-100/50">
+    <div className="rounded-2xl border border-gray-100/50 bg-white p-4 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
       <div className="flex flex-col gap-4 mb-6">
         <motion.h2
           className="text-xl font-bold text-gray-800"
@@ -25,7 +25,7 @@ const Management = ({ students, statusFilter, onStatusFilterChange }) => {
         >
           Gestión de solicitudes de práctica
         </motion.h2>
-        <div className="flex flex-wrap gap-2" aria-label="Filtrar solicitudes por estado administrativo">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" aria-label="Filtrar solicitudes por estado administrativo">
           {STATUS_FILTERS.map((filter, index) => (
             <motion.button
               key={filter.value || 'all'}
