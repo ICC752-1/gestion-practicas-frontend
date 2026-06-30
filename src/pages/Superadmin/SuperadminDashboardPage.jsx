@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ShieldCheck, UsersRound } from 'lucide-react';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { Footer } from '../../components/Footer/Footer';
@@ -22,6 +23,12 @@ const tabs = [
   },
 ];
 
+const getTabEntryMotion = () => ({
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+  transition: { duration: 0.12 },
+});
+
 export const SuperadminDashboardPage = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -38,7 +45,7 @@ export const SuperadminDashboardPage = () => {
       <main className="flex-grow container mx-auto max-w-7xl px-4 py-8">
         <nav
           aria-label="Panel Superadmin"
-          className="mb-6 flex flex-wrap gap-2 rounded-3xl border border-gray-100 bg-white p-2 shadow-sm"
+          className="mb-6 grid grid-cols-2 gap-2 rounded-3xl border border-gray-100 bg-white p-2 shadow-sm sm:mx-auto sm:flex sm:w-fit sm:flex-wrap sm:justify-center"
         >
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -50,7 +57,7 @@ export const SuperadminDashboardPage = () => {
                 to={tab.to}
                 aria-current={isActive ? 'page' : undefined}
                 className={[
-                  'inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition-colors',
+                  'inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition-colors',
                   isActive
                     ? 'bg-[#d22864] text-white shadow-sm'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-[#d22864]',
@@ -63,7 +70,14 @@ export const SuperadminDashboardPage = () => {
           })}
         </nav>
 
-        {activeTab === 'audit' ? <SuperadminAuditPanel /> : <SuperadminUsersPanel />}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeTab}
+            {...getTabEntryMotion()}
+          >
+            {activeTab === 'audit' ? <SuperadminAuditPanel /> : <SuperadminUsersPanel />}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       <Footer />

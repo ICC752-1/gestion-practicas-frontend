@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
     AlertCircle,
@@ -30,6 +31,24 @@ import { internshipService } from '../../services/internshipService';
 import { documentService } from '../../services/documentService';
 import { schedulingService } from '../../services/schedulingService';
 import { getRedirectPathForRoles } from '../../services/roleRouting';
+
+const ENTRY_CONTAINER_VARIANTS = {
+    hidden: {},
+    visible: {
+        transition: {
+            delayChildren: 0.06,
+            staggerChildren: 0.11,
+        },
+    },
+};
+const ENTRY_ITEM_VARIANTS = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.34, ease: 'easeOut' },
+    },
+};
 
 const MONTHS = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -839,7 +858,12 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
         <div className={embedded ? 'font-sans' : 'min-h-screen bg-ufro-bg flex flex-col font-sans'}>
             {!embedded && <UserHeader />}
 
-            <main className={embedded ? 'flex w-full flex-col' : 'mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 py-8 sm:px-8'}>
+            <motion.main
+                className={embedded ? 'flex w-full flex-col' : 'mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 py-8 sm:px-8'}
+                variants={ENTRY_CONTAINER_VARIANTS}
+                initial="hidden"
+                animate="visible"
+            >
                 {!embedded && (
                     <button
                         onClick={() => navigate(getRedirectPathForRoles(user?.roles))}
@@ -850,7 +874,10 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                     </button>
                 )}
                 {/* Headers */}
-                <div className="mb-8 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <motion.div
+                    className="mb-8 flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+                    variants={ENTRY_ITEM_VARIANTS}
+                >
                     <div>
                         <h2 className="text-3xl font-black text-slate-900 sm:text-4xl">
                             Agendar horas y consultas
@@ -873,17 +900,18 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                             Agendar Presentación Directa
                         </button>
                     )}
-                </div>
+                </motion.div>
 
                 {/* Notifications Panel */}
                 {message && (
-                    <div
+                    <motion.div
                         className={[
                             'mb-6 flex items-center gap-3 rounded-2xl border px-5 py-4 text-sm font-semibold shadow-sm',
                             message.type === 'success'
                                 ? 'border-green-200 bg-green-50 text-green-800'
                                 : 'border-red-200 bg-red-50 text-red-800',
                         ].join(' ')}
+                        variants={ENTRY_ITEM_VARIANTS}
                     >
                         {message.type === 'success' ? (
                             <CheckCircle2 className="text-green-600 h-5 w-5 flex-shrink-0" />
@@ -891,11 +919,14 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                             <AlertCircle className="text-red-600 h-5 w-5 flex-shrink-0" />
                         )}
                         <span>{message.text}</span>
-                    </div>
+                    </motion.div>
                 )}
 
                 {/* Navigation Tabs */}
-                <div className="mb-6 flex border-b border-slate-200">
+                <motion.div
+                    className="mb-6 flex border-b border-slate-200"
+                    variants={ENTRY_ITEM_VARIANTS}
+                >
                     {isStudent && (
                         <>
                             <button
@@ -926,13 +957,19 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                     >
                         Citas Agendadas ({appointments.filter(a => a.status !== 'cancelled').length})
                     </button>
-                </div>
+                </motion.div>
 
                 {/* Dashboard Grid Layout */}
-                <div className="grid items-start gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+                <motion.div
+                    className="grid items-start gap-6 xl:grid-cols-[380px_minmax(0,1fr)]"
+                    variants={ENTRY_CONTAINER_VARIANTS}
+                >
                     
                     {/* Sidebar: Calendar & Stats */}
-                    <aside className="w-full space-y-4 xl:sticky xl:top-24">
+                    <motion.aside
+                        className="w-full space-y-4 xl:sticky xl:top-24"
+                        variants={ENTRY_ITEM_VARIANTS}
+                    >
                         
                         <div className="w-full max-w-[460px] mx-auto">
                             <CalendarView
@@ -955,10 +992,13 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                                 icon={CalendarIcon}
                             />
                         </section>
-                    </aside>
+                    </motion.aside>
 
                     {/* Main Content Area */}
-                    <div className="min-w-0 space-y-6">
+                    <motion.div
+                        className="min-w-0 space-y-6"
+                        variants={ENTRY_ITEM_VARIANTS}
+                    >
 
                         {/* TAB 1: Request Scheduling Form (Student only) */}
                         {isStudent && activeTab === 'request' && (
@@ -1544,9 +1584,9 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                                 ))}
                             </section>
                         )}
-                    </div>
-                </div>
-            </main>
+                    </motion.div>
+                </motion.div>
+            </motion.main>
 
             {/* DIALOGS AND MODALS */}
 

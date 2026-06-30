@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { ArrowDown, ArrowDownUp, ArrowUp, Inbox, Filter, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
@@ -13,6 +14,12 @@ const initialSort = {
 };
 
 const normalizeText = (value) => String(value || '').toLowerCase();
+
+const getEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
 
 const formatDateTime = (value) => {
   if (!value) return '-';
@@ -246,7 +253,10 @@ export const StudentTable = ({ students = [] }) => {
 
   if (students.length === 0) {
     return (
-      <div className="bg-white rounded-3xl p-12 shadow-xl border border-gray-100 flex flex-col items-center justify-center text-center space-y-4">
+      <motion.div
+        className="bg-white rounded-3xl p-12 shadow-xl border border-gray-100 flex flex-col items-center justify-center text-center space-y-4"
+        {...getEntryMotion()}
+      >
         <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center">
           <Inbox className="w-10 h-10 text-gray-300" />
         </div>
@@ -254,15 +264,21 @@ export const StudentTable = ({ students = [] }) => {
           <h3 className="text-xl font-bold text-gray-800">No hay solicitudes registradas aún</h3>
           <p className="text-gray-500 max-w-xs mx-auto">Cuando los estudiantes envíen sus solicitudes de práctica, aparecerán en esta lista.</p>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
     <div className="space-y-6 w-full">
       {/* Sección Filtros Internos y Buscador Secundario */}
-      <div className="flex flex-col gap-4 w-full">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+      <motion.div
+        className="flex flex-col gap-4 w-full"
+        {...getEntryMotion()}
+      >
+        <motion.div
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full"
+          {...getEntryMotion(0.04)}
+        >
           <h3 className="text-lg font-bold text-gray-800 flex-shrink-0">Solicitudes de práctica</h3>
           
           <div className="relative w-full sm:w-80">
@@ -275,10 +291,13 @@ export const StudentTable = ({ students = [] }) => {
               className="w-full h-10 pl-9 pr-4 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] transition-all"
             />
           </div>
-        </div>
+        </motion.div>
 
         {/* Fila de Selectores */}
-        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100 w-full">
+        <motion.div
+          className="flex flex-wrap items-center gap-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100 w-full"
+          {...getEntryMotion(0.1)}
+        >
           <div className="flex items-center gap-1.5 font-bold text-gray-500 mr-1 flex-shrink-0">
             <Filter size={16} />
             <span>Filtros:</span>
@@ -314,9 +333,12 @@ export const StudentTable = ({ students = [] }) => {
               Limpiar filtros
             </button>
           )}
-        </div>
+        </motion.div>
 
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-100 bg-white p-3 text-sm text-gray-600">
+        <motion.div
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-100 bg-white p-3 text-sm text-gray-600"
+          {...getEntryMotion(0.16)}
+        >
           <span className="mr-1 text-xs font-black uppercase tracking-wide text-gray-500">
             Tipo de práctica:
           </span>
@@ -345,10 +367,13 @@ export const StudentTable = ({ students = [] }) => {
               {practiceType}
             </button>
           ))}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 text-sm font-semibold text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+      <motion.div
+        className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 text-sm font-semibold text-gray-600 sm:flex-row sm:items-center sm:justify-between"
+        {...getEntryMotion(0.22)}
+      >
         <div>
           <p className="font-black text-gray-900">
             {total} {total === 1 ? 'resultado' : 'resultados'}
@@ -383,10 +408,13 @@ export const StudentTable = ({ students = [] }) => {
             Más antiguos
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Contenedor de la Tabla Estructurada - SIN OVERFLOW NI MIN-W */}
-      <div className="w-full rounded-xl border border-gray-100 bg-white shadow-sm">
+      <motion.div
+        className="w-full rounded-xl border border-gray-100 bg-white shadow-sm"
+        {...getEntryMotion(0.28)}
+      >
         <div className="w-full table-layout-fixed">
           
           {/* Cabecera de la Tabla */}
@@ -403,11 +431,15 @@ export const StudentTable = ({ students = [] }) => {
           {/* Cuerpo de la Tabla */}
           <div className="divide-y divide-gray-100 bg-white">
             {paginatedStudents.length > 0 ? (
-              paginatedStudents.map((student) => {
+              paginatedStudents.map((student, index) => {
                 const normalizedStatus = getNormalizedStatus(student);
 
                 return (
-                  <div key={student.id} className={`${gridLayoutClass} hover:bg-gray-50/40 transition-colors`}>
+                  <motion.div
+                    key={student.id}
+                    className={`${gridLayoutClass} hover:bg-gray-50/40 transition-colors`}
+                    {...getEntryMotion(0.32 + index * 0.035)}
+                  >
                     
                     {/* Estudiante (Con min-w-0 para activar el truncado fluido) */}
                     <div className="flex flex-col min-w-0">
@@ -461,7 +493,7 @@ export const StudentTable = ({ students = [] }) => {
                         {openingId === student.id ? 'Abriendo...' : 'Ver detalles'}
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })
             ) : (
@@ -472,9 +504,12 @@ export const StudentTable = ({ students = [] }) => {
           </div>
 
         </div>
-      </div>
+      </motion.div>
 
-      <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+      <motion.div
+        className="flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between"
+        {...getEntryMotion(0.36)}
+      >
         <span>
           Mostrando {start}-{end} de {total} · Página {currentPage} de {totalPages}
         </span>
@@ -512,7 +547,7 @@ export const StudentTable = ({ students = [] }) => {
             Última
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

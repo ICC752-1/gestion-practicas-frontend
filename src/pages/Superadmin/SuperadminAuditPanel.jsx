@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   ChevronLeft,
   ChevronRight,
@@ -40,6 +41,12 @@ const entityOptions = [
 
 const getErrorMessage = (error) => error?.response?.data?.detail || 'No se pudo cargar la auditoría.';
 
+const getEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
+
 const formatDateTime = (value) => {
   if (!value) {
     return 'Sin fecha';
@@ -67,13 +74,81 @@ const formatJson = (value) => {
   return JSON.stringify(value, null, 2);
 };
 
-const StatCard = ({ title, value, helper }) => (
-  <article className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+const StatCard = ({ title, value, helper, delay = 0 }) => (
+  <motion.article
+    className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm"
+    {...getEntryMotion(delay)}
+  >
     <p className="text-xs font-black uppercase tracking-wide text-gray-500">{title}</p>
     <p className="mt-3 text-3xl font-black text-gray-900">{value}</p>
     <p className="mt-2 text-xs font-semibold text-gray-500">{helper}</p>
-  </article>
+  </motion.article>
 );
+
+const AuditEventMobileCard = ({ event, index, onOpenDetail }) => {
+  const changedFields = event.changed_fields || [];
+
+  return (
+    <motion.article
+      className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
+      {...getEntryMotion(0.4 + index * 0.025)}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-black text-gray-700">
+            {event.action}
+          </span>
+          <p className="mt-2 text-xs font-bold text-gray-500">{formatDateTime(event.timestamp)}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onOpenDetail(event.id)}
+          className="inline-flex shrink-0 items-center justify-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-xs font-black text-gray-700 hover:border-[#d22864] hover:text-[#d22864]"
+        >
+          <Eye size={14} strokeWidth={2.5} />
+          Ver
+        </button>
+      </div>
+
+      <div className="mt-4 grid gap-3 rounded-2xl bg-gray-50 p-3 text-sm sm:grid-cols-2">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">Entidad</p>
+          <p className="mt-1 font-bold text-gray-700">{event.entity}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">Recurso</p>
+          <p className="mt-1 font-bold text-gray-700">#{event.entity_id}</p>
+        </div>
+        <div className="sm:col-span-2">
+          <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">Actor</p>
+          <p className="mt-1 break-words font-bold text-gray-700">{getActorLabel(event.actor)}</p>
+          {event.actor?.email && (
+            <p className="mt-0.5 break-words text-xs font-semibold text-gray-500">{event.actor.email}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">Descripción</p>
+        <p className="mt-1 break-words text-sm font-semibold leading-5 text-gray-700">{event.description}</p>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">Campos</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {changedFields.length === 0 && (
+            <span className="text-xs font-semibold text-gray-400">Sin campos visibles</span>
+          )}
+          {changedFields.map((field) => (
+            <span key={field} className="rounded-full bg-[#fff0f6] px-2 py-1 text-[10px] font-black text-[#8B1D46]">
+              {field}
+            </span>
+          ))}
+        </div>
+      </div>
+    </motion.article>
+  );
+};
 
 export const SuperadminAuditPanel = () => {
   const [filters, setFilters] = useState(initialFilters);
@@ -164,16 +239,23 @@ export const SuperadminAuditPanel = () => {
 
   return (
     <>
-      <section className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+      <motion.section
+        className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8"
+        {...getEntryMotion()}
+      >
         <p className="text-sm font-bold uppercase tracking-wider text-[#d22864]">Superadmin</p>
-        <h1 className="mt-2 text-3xl font-black text-gray-900">Auditoría del sistema</h1>
+        <h1 className="mt-2 text-2xl font-black text-gray-900 sm:text-3xl">Auditoría del sistema</h1>
         <p className="mt-3 text-sm leading-relaxed text-gray-600">
           Consulta eventos técnicos y funcionales generados por acciones críticas del sistema.
           Los valores sensibles se muestran sanitizados desde el backend.
         </p>
-      </section>
+      </motion.section>
 
-      <form onSubmit={handleApplyFilters} className="mt-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+      <motion.form
+        onSubmit={handleApplyFilters}
+        className="mt-6 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6"
+        {...getEntryMotion(0.08)}
+      >
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           <input
             name="date_from"
@@ -252,11 +334,11 @@ export const SuperadminAuditPanel = () => {
             Solo eventos sin actor capturado
           </label>
 
-          <div className="flex flex-wrap justify-end gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-5 py-3 text-sm font-black text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-5 py-3 text-sm font-black text-gray-700 hover:bg-gray-50"
             >
               <RotateCcw size={16} strokeWidth={2.5} />
               Limpiar
@@ -264,44 +346,51 @@ export const SuperadminAuditPanel = () => {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white hover:bg-[#b01e52] disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white hover:bg-[#b01e52] disabled:opacity-50"
             >
               <Filter size={16} strokeWidth={2.5} />
               {loading ? 'Cargando...' : 'Aplicar filtros'}
             </button>
           </div>
         </div>
-      </form>
+      </motion.form>
 
       {error && (
-        <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+        <motion.div
+          className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700"
+          {...getEntryMotion(0.12)}
+        >
           {error}
-        </div>
+        </motion.div>
       )}
 
       <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Eventos filtrados" value={stats?.total ?? 0} helper="Total según filtros activos." />
-        <StatCard title="Últimas 24 horas" value={stats?.last_24_hours ?? 0} helper="Actividad reciente dentro del alcance filtrado." />
+        <StatCard delay={0.14} title="Eventos filtrados" value={stats?.total ?? 0} helper="Total según filtros activos." />
+        <StatCard delay={0.2} title="Últimas 24 horas" value={stats?.last_24_hours ?? 0} helper="Actividad reciente dentro del alcance filtrado." />
         <StatCard
+          delay={0.26}
           title="Por acción"
           value={`${byAction.INSERT || 0}/${byAction.UPDATE || 0}/${byAction.DELETE || 0}`}
           helper="INSERT / UPDATE / DELETE."
         />
-        <StatCard title="Sin actor" value={stats?.without_actor ?? 0} helper="Eventos generados sin user_id capturado." />
+        <StatCard delay={0.32} title="Sin actor" value={stats?.without_actor ?? 0} helper="Eventos generados sin user_id capturado." />
       </section>
 
-      <section className="mt-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+      <motion.section
+        className="mt-6 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6"
+        {...getEntryMotion(0.38)}
+      >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-black text-gray-900">Eventos registrados</h2>
             <p className="text-sm font-semibold text-gray-500">Mostrando {start}-{end} de {total}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex">
             <button
               type="button"
               disabled={offset === 0 || loading}
               onClick={() => setOffset((current) => Math.max(0, current - PAGE_SIZE))}
-              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-black text-gray-700 disabled:opacity-40 hover:bg-gray-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-black text-gray-700 hover:bg-gray-50 disabled:opacity-40"
             >
               <ChevronLeft size={16} strokeWidth={2.5} />
               Anterior
@@ -310,7 +399,7 @@ export const SuperadminAuditPanel = () => {
               type="button"
               disabled={offset + PAGE_SIZE >= total || loading}
               onClick={() => setOffset((current) => current + PAGE_SIZE)}
-              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-black text-gray-700 disabled:opacity-40 hover:bg-gray-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-black text-gray-700 hover:bg-gray-50 disabled:opacity-40"
             >
               Siguiente
               <ChevronRight size={16} strokeWidth={2.5} />
@@ -318,7 +407,7 @@ export const SuperadminAuditPanel = () => {
           </div>
         </div>
 
-        <div className="mt-5 overflow-x-auto rounded-2xl border border-gray-100">
+        <div className="mt-5 hidden min-h-[560px] overflow-x-auto rounded-2xl border border-gray-100 lg:block">
           <div className="min-w-[1080px]">
             <div className="grid grid-cols-[1fr_0.7fr_0.9fr_0.7fr_1.25fr_1.4fr_1.3fr_0.6fr] gap-4 bg-gray-50 px-5 py-3 text-xs font-black uppercase tracking-wide text-gray-500">
               <div>Fecha</div>
@@ -333,22 +422,23 @@ export const SuperadminAuditPanel = () => {
 
             <div className="divide-y divide-gray-100">
               {loading && (
-                <div className="p-10 text-center text-sm font-bold text-gray-500">
+                <div className="flex h-[480px] items-center justify-center p-10 text-center text-sm font-bold text-gray-500">
                   Cargando eventos...
                 </div>
               )}
 
               {!loading && events.length === 0 && (
-                <div className="flex flex-col items-center gap-2 p-10 text-center text-sm font-bold text-gray-500">
+                <div className="flex h-[480px] flex-col items-center justify-center gap-2 p-10 text-center text-sm font-bold text-gray-500">
                   <Inbox className="h-8 w-8 text-gray-300" />
                   <span>No hay eventos para los filtros seleccionados.</span>
                 </div>
               )}
 
-              {!loading && events.map((event) => (
-                <div
+              {!loading && events.map((event, index) => (
+                <motion.div
                   key={event.id}
-                  className="grid grid-cols-[1fr_0.7fr_0.9fr_0.7fr_1.25fr_1.4fr_1.3fr_0.6fr] items-center gap-4 px-5 py-4 text-sm"
+                  className="grid min-h-[88px] grid-cols-[1fr_0.7fr_0.9fr_0.7fr_1.25fr_1.4fr_1.3fr_0.6fr] items-start gap-4 px-5 py-4 text-sm"
+                  {...getEntryMotion(0.4 + index * 0.025)}
                 >
                   <div className="font-bold text-gray-700">{formatDateTime(event.timestamp)}</div>
                   <div>
@@ -363,7 +453,7 @@ export const SuperadminAuditPanel = () => {
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-gray-600">{event.description}</p>
                   </div>
-                  <div className="flex max-h-16 flex-wrap gap-1 overflow-hidden">
+                  <div className="flex flex-wrap gap-1.5">
                     {(event.changed_fields || []).slice(0, 5).map((field) => (
                       <span key={field} className="rounded-full bg-[#fff0f6] px-2 py-1 text-[10px] font-black text-[#8B1D46]">
                         {field}
@@ -383,12 +473,40 @@ export const SuperadminAuditPanel = () => {
                       Ver
                     </button>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
         </div>
-      </section>
+
+        <div className="mt-5 min-h-[560px] lg:hidden">
+          {loading && (
+            <div className="flex h-[480px] items-center justify-center rounded-2xl border border-gray-100 bg-white p-10 text-center text-sm font-bold text-gray-500">
+              Cargando eventos...
+            </div>
+          )}
+
+          {!loading && events.length === 0 && (
+            <div className="flex h-[480px] flex-col items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white p-10 text-center text-sm font-bold text-gray-500">
+              <Inbox className="h-8 w-8 text-gray-300" />
+              <span>No hay eventos para los filtros seleccionados.</span>
+            </div>
+          )}
+
+          {!loading && events.length > 0 && (
+            <div className="grid gap-3">
+              {events.map((event, index) => (
+                <AuditEventMobileCard
+                  key={event.id}
+                  event={event}
+                  index={index}
+                  onOpenDetail={handleOpenDetail}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </motion.section>
 
       {(detailLoading || detailError || selectedEvent) && (
         <div className="fixed inset-0 z-[60] flex justify-end bg-black/40">

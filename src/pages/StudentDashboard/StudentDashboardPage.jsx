@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Plus,
   Play,
@@ -32,6 +32,7 @@ import { useAuth } from "../../context/useAuth";
 import { internshipService } from "../../services/internshipService";
 import { schedulingService } from "../../services/schedulingService";
 import { DocumentUploadModal } from "../../components/StudentDashboard/DocumentUploadModal";
+import { DataPortabilityModal } from "../../components/DataPortability/DataPortabilityModal";
 import { canUploadDocuments, documentService } from "../../services/documentService";
 import { dataPortabilityService } from "../../services/dataPortabilityService";
 import { PresentationLettersPanel } from "../PresentationLetters/PresentationLettersPage";
@@ -170,7 +171,7 @@ const STUDENT_DASHBOARD_TABS = [
   },
   {
     id: 'letters',
-    label: 'Cartas',
+    label: 'Carta de presentación',
     to: '/dashboard/cartas-presentacion',
     icon: Mail,
     match: (pathname) => pathname === '/dashboard/cartas-presentacion',
@@ -183,6 +184,11 @@ const STUDENT_DASHBOARD_TABS = [
     match: (pathname) => pathname === '/dashboard/documentos',
   },
 ];
+const getPracticeCardEntryMotion = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  ...(delay > 0 ? { transition: { delay } } : {}),
+});
 const SELF_EVALUATION_ENABLED_STATUSES = new Set([
   'pending_evaluations',
   'pending_presentation',
@@ -497,6 +503,7 @@ export const StudentDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [downloadingData, setDownloadingData] = useState(false);
+  const [isPortabilityModalOpen, setIsPortabilityModalOpen] = useState(false);
 
   const fetchInternships = async () => {
     try {
@@ -532,12 +539,15 @@ export const StudentDashboardPage = () => {
     fetchInternships();
   };
 
-  const handleDataPortabilityDownload = async () => {
+  const handleDataPortabilityDownload = async ({
+    format = 'zip',
+    includeDocuments = true,
+  } = {}) => {
     try {
       setDownloadingData(true);
       const { blob, filename } = await dataPortabilityService.downloadMyData({
-        format: 'zip',
-        includeDocuments: true,
+        format,
+        includeDocuments,
       });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -550,8 +560,13 @@ export const StudentDashboardPage = () => {
       showToast({
         type: 'success',
         title: 'Descarga iniciada',
-        message: 'Se generó tu copia estructurada de datos y documentos.',
+        message: format === 'pdf'
+          ? 'Se generó tu informe de datos en PDF.'
+          : format === 'json'
+            ? 'Se generó tu copia estructurada de datos.'
+            : 'Se generó tu paquete de datos y documentos.',
       });
+      setIsPortabilityModalOpen(false);
     } catch (err) {
       showToast({
         type: 'error',
@@ -652,7 +667,7 @@ export const StudentDashboardPage = () => {
         <div className="max-w-7xl mx-auto px-6 pt-6 pb-12">
           <nav
             aria-label="Panel del estudiante"
-            className="mb-6 flex flex-wrap gap-2 rounded-3xl border border-gray-100 bg-white p-2 shadow-sm"
+            className="mb-6 flex flex-wrap justify-center gap-2 rounded-3xl border border-gray-100 bg-white p-2 shadow-sm"
           >
             {STUDENT_DASHBOARD_TABS.map((tab) => {
               const Icon = tab.icon;
@@ -686,7 +701,14 @@ export const StudentDashboardPage = () => {
             })}
           </nav>
 
-          {activeTab === 'summary' && (
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+            >
+            {activeTab === 'summary' && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
             {/* Practices List */}
@@ -909,7 +931,7 @@ export const StudentDashboardPage = () => {
             <div className="space-y-6">
               <PersonalDataBlock
                 user={user}
-                onDownload={handleDataPortabilityDownload}
+                onDownload={() => setIsPortabilityModalOpen(true)}
                 downloading={downloadingData}
               />
 
@@ -933,31 +955,43 @@ export const StudentDashboardPage = () => {
           )}
 
           {activeTab === 'letters' && (
-            <div className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm">
+            <motion.div
+              className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm"
+              {...getPracticeCardEntryMotion()}
+            >
               <PresentationLettersPanel />
-            </div>
+            </motion.div>
           )}
 
           {activeTab === 'agenda' && (
-            <div className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm">
+            <motion.div
+              className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm"
+              {...getPracticeCardEntryMotion()}
+            >
               <InterviewSchedulingPage embedded />
-            </div>
+            </motion.div>
           )}
 
           {activeTab === 'tracking' && (
             <>
               {loading ? (
-                <div className="flex flex-col items-center justify-center rounded-[2rem] border border-gray-100 bg-white py-24 shadow-sm">
+                <motion.div
+                  className="flex flex-col items-center justify-center rounded-[2rem] border border-gray-100 bg-white py-24 shadow-sm"
+                  {...getPracticeCardEntryMotion()}
+                >
                   <Loader2 size={42} className="animate-spin text-[#d22864]" />
                   <p className="mt-4 text-sm font-bold text-gray-500">Preparando seguimiento...</p>
-                </div>
+                </motion.div>
               ) : selectedTrackingInternshipId ? (
                 <SeguimientoPage
                   embedded
                   internshipIdOverride={selectedTrackingInternshipId}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-gray-200 bg-white px-8 py-24 text-center">
+                <motion.div
+                  className="flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-gray-200 bg-white px-8 py-24 text-center"
+                  {...getPracticeCardEntryMotion()}
+                >
                   <Briefcase size={46} className="text-gray-300" />
                   <h3 className="mt-5 text-2xl font-black text-gray-900">Sin prácticas para seguimiento</h3>
                   <p className="mt-2 max-w-md text-sm font-semibold leading-relaxed text-gray-500">
@@ -971,7 +1005,7 @@ export const StudentDashboardPage = () => {
                     <Plus size={18} />
                     Inscribir nueva práctica
                   </button>
-                </div>
+                </motion.div>
               )}
             </>
           )}
@@ -989,18 +1023,32 @@ export const StudentDashboardPage = () => {
             </div>
           )}
 
-          {activeTab === 'documents' && (
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <DocumentUploadModal
-                embedded
-                isOpen
-                onClose={() => {}}
-                internships={internships}
-                onDocumentUploaded={handleDocumentUploaded}
-              />
+            {activeTab === 'documents' && (
+            <motion.div
+              className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]"
+              {...getPracticeCardEntryMotion()}
+            >
+              <motion.div
+                className="min-w-0"
+                {...getPracticeCardEntryMotion(0.08)}
+              >
+                <DocumentUploadModal
+                  embedded
+                  isOpen
+                  onClose={() => {}}
+                  internships={internships}
+                  onDocumentUploaded={handleDocumentUploaded}
+                />
+              </motion.div>
 
-              <aside className="space-y-6">
-                <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm">
+              <motion.aside
+                className="space-y-6"
+                {...getPracticeCardEntryMotion(0.16)}
+              >
+                <motion.section
+                  className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm"
+                  {...getPracticeCardEntryMotion(0.2)}
+                >
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#d22864]/10 text-[#d22864]">
                     <Upload size={22} />
                   </div>
@@ -1012,18 +1060,27 @@ export const StudentDashboardPage = () => {
                     <p className="text-xs font-black uppercase tracking-wider text-gray-400">Prácticas habilitadas</p>
                     <p className="mt-1 text-3xl font-black text-gray-900">{uploadableInternshipsCount}</p>
                   </div>
-                </section>
+                </motion.section>
 
                 <PersonalDataBlock
                   user={user}
-                  onDownload={handleDataPortabilityDownload}
+                  onDownload={() => setIsPortabilityModalOpen(true)}
                   downloading={downloadingData}
                 />
-              </aside>
-            </div>
-          )}
+              </motion.aside>
+            </motion.div>
+            )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
+
+      <DataPortabilityModal
+        isOpen={isPortabilityModalOpen}
+        isDownloading={downloadingData}
+        onClose={() => setIsPortabilityModalOpen(false)}
+        onDownload={handleDataPortabilityDownload}
+      />
 
       <Footer />
     </div>

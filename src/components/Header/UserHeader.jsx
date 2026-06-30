@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Menu, Settings, X } from 'lucide-react';
 import universityLogo from "../../assets/university_logo.webp";
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from "../../context/useAuth";
@@ -46,6 +46,7 @@ export const UserHeader = () => {
         );
 
     const [configOpen, setConfigOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [config, setConfig] = useState({
         general_consultations_enabled: false,
         internship_applications_disabled: false,
@@ -173,36 +174,35 @@ export const UserHeader = () => {
         : "border-transparent text-[#d22864] hover:border-[#d22864] hover:bg-[#d22864]/5",
     ].join(" ");
 
+    const getMobileNavLinkClass = (isActive) => [
+      "flex w-full items-center justify-center rounded-xl border-2 px-4 py-3 text-sm font-bold transition-colors",
+      isActive
+        ? "border-[#d22864] bg-[#d22864] text-white shadow-sm"
+        : "border-[#d22864] text-[#d22864] hover:bg-[#d22864] hover:text-white",
+    ].join(" ");
+
   return (
-    <header
-        className="sticky top-0 z-50 flex min-h-[60px] w-full items-center justify-between border-b-[3px] border-[#d22864] bg-white shadow-sm"
-        style={{ padding: '0.4rem clamp(0.5rem, 2vw, 2.5rem)', gap: '0.5rem' }}
-      >
-      <div className="flex lg:grid lg:grid-cols-[auto_1fr_auto] xl:grid-cols-[1fr_auto_1fr] items-center justify-between w-full gap-2 xl:gap-4">
+    <header className="sticky top-0 z-50 w-full border-b-[3px] border-[#d22864] bg-white shadow-sm">
+      <div className="flex min-h-[64px] w-full items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:grid lg:grid-cols-[auto_1fr_auto] lg:px-10 xl:grid-cols-[1fr_auto_1fr] xl:gap-4">
 
         {/* Left: Logo + Title */}
-        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-          <div className="bg-[#d22864] rounded-lg shadow-sm flex-shrink-0 p-1" style={{ padding: 'clamp(4px, 0.4vw, 6px)' }}>
+        <Link to={dashboardPath} className="flex min-w-0 flex-1 items-center gap-2 md:gap-3 lg:flex-none">
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-[#d22864] p-1 shadow-sm sm:h-12 sm:w-12">
             <img
-              style={{ width: 'clamp(36px, 3.5vw, 46px)', height: 'clamp(36px, 3.5vw, 46px)' }}
-              className="object-contain"
+              className="h-full w-full object-contain"
               alt="Universidad de La Frontera"
               src={universityLogo}
             />            
           </div>    
-            <div className="flex flex-col leading-tight min-w-0">
-              <h1 className="font-bold tracking-tight text-[#d22864] truncate"
-                style={{ fontSize: 'clamp(0.65rem, 2.0vw, 1.25rem)' }}>
+            <div className="flex min-w-0 flex-col leading-tight">
+              <h1 className="truncate text-sm font-bold tracking-tight text-[#d22864] sm:text-lg lg:text-xl">
                 Sistema de Gestión de Prácticas
               </h1>
-            <p
-              className="font-semibold text-[#d22864] hidden sm:block mt-0.5"
-              style={{ fontSize: 'clamp(0.65rem, 0.9vw, 0.75rem)' }}
-            >
+            <p className="mt-0.5 hidden text-xs font-semibold text-[#d22864] sm:block lg:text-sm">
               Facultad de Ingeniería y Ciencias
             </p>
           </div>
-        </div>
+        </Link>
 
         {/* Center: Nav — visible desde lg */}
         <nav aria-label="Principal" className="hidden lg:flex items-center justify-center gap-1 xl:gap-1">
@@ -220,27 +220,24 @@ export const UserHeader = () => {
 
         {/* Right: Actions */}
         <div className="flex items-center flex-shrink-0 justify-end gap-2 xl:gap-3">
-
-          {/* Dashboard link móvil (oculto en lg+) */}
-          <Link
-            to={dashboardPath}
-            aria-current={navItems[0].active ? "page" : undefined}
-            className={[
-              "inline-flex rounded-lg font-bold transition-colors lg:hidden flex-shrink-0",
-              navItems[0].active ? "bg-[#d22864] text-white" : "text-[#d22864] hover:bg-[#d22864] hover:text-white",
-            ].join(" ")}
-            style={{ padding: '4px 10px', fontSize: '11px' }}
-          >
-            Dashboard
-          </Link>
-
           {/* Campana — completamente fuera del configRef */}
           <NotificationBell />
 
-          <div className="h-7 w-px bg-gray-200 flex-shrink-0 hidden sm:block" />
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border-2 border-[#d22864] text-[#d22864] transition-colors hover:bg-[#d22864] hover:text-white lg:hidden"
+            aria-label={mobileMenuOpen ? "Cerrar navegación" : "Abrir navegación"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="authenticated-mobile-navigation"
+          >
+            {mobileMenuOpen ? <X size={22} strokeWidth={2.5} /> : <Menu size={22} strokeWidth={2.5} />}
+          </button>
+
+          <div className="hidden h-7 w-px flex-shrink-0 bg-gray-200 lg:block" />
 
           {/* Nombre y Rol */}
-          <div className="hidden md:flex flex-col items-end leading-none max-w-[120px] xl:max-w-[240px] truncate">
+          <div className="hidden lg:flex flex-col items-end leading-none max-w-[120px] xl:max-w-[240px] truncate">
             <span
               className="font-bold text-[#d22864] truncate w-full text-right block"
               style={{ fontSize: 'clamp(0.65rem, 1vw, 0.9rem)' }}
@@ -253,7 +250,7 @@ export const UserHeader = () => {
 
           {/* Settings popover — configRef solo envuelve este bloque */}
           {isAdminToggle && (
-            <div className="relative" ref={configRef}>
+            <div className="relative hidden lg:block" ref={configRef}>
               <button
                 onClick={() => setConfigOpen((prev) => !prev)}
                 className="p-1.5 text-[#d22864] hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
@@ -330,7 +327,7 @@ export const UserHeader = () => {
 
           {/* Avatar */}
           <div
-            className="rounded-full bg-blue-100 border-2 border-[#d22864] flex items-center justify-center overflow-hidden flex-shrink-0"
+            className="hidden rounded-full bg-blue-100 border-2 border-[#d22864] lg:flex items-center justify-center overflow-hidden flex-shrink-0"
             style={{ width: 'clamp(32px, 3.5vw, 42px)', height: 'clamp(32px, 3.5vw, 42px)' }}
           >
             <img
@@ -343,7 +340,7 @@ export const UserHeader = () => {
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="text-[#d22864] hover:bg-red-50 hover:text-red-600 rounded-lg transition-all flex-shrink-0"
+            className="hidden text-[#d22864] hover:bg-red-50 hover:text-red-600 rounded-lg transition-all flex-shrink-0 lg:inline-flex"
             style={{ padding: '6px' }}
             title="Cerrar Sesión"
           >
@@ -352,6 +349,110 @@ export const UserHeader = () => {
 
         </div>
       </div>
+
+      {mobileMenuOpen && (
+        <div
+          id="authenticated-mobile-navigation"
+          className="border-t border-[#d22864]/15 bg-white px-4 py-4 shadow-sm lg:hidden"
+        >
+          <div className="grid gap-4">
+            <div className="flex items-center gap-3 rounded-2xl bg-gray-50 p-3">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[#d22864] bg-blue-100">
+                <img
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`}
+                  alt={userName}
+                  className="h-full w-full"
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-[#d22864]">{userName}</p>
+                <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-wider text-gray-500">{userRole}</p>
+              </div>
+            </div>
+
+            <nav aria-label="Principal móvil" className="grid gap-2">
+              {navItems.map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  aria-current={item.active ? "page" : undefined}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={getMobileNavLinkClass(item.active)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            {isAdminToggle && (
+              <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+                <div className="mb-4">
+                  <h3 className="text-sm font-black text-[#d22864]">Configuración de Agenda</h3>
+                  <p className="mt-1 text-xs font-semibold text-gray-500">
+                    {configLoading ? 'Cargando...' : 'Gestiona disponibilidad de citas y prácticas'}
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-3 rounded-xl bg-white p-3">
+                    <div>
+                      <p className="text-sm font-bold text-gray-800">Consultas Generales</p>
+                      <p className="text-xs text-gray-400">Permite que estudiantes agenden consultas contigo</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleToggleConsultations}
+                      disabled={configSaving || configLoading}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none disabled:opacity-50 ${
+                        config.general_consultations_enabled ? 'bg-green-500' : 'bg-gray-200'
+                      }`}
+                      aria-label="Alternar consultas generales"
+                    >
+                      <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                        config.general_consultations_enabled ? 'translate-x-5' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
+
+                  {isDirector && (
+                    <div className="flex items-center justify-between gap-3 rounded-xl bg-white p-3">
+                      <div>
+                        <p className="text-sm font-bold text-gray-800">Inscripción de Prácticas</p>
+                        <p className="text-xs text-gray-400">Desactiva temporalmente nuevas inscripciones</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleToggleApplications}
+                        disabled={configSaving || configLoading}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none disabled:opacity-50 ${
+                          config.internship_applications_disabled ? 'bg-red-500' : 'bg-gray-200'
+                        }`}
+                        aria-label="Alternar inscripción de prácticas"
+                      >
+                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          config.internship_applications_disabled ? 'translate-x-5' : 'translate-x-0'
+                        }`} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleLogout();
+              }}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-100 px-4 py-3 text-sm font-black text-red-600 transition-colors hover:bg-red-50"
+            >
+              <LogOut size={18} strokeWidth={2.5} />
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
