@@ -283,19 +283,20 @@ const StatusBadge = ({ internship }) => {
   const style = STATUS_STYLES[statusKey] || STATUS_STYLES[1];
 
   return (
-    <div className={`${style.color} text-white px-4 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold shadow-lg`}>
+    <div className={`${style.color} text-white px-4 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold shadow-lg shrink-0`}>
       {style.icon}
       {label}
     </div>
   );
 };
 
+// CORRECCIÓN: Optimizamos el DetailChip con min-w-0 y break-words para que salte de línea fluidamente si el contenedor se achica.
 const DetailChip = ({ icon: Icon, label, value }) => (
-  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 flex-1 min-w-0">
+  <div className="flex items-center gap-2 bg-gray-50 px-2 py-2 rounded-xl border border-gray-100 flex-1 min-w-[100px]">
     <Icon size={14} className="text-[#d22864] flex-shrink-0" />
-    <div className="min-w-0">
-      <p className="text-[9px] uppercase tracking-wider font-bold text-gray-400 leading-none">{label}</p>
-      <p className="text-xs font-bold text-gray-800 truncate">{value || '-'}</p>
+    <div className="min-w-0 flex-1">
+      <p className="text-[9px] uppercase tracking-wider font-bold text-gray-400 leading-none mb-0.5">{label}</p>
+      <p className="text-xs font-bold text-gray-800 break-words line-clamp-2 leading-tight">{value || '-'}</p>
     </div>
   </div>
 );
@@ -335,30 +336,30 @@ const PracticeCard = ({ internship, lifecycle }) => {
 
       {/* Body */}
       <div className="px-6 py-4 space-y-4">
-        {/* Org + Supervisor row */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-3 bg-gray-50/80 p-3 rounded-2xl border border-gray-100/50">
+        {/* CORRECCIÓN: Cambiado de grid-cols-2 estricto a apilarse en 1 columna en mobile (grid-cols-1 sm:grid-cols-2) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex items-center gap-3 bg-gray-50/80 p-3 rounded-2xl border border-gray-100/50 min-w-0">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#d22864] shadow-sm flex-shrink-0">
               <Building2 size={18} />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Empresa</p>
-              <p className="text-sm font-bold text-gray-800 truncate">{internship.org_name || '-'}</p>
+              <p className="text-sm font-bold text-gray-800 break-words line-clamp-2 leading-tight">{internship.org_name || '-'}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 bg-gray-50/80 p-3 rounded-2xl border border-gray-100/50">
+          <div className="flex items-center gap-3 bg-gray-50/80 p-3 rounded-2xl border border-gray-100/50 min-w-0">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#d22864] shadow-sm flex-shrink-0">
               <User size={18} />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Supervisor/a</p>
-              <p className="text-sm font-bold text-gray-800 truncate">{internship.supervisor_name || '-'}</p>
+              <p className="text-sm font-bold text-gray-800 break-words line-clamp-2 leading-tight">{internship.supervisor_name || '-'}</p>
             </div>
           </div>
         </div>
 
-        {/* Chips row */}
-        <div className="flex gap-2">
+        {/* CORRECCIÓN: Cambiado a una cuadrícula responsiva (2x2 en mobile, 4 en pantallas normales) para que los chips tengan espacio y no colapsen horizontales */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <DetailChip icon={Briefcase} label="Modalidad" value={internship.modality} />
           <DetailChip icon={Shield} label="Período" value={internship.internship_period} />
           <DetailChip icon={Clock} label="Horario" value={internship.schedule} />
@@ -435,7 +436,7 @@ const PersonalDataBlock = ({ user, onDownload, downloading }) => {
         <div>
           <h3 className="text-lg font-black text-gray-900">Datos personales</h3>
           <p className="mt-1 text-sm font-semibold text-gray-400">
-            Información asociada a tu cuenta estudiante.
+            Información asociada a tu account estudiante.
           </p>
         </div>
       </div>
@@ -488,7 +489,6 @@ export const StudentDashboardPage = () => {
   const fetchAppointments = async () => {
     try {
       const data = await schedulingService.getMyAppointments();
-      // Filter scheduled final presentation appointments that are active
       const scheduledPresentations = data.filter(appt => 
         appt.purpose === 'final_presentation' && 
         appt.status === 'scheduled'
@@ -511,7 +511,6 @@ export const StudentDashboardPage = () => {
       setError(null);
       
       const data = await internshipService.getMyInternships();
-      
       setInternships(data);
 
       const lifecycleEntries = await Promise.all(
@@ -534,8 +533,6 @@ export const StudentDashboardPage = () => {
   };
 
   const handleDocumentUploaded = () => {
-    // Podríamos recargar si mostramos lista de documentos en esta vista,
-    // por ahora solo refrescamos la data general
     fetchInternships();
   };
 
@@ -594,7 +591,6 @@ export const StudentDashboardPage = () => {
     || null;
 
   const uploadableInternshipsCount = internships.filter((internship) => canUploadDocuments(internship)).length;
-
   const appointmentNotificationsCount = notifications.filter(
     (notification) => !notification.is_read && notification.event_type === 'appointment_scheduled'
   ).length;
@@ -1078,8 +1074,8 @@ export const StudentDashboardPage = () => {
       <DataPortabilityModal
         isOpen={isPortabilityModalOpen}
         isDownloading={downloadingData}
-        onClose={() => setIsPortabilityModalOpen(false)}
         onDownload={handleDataPortabilityDownload}
+        onClose={() => setIsPortabilityModalOpen(false)}
       />
 
       <Footer />

@@ -947,10 +947,10 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                     variants={ENTRY_ITEM_VARIANTS}
                 >
                     <div className="max-w-2xl">
-                        <h2 className="text-3xl font-black text-slate-900 sm:text-4xl">
+                        <h2 className="text-3xl font-black text-slate-900 sm:text-4xl px-2">
                             Agendar horas y consultas
                         </h2>
-                        <p className="text-sm text-slate-500 mt-1">
+                        <p className="text-sm text-slate-500 mt-1 px-2">
                             {isAdmin
                                 ? 'Responde solicitudes de agendamiento y califica resultados de presentaciones.'
                                 : 'Solicita horas para consultas generales o presentaciones finales de tus prácticas.'}
