@@ -327,10 +327,10 @@ export const SeguimientoPage = ({
 
       <main className={embedded ? "w-full" : "max-w-5xl mx-auto w-full py-10 px-6 flex-grow"}>
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={embedded ? "mb-6" : "mb-10"}>
-          <h2 className="text-[#d22864] text-2xl md:text-3xl font-bold tracking-tight">
+          <h2 className="text-[#d22864] text-2xl md:text-3xl font-bold tracking-tight px-2">
             Seguimiento de Práctica
           </h2>
-          <p className="text-gray-400 font-medium mt-1">
+          <p className="text-gray-400 font-medium mt-1 px-2">
             Estudiante: {user?.first_name} {user?.last_name}
           </p>
         </motion.div>

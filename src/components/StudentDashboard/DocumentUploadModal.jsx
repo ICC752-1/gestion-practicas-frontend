@@ -335,7 +335,7 @@ export const DocumentUploadModal = ({
       {/* Info Note */}
       <div className="flex items-start gap-2.5 px-3 py-2.5 bg-blue-50/50 rounded-xl text-blue-700/80">
         <Info className="flex-shrink-0 mt-0.5" size={14} />
-        <p className="text-[10px] font-medium leading-normal">
+        <p className="text-[11px] font-medium leading-normal">
           Recuerda que los documentos deben ser legibles. Una vez aprobados por el encargado, no podrán ser modificados.
         </p>
       </div>
