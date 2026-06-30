@@ -332,7 +332,7 @@ const StudentView = ({
             <div>
               <h3 className="text-xl font-bold text-gray-900">Generar carta</h3>
               <p className="mt-1 text-sm text-gray-500">
-                Selecciona el tipo de práctica. El sistema genera el PDF y registra el envío a tu correo.
+                Selecciona el tipo de práctica. El sistema genera el documento PDF y registra el envío a tu correo.
               </p>
             </div>
           </div>
@@ -367,10 +367,9 @@ const StudentView = ({
           className="rounded-2xl border border-[#d22864]/10 bg-[#fff0f6] p-5 text-sm text-[#8B1D46]"
           {...getPracticeCardEntryMotion(0.18)}
         >
-          <h3 className="font-bold">Regla de uso</h3>
+          <h3 className="font-bold">Nota</h3>
           <p className="mt-2 leading-relaxed">
-            La carta es opcional. No bloquea inducción, inscripción, aprobación,
-            agenda ni seguimiento de práctica.
+            Esta carta es únicamente para gestionar el acercamiento inicial con la organización. A veces, es un requisito que algunas empresas solicitan presentar.
           </p>
         </motion.section>
       </motion.aside>
@@ -1181,8 +1180,10 @@ export const PresentationLettersPanel = () => {
           {isStudent ? 'Mis cartas de presentación' : 'Plantillas de carta de presentación'}
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600">
-          El Director administra plantillas por tipo de práctica. El estudiante
-          genera automáticamente su PDF con datos reales y puede descargarlo desde esta página.
+          Si necesitas una carta de presentación emitida por tu Dirección de Carrera para buscar tu Práctica de Estudios, puedes solicitarla acá.
+        </p>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600">
+          Esta carta es una herramienta clave para tu primer contacto con la organización, ya que incluye información sobre los principales resultados de aprendizaje esperados durante la práctica.
         </p>
       </motion.div>
 
