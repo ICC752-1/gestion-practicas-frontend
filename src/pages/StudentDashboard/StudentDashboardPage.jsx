@@ -336,7 +336,7 @@ const PracticeCard = ({ internship, lifecycle }) => {
       {/* Body */}
       <div className="px-6 py-4 space-y-4">
         {/* Org + Supervisor row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div className="flex items-center gap-3 bg-gray-50/80 p-3 rounded-2xl border border-gray-100/50">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#d22864] shadow-sm flex-shrink-0">
               <Building2 size={18} />

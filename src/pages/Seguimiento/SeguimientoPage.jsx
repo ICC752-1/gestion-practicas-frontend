@@ -430,22 +430,16 @@ export const SeguimientoPage = ({
                   <p className="text-sm text-gray-700">{internship.act_description}</p>
                 </div>
               )}
-              {(internship.ben_description || internship.amount > 0) && (
-                <div className="mt-4 pt-4 border-t border-gray-100 flex gap-6">
-                  {internship.ben_description && (
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Beneficios</p>
-                      <p className="text-sm text-gray-700">{formatBenefitLabels(internship.ben_description)}</p>
-                    </div>
-                  )}
-                  {internship.amount > 0 && (
-                    <div>
-                      <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Apoyo económico</p>
-                      <p className="text-sm font-bold text-[#d22864]">${internship.amount?.toLocaleString('es-CL')}</p>
-                    </div>
-                  )}
+              <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Beneficios</p>
+                  <p className="text-sm text-gray-700">{formatBenefitLabels(internship.ben_description)}</p>
                 </div>
-              )}
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Apoyo económico</p>
+                  <p className="text-sm font-bold text-[#d22864]">${(internship.amount || 0).toLocaleString('es-CL')}</p>
+                </div>
+              </div>
             </motion.div>
 
             {/* Organization */}

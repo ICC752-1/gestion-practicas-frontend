@@ -86,7 +86,7 @@ export const ActivitiesForm = ({ onNext, onBack, initialData = {}, isSubmitting 
             Beneficios que entregará la organización (opcional)
           </label>
           <div className="space-y-2">
-            {BENEFIT_OPTIONS.map(benefit => {
+            {BENEFIT_OPTIONS.filter(benefit => benefit.id !== 'sin_beneficio').map(benefit => {
               const isChecked = formData.ben_description.includes(benefit.id);
               const isNone = benefit.id === 'sin_beneficio';
               return (
