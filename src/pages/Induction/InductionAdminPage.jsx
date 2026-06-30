@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { CircleHelp } from 'lucide-react';
 import { Footer } from '../../components/Footer/Footer';
 import { UserHeader } from '../../components/Header/UserHeader';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
@@ -71,7 +72,38 @@ const getVersionStatusMeta = (version) => {
 };
 
 const getRetakeLabel = (requiresRetake) => (
-  requiresRetake ? 'Exige repetir la inducción' : 'No exige repetición'
+  requiresRetake ? 'Deben renovarse' : 'Siguen vigentes'
+);
+
+const RETAKE_HELP_TEXT = (
+  'Define qué ocurre con estudiantes que aprobaron una versión anterior. '
+  + 'Si solicitas una nueva aprobación, deberán completar y aprobar la versión '
+  + 'activa antes de inscribir una práctica. Si mantienes las aprobaciones, '
+  + 'su aprobación anterior seguirá siendo válida.'
+);
+
+const RetakeHelp = () => (
+  <span className="group relative inline-flex shrink-0">
+    <button
+      type="button"
+      className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-[#d22864] focus:bg-gray-100 focus:text-[#d22864] focus:outline-none"
+      aria-label={RETAKE_HELP_TEXT}
+    >
+      <CircleHelp size={17} />
+    </button>
+    <span
+      role="tooltip"
+      className="pointer-events-none invisible absolute right-0 top-full z-40 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl bg-gray-900 px-3 py-2.5 text-left text-xs font-semibold normal-case leading-relaxed tracking-normal text-white opacity-0 shadow-xl transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+    >
+      {RETAKE_HELP_TEXT}
+    </span>
+  </span>
+);
+
+const getRetakePublishEffect = (requiresRetake) => (
+  requiresRetake
+    ? 'Los estudiantes con una aprobación anterior deberán aprobar esta nueva versión.'
+    : 'Las aprobaciones obtenidas en versiones anteriores seguirán siendo válidas.'
 );
 
 const getEntryMotion = (delay = 0) => ({
@@ -327,9 +359,11 @@ export const InductionAdminPanel = () => {
     setConfirmAction({
       type: 'publish',
       title: 'Publicar inducción',
-      message: selectedVersionId
-        ? 'Se guardarán los cambios y esta versión quedará activa para nuevos intentos.'
-        : 'Se creará un borrador con estos datos y quedará activo para nuevos intentos.',
+      message: `${
+        selectedVersionId
+          ? 'Se guardarán los cambios y esta versión quedará activa para nuevos intentos.'
+          : 'Se creará una versión con estos datos y quedará activa para nuevos intentos.'
+      } ${getRetakePublishEffect(form.requires_retake)}`,
       confirmLabel: 'Publicar y activar',
       tone: 'success',
     });
@@ -342,7 +376,10 @@ export const InductionAdminPanel = () => {
       type: 'activate',
       versionId: version.id,
       title: 'Activar versión',
-      message: `La versión "${version.title}" reemplazará a la inducción activa para nuevos intentos.`,
+      message: (
+        `La versión "${version.title}" reemplazará a la inducción activa para nuevos intentos. `
+        + getRetakePublishEffect(version.requires_retake)
+      ),
       confirmLabel: 'Activar versión',
       tone: 'success',
     });
@@ -412,42 +449,45 @@ export const InductionAdminPanel = () => {
   return (
     <>
         <motion.section
-          className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm"
+          className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-8"
           {...getEntryMotion()}
         >
           <p className="text-sm font-black uppercase tracking-wide text-[#d22864]">Inducción</p>
-          <h1 className="mt-3 text-3xl font-black text-gray-900">Administración de contenido</h1>
+          <h1 className="mt-3 text-2xl font-black text-gray-900 sm:text-3xl">Administración de contenido</h1>
           <p className="mt-3 max-w-3xl text-gray-600">
-            Crea borradores, valida preguntas y publica una única versión activa para nuevos intentos.
+            Crea borradores, valida preguntas y define cómo afecta una nueva versión a las aprobaciones anteriores.
           </p>
-          <div className="mt-6 grid gap-3 md:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <motion.div
-              className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
+              className="min-w-0 rounded-2xl border border-gray-100 bg-gray-50 p-3 sm:p-4"
               {...getEntryMotion(0.08)}
             >
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Acceso actual</p>
-              <p className="mt-2 text-sm font-black text-gray-900">{userRole}</p>
+              <p className="mt-2 break-words text-sm font-black text-gray-900">{userRole}</p>
             </motion.div>
             <motion.div
-              className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
+              className="min-w-0 rounded-2xl border border-gray-100 bg-gray-50 p-3 sm:p-4"
               {...getEntryMotion(0.14)}
             >
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Borradores</p>
               <p className="mt-2 text-2xl font-black text-gray-900">{draftCount}</p>
             </motion.div>
             <motion.div
-              className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
+              className="min-w-0 rounded-2xl border border-gray-100 bg-gray-50 p-3 sm:p-4"
               {...getEntryMotion(0.2)}
             >
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Publicadas</p>
               <p className="mt-2 text-2xl font-black text-gray-900">{publishedCount}</p>
             </motion.div>
             <motion.div
-              className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
+              className="min-w-0 rounded-2xl border border-gray-100 bg-gray-50 p-3 sm:p-4"
               {...getEntryMotion(0.26)}
             >
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Repetición activa</p>
-              <p className="mt-2 text-sm font-black text-gray-900">
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Aprobaciones previas</p>
+                <RetakeHelp />
+              </div>
+              <p className="mt-2 break-words text-sm font-black text-gray-900">
                 {activeVersion ? getRetakeLabel(activeVersion.requires_retake) : 'Sin versión activa'}
               </p>
             </motion.div>
@@ -472,17 +512,17 @@ export const InductionAdminPanel = () => {
         )}
 
         <motion.section
-          className="mt-6 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]"
+          className="mt-6 grid min-w-0 gap-6 xl:grid-cols-[340px_minmax(0,1fr)]"
           {...getEntryMotion(0.32)}
         >
           <motion.aside
-            className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm"
+            className="min-w-0 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5"
             {...getEntryMotion(0.36)}
           >
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-black text-gray-900">Versiones</h2>
-              <button type="button" onClick={handleNewDraft} className="rounded-xl bg-gray-900 px-3 py-2 text-xs font-bold text-white">
-                Nuevo
+              <button type="button" onClick={handleNewDraft} className="shrink-0 rounded-xl bg-gray-900 px-3 py-2 text-xs font-bold text-white">
+                Nueva versión
               </button>
             </div>
             <div className="mt-5 space-y-3">
@@ -499,12 +539,12 @@ export const InductionAdminPanel = () => {
                     onClick={() => handleSelectVersion(version)}
                     className="w-full text-left"
                   >
-                    <p className="font-black text-gray-900">{version.title}</p>
+                    <p className="break-words font-black text-gray-900">{version.title}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${getVersionStatusMeta(version).className}`}>
                         {getVersionStatusMeta(version).label}
                       </span>
-                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${version.requires_retake ? 'bg-[#fff0f6] text-[#d22864]' : 'bg-gray-100 text-gray-500'}`}>
+                      <span className={`max-w-full rounded-full px-2.5 py-1 text-left text-[10px] font-black uppercase leading-tight tracking-wide ${version.requires_retake ? 'bg-[#fff0f6] text-[#d22864]' : 'bg-gray-100 text-gray-500'}`}>
                         {getRetakeLabel(version.requires_retake)}
                       </span>
                     </div>
@@ -539,18 +579,18 @@ export const InductionAdminPanel = () => {
 
           <motion.form
             onSubmit={handleSave}
-            className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm"
+            className="min-w-0 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6"
             {...getEntryMotion(0.44)}
           >
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-xl font-black text-gray-900">{isEditing ? 'Editar versión' : 'Nuevo borrador'}</h2>
                 {selectedVersion && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${getVersionStatusMeta(selectedVersion).className}`}>
                       {getVersionStatusMeta(selectedVersion).label}
                     </span>
-                    <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${form.requires_retake ? 'bg-[#fff0f6] text-[#d22864]' : 'bg-gray-100 text-gray-500'}`}>
+                    <span className={`max-w-full rounded-full px-3 py-1 text-left text-[10px] font-black uppercase leading-tight tracking-wide ${form.requires_retake ? 'bg-[#fff0f6] text-[#d22864]' : 'bg-gray-100 text-gray-500'}`}>
                       {getRetakeLabel(form.requires_retake)}
                     </span>
                   </div>
@@ -562,34 +602,37 @@ export const InductionAdminPanel = () => {
                   </div>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap">
                 {canActivateVersion(selectedVersion) && (
-                  <button type="button" onClick={() => requestActivate(selectedVersion)} disabled={saving} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
+                  <button type="button" onClick={() => requestActivate(selectedVersion)} disabled={saving} className="w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50 sm:w-auto">
                     Activar versión
                   </button>
                 )}
-                {isEditing && <button type="button" onClick={requestDelete} disabled={saving} className="rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-600 disabled:opacity-50">Eliminar</button>}
+                {isEditing && <button type="button" onClick={requestDelete} disabled={saving} className="w-full rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-600 disabled:opacity-50 sm:w-auto">Eliminar versión</button>}
               </div>
             </div>
 
-            <fieldset className="mt-6 space-y-5">
-              <input name="title" value={form.title} onChange={handleFieldChange} required placeholder="Título" className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
-              <textarea name="description" value={form.description} onChange={handleFieldChange} rows="3" placeholder="Descripción" className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
+            <fieldset className="mt-6 min-w-0 space-y-5">
+              <input name="title" value={form.title} onChange={handleFieldChange} required placeholder="Título" className="min-w-0 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
+              <textarea name="description" value={form.description} onChange={handleFieldChange} rows="3" placeholder="Descripción" className="min-w-0 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block text-sm font-bold text-gray-700">
                   Puntaje mínimo
-                  <input name="min_score" type="number" min="1" value={form.min_score} onChange={handleFieldChange} className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
+                  <input name="min_score" type="number" min="1" value={form.min_score} onChange={handleFieldChange} className="mt-2 min-w-0 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-[#d22864]" />
                 </label>
                 <div className="rounded-xl border border-gray-200 p-3">
-                  <p className="text-sm font-bold text-gray-700">Repetición al publicar</p>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Repetición al publicar">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-bold text-gray-700">Aprobaciones de versiones anteriores</p>
+                    <RetakeHelp />
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Validez de aprobaciones de versiones anteriores">
                     <button
                       type="button"
                       onClick={() => setForm((current) => ({ ...current, requires_retake: false }))}
                       className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${!form.requires_retake ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
                       aria-pressed={!form.requires_retake}
                     >
-                      No exigir
+                      Mantener vigentes
                     </button>
                     <button
                       type="button"
@@ -597,27 +640,27 @@ export const InductionAdminPanel = () => {
                       className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${form.requires_retake ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
                       aria-pressed={form.requires_retake}
                     >
-                      Exigir repetición
+                      Solicitar nueva aprobación
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-100 p-5">
-                <div className="flex items-center justify-between">
+              <div className="min-w-0 rounded-2xl border border-gray-100 p-4 sm:p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="font-black text-gray-900">Videos</h3>
-                  <button type="button" onClick={() => setForm((current) => ({ ...current, videos: [...current.videos, { ...emptyVideo, order: current.videos.length + 1 }] }))} className="text-sm font-bold text-[#d22864]">Agregar video</button>
+                  <button type="button" onClick={() => setForm((current) => ({ ...current, videos: [...current.videos, { ...emptyVideo, order: current.videos.length + 1 }] }))} className="w-full rounded-xl border border-[#d22864]/20 px-3 py-2 text-sm font-bold text-[#d22864] sm:w-auto">Agregar video</button>
                 </div>
                 <div className="mt-4 space-y-3">
                   {form.videos.map((video, index) => (
-                    <div key={index} className="grid gap-3 md:grid-cols-[80px_1fr_1fr_auto]">
-                      <input type="number" min="0" value={video.order} onChange={(event) => updateVideo(index, 'order', event.target.value)} className="rounded-xl border border-gray-200 px-3 py-2" />
-                      <input value={video.title} onChange={(event) => updateVideo(index, 'title', event.target.value)} placeholder="Título video" className="rounded-xl border border-gray-200 px-3 py-2" />
-                      <input value={video.video_url} onChange={(event) => updateVideo(index, 'video_url', event.target.value)} placeholder="https://..." className="rounded-xl border border-gray-200 px-3 py-2" />
+                    <div key={index} className="grid min-w-0 gap-3 md:grid-cols-[80px_minmax(0,1fr)_minmax(0,1fr)_auto]">
+                      <input type="number" min="0" value={video.order} onChange={(event) => updateVideo(index, 'order', event.target.value)} aria-label={`Orden del video ${index + 1}`} className="min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2" />
+                      <input value={video.title} onChange={(event) => updateVideo(index, 'title', event.target.value)} placeholder="Título video" className="min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2" />
+                      <input value={video.video_url} onChange={(event) => updateVideo(index, 'video_url', event.target.value)} placeholder="https://..." className="min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2" />
                       <button
                         type="button"
                         onClick={() => removeVideo(index)}
-                        className="rounded-xl border border-red-100 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50"
+                        className="w-full rounded-xl border border-red-100 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 md:w-auto"
                       >
                         Eliminar
                       </button>
@@ -629,34 +672,34 @@ export const InductionAdminPanel = () => {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-100 p-5">
-                <div className="flex items-center justify-between">
+              <div className="min-w-0 rounded-2xl border border-gray-100 p-4 sm:p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="font-black text-gray-900">Preguntas</h3>
-                  <button type="button" onClick={() => setForm((current) => ({ ...current, questions: [...current.questions, cloneQuestion({ ...emptyQuestion, order: current.questions.length + 1 })] }))} className="text-sm font-bold text-[#d22864]">Agregar pregunta</button>
+                  <button type="button" onClick={() => setForm((current) => ({ ...current, questions: [...current.questions, cloneQuestion({ ...emptyQuestion, order: current.questions.length + 1 })] }))} className="w-full rounded-xl border border-[#d22864]/20 px-3 py-2 text-sm font-bold text-[#d22864] sm:w-auto">Agregar pregunta</button>
                 </div>
                 <div className="mt-4 space-y-5">
                   {form.questions.map((question, index) => (
-                    <div key={index} className="rounded-2xl bg-gray-50 p-4">
-                      <div className="grid gap-3 md:grid-cols-[80px_1fr_auto]">
-                        <input type="number" min="0" value={question.order} onChange={(event) => updateQuestion(index, 'order', event.target.value)} className="rounded-xl border border-gray-200 px-3 py-2" />
-                        <input value={question.question_text} onChange={(event) => updateQuestion(index, 'question_text', event.target.value)} placeholder="Enunciado" className="rounded-xl border border-gray-200 px-3 py-2" />
+                    <div key={index} className="min-w-0 rounded-2xl bg-gray-50 p-3 sm:p-4">
+                      <div className="grid min-w-0 gap-3 md:grid-cols-[80px_minmax(0,1fr)_auto]">
+                        <input type="number" min="0" value={question.order} onChange={(event) => updateQuestion(index, 'order', event.target.value)} aria-label={`Orden de la pregunta ${index + 1}`} className="min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2" />
+                        <input value={question.question_text} onChange={(event) => updateQuestion(index, 'question_text', event.target.value)} placeholder="Enunciado" className="min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2" />
                         <button
                           type="button"
                           onClick={() => removeQuestion(index)}
-                          className="rounded-xl border border-red-100 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50"
+                          className="w-full rounded-xl border border-red-100 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 md:w-auto"
                         >
                           Eliminar
                         </button>
                       </div>
                       <div className="mt-3 grid gap-3 md:grid-cols-2">
                         {Object.entries(question.options).map(([key, value]) => (
-                          <div key={key} className="grid grid-cols-[1fr_auto] gap-2">
-                            <input value={value} onChange={(event) => updateQuestionOption(index, key, event.target.value)} placeholder={`Opción ${key}`} className="rounded-xl border border-gray-200 px-3 py-2" />
+                          <div key={key} className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                            <input value={value} onChange={(event) => updateQuestionOption(index, key, event.target.value)} placeholder={`Opción ${key}`} className="min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2" />
                             <button
                               type="button"
                               onClick={() => removeQuestionOption(index, key)}
                               disabled={Object.keys(question.options).length <= 2}
-                              className="rounded-xl border border-red-100 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="w-full rounded-xl border border-red-100 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
                             >
                               Eliminar
                             </button>
@@ -672,7 +715,7 @@ export const InductionAdminPanel = () => {
                       </button>
                       <label className="mt-3 block text-sm font-bold text-gray-700">
                         Respuesta correcta
-                        <select value={question.correct_answer} onChange={(event) => updateQuestion(index, 'correct_answer', event.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2">
+                        <select value={question.correct_answer} onChange={(event) => updateQuestion(index, 'correct_answer', event.target.value)} className="mt-2 min-w-0 w-full rounded-xl border border-gray-200 px-3 py-2">
                           {Object.keys(question.options).map((key) => <option key={key} value={key}>{key}</option>)}
                         </select>
                       </label>
