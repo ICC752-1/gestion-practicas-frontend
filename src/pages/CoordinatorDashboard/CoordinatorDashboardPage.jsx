@@ -164,7 +164,7 @@ export const CoordinatorDashboardPage = () => {
                 to={tab.to}
                 aria-current={isActive ? 'page' : undefined}
                 className={[
-                  'relative inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition-colors',
+                  'relative inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition-colors',
                   isActive
                     ? 'bg-[#d22864] text-white shadow-sm'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-[#d22864]',

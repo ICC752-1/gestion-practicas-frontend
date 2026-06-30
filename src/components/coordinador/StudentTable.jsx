@@ -401,14 +401,14 @@ export const StudentTable = ({ students = [] }) => {
           className="rounded-xl border border-gray-100 bg-white p-3 text-sm text-gray-600"
           {...getEntryMotion(0.16)}
         >
-          <span className="block text-xs font-black uppercase tracking-wide text-gray-500 sm:inline sm:mr-1">
+          <span className="block text-xs font-black uppercase tracking-wide text-gray-500 sm:inline sm:mr-2">
             Tipo de práctica:
           </span>
           <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-0 sm:inline-flex sm:flex-wrap">
             <button
               type="button"
               onClick={() => handlePracticeTypeFilterChange('')}
-              className={`rounded-lg border px-3 py-2 text-xs font-black transition ${
+              className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${
                 practiceTypeFilter === ''
                   ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-[#d22864] hover:text-[#d22864]'
@@ -421,7 +421,7 @@ export const StudentTable = ({ students = [] }) => {
               key={practiceType}
               type="button"
               onClick={() => handlePracticeTypeFilterChange(practiceType)}
-              className={`rounded-lg border px-3 py-2 text-xs font-black transition ${
+              className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${
                 practiceTypeFilter === practiceType
                   ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-[#d22864] hover:text-[#d22864]'
@@ -450,7 +450,7 @@ export const StudentTable = ({ students = [] }) => {
           <button
             type="button"
             onClick={() => applyRecentSort('desc')}
-            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold transition ${
               sort.sort_by === 'upload_date' && sort.sort_dir === 'desc'
                 ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
                 : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
@@ -462,7 +462,7 @@ export const StudentTable = ({ students = [] }) => {
           <button
             type="button"
             onClick={() => applyRecentSort('asc')}
-            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold transition ${
               sort.sort_by === 'upload_date' && sort.sort_dir === 'asc'
                 ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
                 : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
@@ -483,11 +483,11 @@ export const StudentTable = ({ students = [] }) => {
           
           {/* Cabecera de la Tabla */}
           <div className={`${gridLayoutClass} bg-gray-50/70 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider`}>
-            <SortHeader label="Estudiante" field="student" sort={sort} onSort={handleSort} />
-            <SortHeader label="Solicitud" field="upload_date" sort={sort} onSort={handleSort} align="center" />
-            <SortHeader label="Carrera" field="degree" sort={sort} onSort={handleSort} />
-            <SortHeader label="Tipo" field="internship_type" sort={sort} onSort={handleSort} />
-            <SortHeader label="Empresa" field="company" sort={sort} onSort={handleSort} />
+            <SortHeader label="Estudiante" field="student" sort={sort} onSort={handleSort} align="left" />
+            <SortHeader label="Solicitud" field="upload_date" sort={sort} onSort={handleSort} align="left" />
+            <SortHeader label="Carrera" field="degree" sort={sort} onSort={handleSort} align="left" />
+            <SortHeader label="Tipo" field="internship_type" sort={sort} onSort={handleSort} align="left" />
+            <SortHeader label="Empresa" field="company" sort={sort} onSort={handleSort} align="left"/>
             <SortHeader label="Estado" field="status" sort={sort} onSort={handleSort} align="center" />
             <div className="text-center">Acciones</div>
           </div>
@@ -507,7 +507,7 @@ export const StudentTable = ({ students = [] }) => {
                     
                     {/* Estudiante (Con min-w-0 para activar el truncado fluido) */}
                     <div className="flex flex-col min-w-0">
-                      <span className="font-bold text-gray-800 leading-tight text-sm truncate">
+                      <span className="font-bold text-gray-800 leading-tight text-sm ">
                         {student.student ? `${student.student.first_name} ${student.student.last_name}` : 'Estudiante no registrado'}
                       </span>
                       <span className="text-xs text-gray-400 font-medium truncate mt-0.5">{student.student?.email}</span>
@@ -520,27 +520,28 @@ export const StudentTable = ({ students = [] }) => {
 
                     {/* Carrera (Se corrigió la etiqueta td invasiva de develop para mantener la rejilla CSS Grid limpia) */}
                     <div className="min-w-0">
-                      <p className="text-sm text-gray-600 font-medium truncate">
+                      <p className="text-[12px] text-gray-600 font-medium">
                         {student.student?.degree || student.student?.cod_degree || 'N/A'}
                       </p>
                     </div>
 
                     {/* Tipo de práctica */}
                     <div className="min-w-0">
-                      <p className="text-sm text-gray-600 font-medium truncate" title={getPracticeType(student)}>
+                      <p className="text-[12px] text-gray-600 font-medium " 
+                        title={getPracticeType(student)}>
                         {getPracticeType(student) || 'N/A'}
                       </p>
                     </div>
 
                     {/* Empresa */}
                     <div className="min-w-0">
-                      <p className="text-sm text-gray-600 font-medium truncate">{student.org_name || 'N/A'}</p>
+                      <p className="text-[12px] text-gray-600 font-medium ">{student.org_name || 'N/A'}</p>
                     </div>
 
                     {/* Estado */}
                     <div className="flex justify-center min-w-0 w-full">
                       <span className={`
-                        px-2 sm:px-4 py-1.5 rounded-full text-white text-[11px] font-bold text-center w-full max-w-[100px] block shadow-sm truncate
+                        px-2 sm:px-4 py-1.5 rounded-full text-white text-[11px] font-bold text-center w-full max-w-[90px] block shadow-sm truncate
                         ${normalizedStatus.color}
                       `}>
                         {normalizedStatus.label}
