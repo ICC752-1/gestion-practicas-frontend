@@ -1278,7 +1278,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                         {/* TAB 2: List of requests (My requests for Student; Pending requests for Coordinator) */}
                         {activeTab === 'requests' && (
                             <section className="space-y-4">
-                                <h3 className="text-xl font-black text-slate-900">
+                                <h3 className="text-xl font-black text-slate-900 px-3">
                                     {isAdmin ? 'Solicitudes Pendientes de Estudiantes' : 'Mis Solicitudes de Agendamiento'}
                                 </h3>
 
@@ -1429,7 +1429,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                             <section className="space-y-4">
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <h3 className="text-xl font-black text-slate-900">
+                                        <h3 className="text-xl font-black text-slate-900 px-3">
                                             Citas confirmadas y resultados
                                         </h3>
                                         {appointmentsDateFilter && (

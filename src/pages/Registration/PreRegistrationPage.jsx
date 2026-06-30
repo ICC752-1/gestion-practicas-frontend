@@ -464,19 +464,19 @@ export const PreRegistrationPage = ({
           className="mb-8"
           {...getPracticeCardEntryMotion()}
         >
-          <p className="text-sm font-black uppercase tracking-wider text-[#d22864] ">
+          <p className="text-sm font-black uppercase tracking-wider text-[#d22864] px-2 ">
             Nueva inscripción
           </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-gray-950 md:text-4xl">
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-gray-950 md:text-4xl px-2">
             Preinscripción de práctica
           </h1>
-          <p className="mt-3 max-w-3xl text-base leading-relaxed text-gray-600">
+          <p className="mt-3 max-w-3xl text-base leading-relaxed text-gray-600 px-2">
             Revisa los prerrequisitos institucionales y completa la inducción. La inducción
             aprobada habilita el acceso al formulario de solicitud.
           </p>
           <Link
             to="/requisitos"
-            className="mt-4 inline-flex items-center gap-2 text-sm font-black text-[#d22864] hover:underline"
+            className="mt-4 inline-flex items-center gap-2 text-sm font-black text-[#d22864] hover:underline px-2"
           >
             Ver explicación de requisitos e inducción
             <ExternalLink size={15} />

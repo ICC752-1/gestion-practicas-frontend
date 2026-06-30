@@ -327,10 +327,10 @@ export const SeguimientoPage = ({
 
       <main className={embedded ? "w-full" : "max-w-5xl mx-auto w-full py-10 px-6 flex-grow"}>
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={embedded ? "mb-6" : "mb-10"}>
-          <h2 className="text-[#d22864] text-2xl md:text-3xl font-bold tracking-tight">
+          <h2 className="text-[#d22864] text-2xl md:text-3xl font-bold tracking-tight px-2">
             Seguimiento de Práctica
           </h2>
-          <p className="text-gray-400 font-medium mt-1">
+          <p className="text-gray-400 font-medium mt-1 px-2">
             Estudiante: {user?.first_name} {user?.last_name}
           </p>
         </motion.div>
@@ -358,7 +358,7 @@ export const SeguimientoPage = ({
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-full ${statusStyle.color} flex items-center justify-center text-white shadow-sm`}>
+                  <div className={`w-12 h-12 rounded-full ${statusStyle.color} flex items-center justify-center text-white shadow-sm flex-shrink-0`}>
                     {currentStatusLabel.toLowerCase().includes('finalizad') || currentStatusLabel.toLowerCase().includes('aprobad') ? (
                       <CheckCircle2 className="w-6 h-6" />
                     ) : (
@@ -430,22 +430,16 @@ export const SeguimientoPage = ({
                   <p className="text-sm text-gray-700">{internship.act_description}</p>
                 </div>
               )}
-              {(internship.ben_description || internship.amount > 0) && (
-                <div className="mt-4 pt-4 border-t border-gray-100 flex gap-6">
-                  {internship.ben_description && (
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Beneficios</p>
-                      <p className="text-sm text-gray-700">{formatBenefitLabels(internship.ben_description)}</p>
-                    </div>
-                  )}
-                  {internship.amount > 0 && (
-                    <div>
-                      <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Apoyo económico</p>
-                      <p className="text-sm font-bold text-[#d22864]">${internship.amount?.toLocaleString('es-CL')}</p>
-                    </div>
-                  )}
+              <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Beneficios</p>
+                  <p className="text-sm text-gray-700">{formatBenefitLabels(internship.ben_description)}</p>
                 </div>
-              )}
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Apoyo económico</p>
+                  <p className="text-sm font-bold text-[#d22864]">${(internship.amount || 0).toLocaleString('es-CL')}</p>
+                </div>
+              </div>
             </motion.div>
 
             {/* Organization */}
