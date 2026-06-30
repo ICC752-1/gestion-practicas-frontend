@@ -606,11 +606,11 @@ export const StudentDashboardPage = () => {
       <main className="flex-grow">
         {/* Welcome Section */}
         <div className="bg-white border-b border-gray-100 w-full overflow-hidden">
-          <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="max-w-7xl mx-auto px-6 py-7">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full min-w-0"
+              className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 w-full min-w-0"
             >
               <div className="min-w-0">
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight leading-none mb-2">
@@ -857,7 +857,7 @@ export const StudentDashboardPage = () => {
                 </div>
               )}
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between px-5">
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   Mis Prácticas
                   <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-1 rounded-md">{internships.length} TOTAL</span>
