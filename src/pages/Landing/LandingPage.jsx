@@ -27,7 +27,7 @@ export const LandingPage = () => {
           exit={{ opacity: 0 }}
         >
           {/* Hero Section */}
-          <section className="bg-brand-medium text-white py-24 px-6 relative overflow-hidden">
+          <section className="bg-brand-medium text-white py-24 px-6 relative overflow-hidden items-center">
             <div className="max-w-4xl mx-auto text-center relative z-10">
               <motion.h2 
                 initial={{ y: -20, opacity: 0 }}
@@ -100,39 +100,47 @@ export const LandingPage = () => {
 
           {/* Info columns */}
           <section className="bg-brand-medium py-18 px-6 text-white">
-            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-32">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-32 items-start">
               
               {/* Columna Estudiantes */}
-              <motion.div initial={{ x: -20, opacity: 0 }} whileInView={{ x: 0, opacity: 1 }} viewport={{ once: true }}>
-                <h3 className="text-2xl font-bold mb-8">Para Estudiantes</h3>
-                <ul className="space-y-6">
-                  {["Inscribe tu práctica de forma rápida y sencilla", "Sube y gertiona todos tus documentos en un solo lugar", "Recibe notificaciones sobre el estado de tu práctica", "Accede a preguntas frecuentes y soporte"].map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-4 group">
-                      {/* SOLUCIÓN: Caja contenedora rígida con h-[28px] (la altura promedio de la primera línea) para forzar centrado vertical exacto */}
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                className="flex flex-col items-start w-full"
+              >
+                <h3 className="text-2xl font-bold mb-8 text-left">Para Estudiantes</h3>
+                <ul className="space-y-6 w-full">
+                  {["Inscribe tu práctica de forma rápida y sencilla", "Sube y gestiona todos tus documentos en un solo lugar", "Recibe notificaciones sobre el estado de tu práctica", "Accede a preguntas frecuentes y soporte"].map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-4 group w-full">
                       <div className="flex items-center h-[28px] flex-shrink-0">
                         <div className="bg-white rounded-full p-1 text-brand-medium w-5 h-5 flex items-center justify-center">
                           <CheckCircle2 size={12} fill="currentColor" className="text-white" />
                         </div>
                       </div>
-                      <span className="text-lg opacity-90 leading-normal">{item}</span>
+                      <span className="text-lg opacity-90 leading-normal text-left">{item}</span>
                     </li>
                   ))}
                 </ul>
               </motion.div>
               
               {/* Columna Encargados y Supervisores */}
-              <motion.div initial={{ x: 20, opacity: 0 }} whileInView={{ x: 0, opacity: 1 }} viewport={{ once: true }}>
-                <h3 className="text-2xl font-bold mb-8">Para Encargados y Supervisores</h3>
-                <ul className="space-y-6">
+              <motion.div
+                initial={{ x: 20, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                className="flex flex-col items-start w-full"
+              >
+                <h3 className="text-2xl font-bold mb-8 text-left">Para Encargados y Supervisores</h3>
+                <ul className="space-y-6 w-full">
                   {["Gestiona todas las prácticas desde un panel centralizado", "Revisa y aprueba documentos de manera eficiente", "Completa evaluaciones directamente en la plataforma", "Genera reportes y estadísticas en tiempo real"].map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-4 group">
-                      {/* SOLUCIÓN: Caja contenedora rígida con h-[28px] (la altura promedio de la primera línea) para forzar centrado vertical exacto */}
+                    <li key={idx} className="flex items-start gap-4 group w-full">
                       <div className="flex items-center h-[28px] flex-shrink-0">
                         <div className="bg-white rounded-full p-1 text-brand-medium w-5 h-5 flex items-center justify-center">
                           <CheckCircle2 size={12} fill="currentColor" className="text-white" />
                         </div>
                       </div>
-                      <span className="text-lg opacity-90 leading-normal">{item}</span>
+                      <span className="text-lg opacity-90 leading-normal text-left">{item}</span>
                     </li>
                   ))}
                 </ul>

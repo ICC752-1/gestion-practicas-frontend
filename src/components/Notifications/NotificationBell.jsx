@@ -151,20 +151,20 @@ export const NotificationBell = () => {
                     </div>
                     {(notification.status === 'failed' || !notification.is_read) && (
                       <div className="mt-2 flex items-center justify-end gap-2 pl-12">
-                      {notification.status === 'failed' && (
-                        <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
-                          Fallida
-                        </span>
-                      )}
-                      {!notification.is_read && (
-                        <button
-                          type="button"
-                          onClick={() => markAsRead(notification.id)}
-                          className="text-[10px] font-bold text-[#d22864] hover:underline"
-                        >
-                          Marcar leída
-                        </button>
-                      )}
+                        {notification.status === 'failed' && (
+                          <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                            Fallida
+                          </span>
+                        )}
+                        {!notification.is_read && (
+                          <button
+                            type="button"
+                            onClick={() => markAsRead(notification.id)}
+                            className="text-[10px] font-bold text-[#d22864] hover:underline cursor-pointer"
+                          >
+                            Marcar leída
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

@@ -220,9 +220,12 @@ const businessWindowStart = (endDateStr, businessDays) => {
   return cursor;
 };
 
-const isSelfEvaluationAvailable = (internship) => {
+const isSelfEvaluationAvailable = (internship, lifecycle) => {
   if (!internship || internship.is_cancelled) return false;
   if (internship.status_id === 5) return false;
+
+  if (lifecycle?.self_evaluation_submitted) return false;
+
   if (SELF_EVALUATION_ENABLED_STATUSES.has(internship.completion_status)) return true;
   if (internship.status_id !== 4) return false;
 
@@ -306,7 +309,7 @@ const PracticeCard = ({ internship, lifecycle }) => {
         color: lifecycle.progress_percentage >= 100 ? 'bg-green-500' : 'bg-[#d22864]',
       }
     : getInternshipAdministrativeProgress(internship);
-  const canSelfEvaluate = isSelfEvaluationAvailable(internship);
+  const canSelfEvaluate = isSelfEvaluationAvailable(internship, lifecycle);
 
   return (
     <motion.div
@@ -660,7 +663,6 @@ export const StudentDashboardPage = () => {
               </div>
             </motion.div>
           </div>
-    
         </div>
         <div className="max-w-7xl mx-auto px-6 pt-6 pb-12">
           <nav

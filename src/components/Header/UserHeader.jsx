@@ -183,7 +183,7 @@ export const UserHeader = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b-[3px] border-[#d22864] bg-white shadow-sm">
-      <div className="flex min-h-[64px] w-full items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:grid lg:grid-cols-[auto_1fr_auto] lg:px-10 xl:grid-cols-[1fr_auto_1fr] xl:gap-4">
+      <div className="flex min-h-[65px] w-full items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:grid lg:grid-cols-[auto_1fr_auto] lg:px-10 xl:grid-cols-[1fr_auto_1fr] xl:gap-4">
 
         {/* Left: Logo + Title */}
         <Link to={dashboardPath} className="flex min-w-0 flex-1 items-center gap-2 md:gap-3 lg:flex-none">
@@ -205,7 +205,7 @@ export const UserHeader = () => {
         </Link>
 
         {/* Center: Nav — visible desde lg */}
-        <nav aria-label="Principal" className="hidden lg:flex items-center justify-center gap-1 xl:gap-2">
+        <nav aria-label="Principal" className="hidden lg:flex items-center justify-center gap-1 xl:gap-1">
           {navItems.map((item) => (
             <Link
               key={item.label}
@@ -219,7 +219,7 @@ export const UserHeader = () => {
         </nav>
 
         {/* Right: Actions */}
-        <div className="flex items-center flex-shrink-0 justify-end gap-2 xl:gap-3">
+        <div className="flex items-center flex-shrink-0 justify-end gap-4 xl:gap-3">
           {/* Campana — completamente fuera del configRef */}
           <NotificationBell />
 
@@ -231,7 +231,7 @@ export const UserHeader = () => {
             aria-expanded={mobileMenuOpen}
             aria-controls="authenticated-mobile-navigation"
           >
-            {mobileMenuOpen ? <X size={22} strokeWidth={2.5} /> : <Menu size={22} strokeWidth={2.5} />}
+            {mobileMenuOpen ? <X size={21} strokeWidth={2.5} /> : <Menu size={18} strokeWidth={2.5} />}
           </button>
 
           <div className="hidden h-7 w-px flex-shrink-0 bg-gray-200 lg:block" />

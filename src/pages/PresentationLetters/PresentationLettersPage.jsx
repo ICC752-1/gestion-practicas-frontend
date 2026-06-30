@@ -35,6 +35,7 @@ const PRACTICE_TYPES = [
   'Práctica de Estudio II',
   'Práctica Controlada',
 ];
+
 const getPracticeCardEntryMotion = (delay = 0) => ({
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
@@ -272,8 +273,8 @@ const StudentLetterCard = ({ letter, onDownload, downloadingId }) => (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-lg font-black text-gray-950">{letter.practice_type}</h3>
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-black text-green-700">
+          <h3 className="text-lg font-bold text-gray-900">{letter.practice_type}</h3>
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
             <CheckCircle2 size={13} />
             Generada
           </span>
@@ -291,7 +292,7 @@ const StudentLetterCard = ({ letter, onDownload, downloadingId }) => (
         type="button"
         disabled={downloadingId === letter.id}
         onClick={() => onDownload(letter)}
-        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] disabled:opacity-60"
+        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#b01e52] disabled:opacity-60 cursor-pointer"
       >
         {downloadingId === letter.id ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
         Descargar
@@ -329,7 +330,7 @@ const StudentView = ({
               <FileText size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-black text-gray-950">Generar carta</h3>
+              <h3 className="text-xl font-bold text-gray-900">Generar carta</h3>
               <p className="mt-1 text-sm text-gray-500">
                 Selecciona el tipo de práctica. El sistema genera el PDF y registra el envío a tu correo.
               </p>
@@ -355,7 +356,7 @@ const StudentView = ({
             type="button"
             disabled={generating}
             onClick={() => onGenerate(practiceType)}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 font-black text-white transition hover:bg-[#b01e52] disabled:opacity-60"
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 font-semibold text-white transition hover:bg-[#b01e52] disabled:opacity-60 cursor-pointer"
           >
             {generating ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
             Generar carta de presentación
@@ -366,7 +367,7 @@ const StudentView = ({
           className="rounded-2xl border border-[#d22864]/10 bg-[#fff0f6] p-5 text-sm text-[#8B1D46]"
           {...getPracticeCardEntryMotion(0.18)}
         >
-          <h3 className="font-black">Regla de uso</h3>
+          <h3 className="font-bold">Regla de uso</h3>
           <p className="mt-2 leading-relaxed">
             La carta es opcional. No bloquea inducción, inscripción, aprobación,
             agenda ni seguimiento de práctica.
@@ -379,11 +380,11 @@ const StudentView = ({
         {...getPracticeCardEntryMotion(0.16)}
       >
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-black text-gray-950">Mis cartas generadas</h2>
+          <h2 className="text-xl font-bold text-gray-900">Mis cartas generadas</h2>
           <button
             type="button"
             onClick={onRefresh}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-black text-gray-700 shadow-sm ring-1 ring-gray-100 transition hover:bg-gray-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-gray-100 transition hover:bg-gray-50 cursor-pointer"
           >
             <RefreshCw size={16} />
             Actualizar
@@ -404,7 +405,7 @@ const StudentView = ({
             {...getPracticeCardEntryMotion(0.2)}
           >
             <Mail className="mx-auto text-gray-300" size={44} />
-            <h3 className="mt-4 text-lg font-black text-gray-900">
+            <h3 className="mt-4 text-lg font-bold text-gray-900">
               Aún no tienes cartas generadas
             </h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
@@ -513,7 +514,7 @@ const TemplateEditor = ({
           className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
           {...getPracticeCardEntryMotion(0.08)}
         >
-          <h3 className="text-lg font-black text-gray-950">Plantilla por práctica</h3>
+          <h3 className="text-lg font-bold text-gray-900">Plantilla por práctica</h3>
           <label className="mt-4 block text-sm font-bold text-gray-700">
             Tipo de práctica
             <select
@@ -579,7 +580,7 @@ const TemplateEditor = ({
                           <button
                             type="button"
                             onClick={() => handleCopyVariable(variable.token)}
-                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs transition ${
+                            className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border text-xs transition ${
                               isCopied
                                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                                 : 'border-gray-200 bg-white text-gray-500 hover:border-[#d22864] hover:text-[#d22864]'
@@ -657,7 +658,7 @@ const TemplateEditor = ({
                 type="button"
                 onClick={handleOpenPreview}
                 disabled={previewLoading}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-black text-white transition hover:bg-gray-800"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-black text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {previewLoading ? <Loader2 className="animate-spin" size={17} /> : <Eye size={17} />}
                 Previsualizar PDF
@@ -849,7 +850,7 @@ const TemplateEditor = ({
                       <button
                         type="button"
                         onClick={onSignatureImageDelete}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-100 bg-white px-4 py-3 text-sm font-black text-red-600 transition hover:bg-red-50"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-100 bg-white px-4 py-3 text-sm font-black text-red-600 transition hover:bg-red-50 cursor-pointer"
                       >
                         <Trash2 size={16} />
                         Quitar firma
@@ -876,7 +877,7 @@ const TemplateEditor = ({
               <motion.button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d22864] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b01e52] disabled:opacity-60 cursor-pointer"
                 {...getPracticeCardEntryMotion(0.76)}
               >
                 {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
@@ -920,7 +921,7 @@ const TemplateEditor = ({
               <button
                 type="button"
                 onClick={handleClosePreview}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition hover:border-[#d22864] hover:text-[#d22864]"
+                className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition hover:border-[#d22864] hover:text-[#d22864]"
                 aria-label="Cerrar previsualización"
               >
                 <X size={18} />
@@ -1169,21 +1170,21 @@ export const PresentationLettersPanel = () => {
 
   return (
     <>
-        <motion.div
-          className="mb-6"
-          {...getPracticeCardEntryMotion()}
-        >
-          <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
-            Carta de presentación
-          </p>
-          <h1 className="mt-2 text-3xl font-black text-gray-950">
-            {isStudent ? 'Mis cartas de presentación' : 'Plantillas de carta de presentación'}
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-500">
-            El Director administra plantillas por tipo de práctica. El estudiante
-            genera automáticamente su PDF con datos reales y puede descargarlo desde esta página.
-          </p>
-        </motion.div>
+      <motion.div
+        className="mb-6"
+        {...getPracticeCardEntryMotion()}
+      >
+        <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+          Carta de presentación
+        </p>
+        <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight">
+          {isStudent ? 'Mis cartas de presentación' : 'Plantillas de carta de presentación'}
+        </h1>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600">
+          El Director administra plantillas por tipo de práctica. El estudiante
+          genera automáticamente su PDF con datos reales y puede descargarlo desde esta página.
+        </p>
+      </motion.div>
 
         {isStudent ? (
           <StudentView

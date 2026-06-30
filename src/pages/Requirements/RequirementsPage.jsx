@@ -16,7 +16,6 @@ import { Footer } from '../../components/Footer/Footer';
 import { useAuth } from '../../context/useAuth';
 import { getRedirectPathForRoles } from '../../services/roleRouting';
 
-
 const requirementCards = [
   {
     icon: PlayCircle,
@@ -69,14 +68,14 @@ export const RequirementsPage = () => {
 
       <main className="bg-white">
         {/* Botón volver */}
-          <motion.div
-            className="max-w-7xl mx-auto py-3 px-6 w-full"
-            {...getEntryMotion()}
-          >
+        <motion.div
+          className="max-w-7xl mx-auto py-3 px-6 w-full"
+          {...getEntryMotion()}
+        >
           <button
             type="button"
             onClick={() => navigate(backPath)}
-            className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-[#d22864] transition hover:underline"
+            className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-[#d22864] transition hover:underline cursor-pointer"
           >
             <ArrowLeft size={18} />
             Volver
@@ -91,7 +90,7 @@ export const RequirementsPage = () => {
             <p className="text-sm font-black uppercase tracking-wider text-[#d22864]">
               Antes de registrar tu práctica
             </p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight text-brand-medium md:text-5xl">
+            <h1 className="mt-3 text-4xl font-black tracking-tight text-gray-950 md:text-5xl">
               Requisitos e inducción estudiantil
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-gray-600">
@@ -166,7 +165,7 @@ export const RequirementsPage = () => {
                   <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#d22864] text-sm font-black text-white">
                     {index + 1}
                   </span>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="font-bold text-gray-950">{step}</p>
                     {index === 2 && (
                       <p className="mt-1 text-sm text-gray-500">

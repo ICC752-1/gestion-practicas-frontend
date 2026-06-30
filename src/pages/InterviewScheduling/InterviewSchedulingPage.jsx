@@ -78,6 +78,7 @@ const STATUS_LABELS = {
     scheduled: 'Agendada',
     completed: 'Realizada',
     no_show: 'No asistió',
+    cancelled: 'Cancelada',
 };
 const REQUEST_STATUS_LABELS = {
     pending: 'Pendiente',
@@ -201,6 +202,7 @@ const purposeLabel = (purpose) => {
 const getStatusBadgeClasses = (status) => {
     if (status === 'completed') return 'bg-green-100 text-green-700';
     if (status === 'no_show') return 'bg-amber-100 text-amber-700';
+    if (status === 'cancelled') return 'bg-red-100 text-red-700';
     return 'bg-blue-100 text-blue-700';
 };
 
@@ -1289,7 +1291,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                                     </div>
                                 )}
 
-                                {isStudent && myRequests.map((req) => {
+                                {isStudent && myRequests.filter(req => req.status !== 'scheduled').map((req) => {
                                     const preferredDatesList = parsePreferredDates(req.preferred_dates);
                                     return (
                                         <div key={req.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm space-y-4">
