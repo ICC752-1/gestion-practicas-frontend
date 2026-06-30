@@ -16,7 +16,7 @@ export const StatCard = ({ label, value, Icon, variant = 'default' }) => {
   };
 
   return (
-    <div className="relative flex min-h-0 flex-row items-center justify-between overflow-hidden rounded-2xl border border-gray-100/50 bg-white p-4 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
+    <div className="relative flex h-full min-h-0 flex-row items-center justify-between overflow-hidden rounded-2xl border border-gray-100/50 bg-white p-4 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] sm:p-6">
       <div className="min-w-0 text-left">
         <p className="text-xs font-medium leading-tight text-gray-400 sm:text-sm">{label}</p>
         <p className="mt-1 text-2xl font-bold text-gray-800 sm:text-3xl">{value}</p>
