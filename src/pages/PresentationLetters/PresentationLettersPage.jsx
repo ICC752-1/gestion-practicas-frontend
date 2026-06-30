@@ -66,10 +66,17 @@ const TEMPLATE_VARIABLES = [
     recommendedFields: 'Título, subtítulo o descripción específica.',
     icon: FileText,
   },
+  {
+    token: '{{minimum_hours}}',
+    title: 'Horas mínimas',
+    description: 'Cantidad de horas configurada para la plantilla seleccionada.',
+    example: 'Ej.: 168',
+    recommendedFields: 'Párrafo de duración y aprendizajes.',
+    icon: Hash,
+  },
 ];
 const INTERNAL_VARIABLE_TOKENS = [
   '{{current_date}}',
-  '{{minimum_hours}}',
   '{{learning_outcomes}}',
 ];
 
@@ -79,6 +86,11 @@ const TEMPLATE_READER_ROLES = new Set([
   'Director de carrera',
   'Secretaria de Carrera',
 ]);
+const DEFAULT_MINIMUM_HOURS_CLAUSE = (
+  'Es importante destacar que la duración mínima de la Práctica de Estudios I '
+  + 'es de {{minimum_hours}} horas cronológicas, y que una vez completada con éxito el/la '
+  + 'estudiante debe ser capaz de evidenciar los siguientes aprendizajes:'
+);
 
 const DEFAULT_TEMPLATE_FORM = {
   title: '',
@@ -87,6 +99,7 @@ const DEFAULT_TEMPLATE_FORM = {
   student_presentation_template: '',
   practice_description: '',
   minimum_hours: 168,
+  minimum_hours_clause: DEFAULT_MINIMUM_HOURS_CLAUSE,
   learning_outcomes: '',
   insurance_clause: '',
   closing_text: '',
@@ -144,6 +157,7 @@ const toTemplateForm = (template) => ({
   student_presentation_template: template?.student_presentation_template || '',
   practice_description: template?.practice_description || '',
   minimum_hours: template?.minimum_hours || 168,
+  minimum_hours_clause: template?.minimum_hours_clause || DEFAULT_MINIMUM_HOURS_CLAUSE,
   learning_outcomes: Array.isArray(template?.learning_outcomes)
     ? template.learning_outcomes.join('\n')
     : '',
@@ -710,11 +724,11 @@ const TemplateEditor = ({
             </motion.div>
 
             <motion.div
-              className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]"
+              className="grid items-start gap-4 md:grid-cols-[180px_minmax(0,1fr)]"
               {...getPracticeCardEntryMotion(0.46)}
             >
               <label className="text-sm font-bold text-gray-700">
-                Horas mínimas
+                Valor de horas mínimas
                 <input
                   type="number"
                   min="1"
@@ -726,6 +740,17 @@ const TemplateEditor = ({
                   required
                 />
               </label>
+              <TemplateTextarea
+                label="Párrafo de duración y aprendizajes"
+                rows={4}
+                value={form.minimum_hours_clause}
+                onValueChange={(value) => updateField('minimum_hours_clause', value)}
+                disabled={!canEdit}
+                required
+              />
+            </motion.div>
+
+            <motion.div {...getPracticeCardEntryMotion(0.5)}>
               <TemplateTextarea
                 label="Aprendizajes esperados"
                 rows={5}
