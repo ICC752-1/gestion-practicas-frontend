@@ -16,15 +16,15 @@ export const StatCard = ({ label, value, Icon, variant = 'default' }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] flex items-center border border-gray-100/50 relative overflow-hidden">
+    <div className="relative flex min-h-[116px] flex-col justify-between gap-3 overflow-hidden rounded-2xl border border-gray-100/50 bg-white p-3 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] sm:min-h-0 sm:flex-row sm:items-center sm:p-6">
       {/* El bloque de texto se queda fijo en su lugar original */}
-      <div className="text-center sm:text-left">
-        <p className="text-gray-400 text-sm font-medium">{label}</p>
-        <p className="text-3xl font-bold text-gray-800">{value}</p>
+      <div className="min-w-0 text-left">
+        <p className="text-xs font-medium leading-tight text-gray-400 sm:text-sm">{label}</p>
+        <p className="mt-1 text-2xl font-bold text-gray-800 sm:text-3xl">{value}</p>
       </div>
       
-      <div className={`${bgVariants[variant] || bgVariants.default} p-3 rounded-xl ml-auto -mr-2 flex-shrink-0`}>
-        <Icon size={32} className={`${iconVariants[variant] || iconVariants.default}`} />
+      <div className={`${bgVariants[variant] || bgVariants.default} ml-auto flex-shrink-0 rounded-xl p-2 sm:-mr-2 sm:p-3`}>
+        <Icon size={28} className={`${iconVariants[variant] || iconVariants.default}`} />
       </div>
     </div>
   );

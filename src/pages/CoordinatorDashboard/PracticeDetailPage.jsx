@@ -16,13 +16,13 @@ import { formatBenefitLabels } from '../../constants/benefits';
 
 // Componente para mostrar un detalle con ícono
 const DetailItem = ({ icon: Icon, label, value, subValue }) => (
-  <div>
-    <div className="flex items-center text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
-      <Icon className="w-4 h-4 mr-2" />
+  <div className="min-w-0">
+    <div className="mb-2 flex items-center text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
+      <Icon className="mr-2 h-4 w-4 shrink-0" />
       <span>{label}</span>
     </div>
-    <p className="text-lg font-medium text-gray-800">{value || 'No disponible'}</p>
-    {subValue && <p className="text-gray-500">{subValue}</p>}
+    <p className="break-words text-base font-medium text-gray-800 sm:text-lg">{value || 'No disponible'}</p>
+    {subValue && <p className="break-words text-sm text-gray-500 sm:text-base">{subValue}</p>}
   </div>
 );
 
@@ -31,21 +31,21 @@ const DetailSection = ({ icon: Icon, title, summary, isOpen, onToggle, children 
     <button
       type="button"
       onClick={onToggle}
-      className="flex w-full items-center justify-between gap-4 p-5 text-left transition-colors hover:bg-gray-50"
+      className="flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-gray-50 sm:gap-4 sm:p-5"
     >
-      <div className="flex items-center gap-3">
-        <div className="rounded-2xl bg-white p-3 text-[#d22864] shadow-sm">
-          <Icon size={22} />
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="shrink-0 rounded-2xl bg-white p-2.5 text-[#d22864] shadow-sm sm:p-3">
+          <Icon size={20} />
         </div>
-        <div>
+        <div className="min-w-0">
           <h3 className="font-bold text-gray-900">{title}</h3>
-          {summary && <p className="mt-0.5 text-sm font-medium text-gray-500">{summary}</p>}
+          {summary && <p className="mt-0.5 truncate text-sm font-medium text-gray-500">{summary}</p>}
         </div>
       </div>
-      {isOpen ? <ChevronUp className="text-gray-400" size={20} /> : <ChevronDown className="text-gray-400" size={20} />}
+      {isOpen ? <ChevronUp className="shrink-0 text-gray-400" size={20} /> : <ChevronDown className="shrink-0 text-gray-400" size={20} />}
     </button>
     {isOpen && (
-      <div className="border-t border-gray-100 bg-white px-5 py-6">
+      <div className="border-t border-gray-100 bg-white px-4 py-5 sm:px-5 sm:py-6">
         {children}
       </div>
     )}
@@ -74,6 +74,49 @@ const formatMoney = (amount) => {
 
   return `$${Number(amount).toLocaleString('es-CL')}`;
 };
+
+const SummaryField = ({ label, value }) => (
+  <div className="rounded-2xl bg-gray-50 p-3">
+    <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">{label}</p>
+    <p className="mt-1 break-words text-sm font-bold text-gray-800">{value || 'No disponible'}</p>
+  </div>
+);
+
+const PracticeSummaryCard = ({
+  studentName,
+  studentEmail,
+  currentStatusLabel,
+  statusClass,
+  practice,
+  companyAddress,
+}) => (
+  <section className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-black uppercase tracking-wider text-[#d22864]">Resumen de solicitud</p>
+        <h3 className="mt-1 break-words text-xl font-black text-gray-900 sm:text-2xl">{studentName}</h3>
+        {studentEmail && <p className="mt-1 break-words text-sm font-semibold text-gray-500">{studentEmail}</p>}
+      </div>
+      <span className={`inline-flex w-fit items-center rounded-full border px-3 py-1 text-sm font-bold ${statusClass}`}>
+        {currentStatusLabel}
+      </span>
+    </div>
+
+    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <SummaryField label="Tipo" value={practice.internship_type} />
+      <SummaryField label="Empresa" value={practice.org_name} />
+      <SummaryField label="Inicio" value={formatDate(practice.start_date)} />
+      <SummaryField label="Término" value={formatDate(practice.end_date)} />
+    </div>
+
+    {(companyAddress || practice.schedule) && (
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <SummaryField label="Ubicación" value={companyAddress || practice.internship_address} />
+        <SummaryField label="Horario" value={practice.schedule} />
+      </div>
+    )}
+  </section>
+);
 
 const HISTORY_ACTION_TITLES = {
   admin_update: 'Corrección administrativa',
@@ -173,8 +216,8 @@ export const PracticeDetailPage = () => {
   const [insuranceActionSuccess, setInsuranceActionSuccess] = useState('');
   const [insuranceNotes, setInsuranceNotes] = useState('');
   const [expandedSections, setExpandedSections] = useState({
-    student: true,
     practice: true,
+    student: false,
     organization: false,
     supervisor: false,
   });
@@ -397,17 +440,17 @@ export const PracticeDetailPage = () => {
     <div className="min-h-screen flex flex-col bg-ufro-bg">
       <UserHeader userName={userName} userRole={userRole} />
 
-      <main className="flex-grow container mx-auto px-4 py-8 max-w-4xl animate-fade-in">
+      <main className="container mx-auto max-w-5xl flex-grow px-4 py-6 animate-fade-in sm:py-8">
         <button
           onClick={() => navigate(adminBasePath)}
-          className="flex items-center text-ufro-primary hover:underline mb-6 font-medium cursor-pointer"
+          className="mb-6 flex items-center font-medium text-ufro-primary hover:underline"
         >
           <ArrowLeft className="mr-2" size={20} />
           Volver al Dashboard
         </button>
 
-        <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-800 mb-8">Detalle de solicitud de práctica</h2>
+        <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-xl sm:p-8">
+          <h2 className="mb-6 text-2xl font-bold text-gray-800 sm:mb-8">Detalle de solicitud de práctica</h2>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center min-h-[30vh] space-y-4">
@@ -422,23 +465,23 @@ export const PracticeDetailPage = () => {
               <p className="text-gray-500 text-center max-w-md">{error}</p>
             </div>
           ) : practice ? (
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <DetailSection
-                  icon={User}
-                  title="Estudiante"
-                  summary={studentEmail || 'Datos del solicitante'}
-                  isOpen={expandedSections.student}
-                  onToggle={() => toggleSection('student')}
-                >
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <DetailItem icon={User} label="Nombre" value={studentName} />
-                    <DetailItem icon={Mail} label="Correo" value={studentEmail} />
-                    <DetailItem icon={FileText} label="RUT" value={studentData?.rut} />
-                    <DetailItem icon={Building} label="Carrera" value={studentDegree} />
-                  </div>
-                </DetailSection>
+            <div className="space-y-6 sm:space-y-8">
+              <PracticeSummaryCard
+                studentName={studentName}
+                studentEmail={studentEmail}
+                currentStatusLabel={currentStatusLabel}
+                statusClass={getBadgeColor(currentStatusLabel)}
+                practice={practice}
+                companyAddress={companyAddress}
+              />
 
+              {/* Acciones administrativas */}
+              <ActionButtons
+                practice={practice}
+                onActionSuccess={handleActionSuccess}
+              />
+
+              <div className="space-y-4">
                 <DetailSection
                   icon={Briefcase}
                   title="Solicitud y práctica"
@@ -448,7 +491,7 @@ export const PracticeDetailPage = () => {
                 >
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div>
-                      <div className="flex items-center text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                      <div className="mb-2 flex items-center text-xs font-semibold uppercase tracking-wider text-gray-400 sm:text-sm">
                         <ShieldCheck className="w-4 h-4 mr-2" />
                         <span>Estado de solicitud</span>
                       </div>
@@ -467,8 +510,7 @@ export const PracticeDetailPage = () => {
                     <DetailItem icon={FileText} label="Fecha de registro" value={formatDateTime(practice.upload_date)} />
                     <DetailItem icon={ShieldAlert} label="Seguro escolar declarado" value={practice.has_school_insurance ? 'Sí' : 'No'} />
                   </div>
-              {/* Sección de Práctica */}
-             {practice.act_description && (
+                  {practice.act_description && (
                     <div className="mt-6 border-t border-gray-100 pt-5">
                       <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Actividades a realizar</p>
                       <p className="mt-2 text-sm leading-relaxed text-gray-700">{practice.act_description}</p>
@@ -485,48 +527,13 @@ export const PracticeDetailPage = () => {
                     </div>
                   )}
                 </DetailSection>
-
-                <DetailSection
-                  icon={Building}
-                  title="Organización"
-                  summary={companyAddress || practice.org_name || 'Datos de la organización'}
-                  isOpen={expandedSections.organization}
-                  onToggle={() => toggleSection('organization')}
-                >
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <DetailItem icon={Building} label="Nombre" value={practice.org_name} />
-                    <DetailItem icon={Briefcase} label="Rubro" value={practice.sector} />
-                    <DetailItem icon={MapPin} label="Dirección casa matriz" value={practice.address} />
-                    <DetailItem icon={MapPin} label="Ciudad" value={practice.city} />
-                    <DetailItem icon={Phone} label="Teléfono" value={practice.org_phone} />
-                    <DetailItem icon={Globe2} label="Página web" value={practice.web} />
-                  </div>
-                </DetailSection>
-
-                <DetailSection
-                  icon={User}
-                  title="Supervisor/a"
-                  summary={practice.supervisor_email || 'Datos del supervisor externo'}
-                  isOpen={expandedSections.supervisor}
-                  onToggle={() => toggleSection('supervisor')}
-                >
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <DetailItem icon={User} label="Nombre" value={practice.supervisor_name} />
-                    <DetailItem icon={Briefcase} label="Profesión" value={practice.supervisor_profession} />
-                    <DetailItem icon={Briefcase} label="Cargo" value={practice.supervisor_position} />
-                    <DetailItem icon={Building} label="Departamento" value={practice.supervisor_department} />
-                    <DetailItem icon={Mail} label="Correo" value={practice.supervisor_email} />
-                    <DetailItem icon={Phone} label="Teléfono" value={practice.supervisor_phone} />
-                  </div>
-                </DetailSection>
-
               </div>
 
               {/* Seguro escolar */}
-              <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-5">
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-4 sm:p-5">
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div className="flex gap-3">
-                    <div className="mt-1 rounded-2xl bg-white p-3 text-amber-600 shadow-sm">
+                    <div className="mt-1 h-fit rounded-2xl bg-white p-3 text-amber-600 shadow-sm">
                       {insuranceStatus === 'validated' || insuranceStatus === 'exception_authorized'
                         ? <ShieldCheck size={24} />
                         : <ShieldAlert size={24} />}
@@ -584,7 +591,7 @@ export const PracticeDetailPage = () => {
                       </p>
                     )}
 
-                    <div className="flex flex-wrap gap-3">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <button
                         type="button"
                         onClick={() => handleUpdateSchoolInsurance('validated', 'Seguro escolar validado para esta solicitud.')}
@@ -622,16 +629,61 @@ export const PracticeDetailPage = () => {
                 )}
               </div>
 
-              {/* Acciones administrativas */}
-              <ActionButtons
-                practice={practice}
-                onActionSuccess={handleActionSuccess}
-              />
+              <div className="space-y-4">
+                <DetailSection
+                  icon={User}
+                  title="Estudiante"
+                  summary={studentEmail || 'Datos del solicitante'}
+                  isOpen={expandedSections.student}
+                  onToggle={() => toggleSection('student')}
+                >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <DetailItem icon={User} label="Nombre" value={studentName} />
+                    <DetailItem icon={Mail} label="Correo" value={studentEmail} />
+                    <DetailItem icon={FileText} label="RUT" value={studentData?.rut} />
+                    <DetailItem icon={Building} label="Carrera" value={studentDegree} />
+                  </div>
+                </DetailSection>
+
+                <DetailSection
+                  icon={Building}
+                  title="Organización"
+                  summary={companyAddress || practice.org_name || 'Datos de la organización'}
+                  isOpen={expandedSections.organization}
+                  onToggle={() => toggleSection('organization')}
+                >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <DetailItem icon={Building} label="Nombre" value={practice.org_name} />
+                    <DetailItem icon={Briefcase} label="Rubro" value={practice.sector} />
+                    <DetailItem icon={MapPin} label="Dirección casa matriz" value={practice.address} />
+                    <DetailItem icon={MapPin} label="Ciudad" value={practice.city} />
+                    <DetailItem icon={Phone} label="Teléfono" value={practice.org_phone} />
+                    <DetailItem icon={Globe2} label="Página web" value={practice.web} />
+                  </div>
+                </DetailSection>
+
+                <DetailSection
+                  icon={User}
+                  title="Supervisor/a"
+                  summary={practice.supervisor_email || 'Datos del supervisor externo'}
+                  isOpen={expandedSections.supervisor}
+                  onToggle={() => toggleSection('supervisor')}
+                >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <DetailItem icon={User} label="Nombre" value={practice.supervisor_name} />
+                    <DetailItem icon={Briefcase} label="Profesión" value={practice.supervisor_profession} />
+                    <DetailItem icon={Briefcase} label="Cargo" value={practice.supervisor_position} />
+                    <DetailItem icon={Building} label="Departamento" value={practice.supervisor_department} />
+                    <DetailItem icon={Mail} label="Correo" value={practice.supervisor_email} />
+                    <DetailItem icon={Phone} label="Teléfono" value={practice.supervisor_phone} />
+                  </div>
+                </DetailSection>
+              </div>
 
               {canInviteSupervisor && (
-                <div className="rounded-2xl border border-[#ffd6e5] bg-[#fff8fb] p-5">
+                <div className="rounded-2xl border border-[#ffd6e5] bg-[#fff8fb] p-4 sm:p-5">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="font-bold text-gray-900">Evaluación del supervisor a estudiante</h3>
                       <p className="mt-1 text-sm text-gray-500">
                         Envía al supervisor un enlace de un solo uso para evaluar al estudiante en práctica.
@@ -646,7 +698,7 @@ export const PracticeDetailPage = () => {
                       type="button"
                       onClick={handleGenerateSupervisorInvitation}
                       disabled={supervisorInviteLoading || !canSendSupervisorEvaluation}
-                      className="rounded-xl bg-[#d22864] px-4 py-3 text-sm font-bold text-white hover:bg-[#b01e52] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="w-full rounded-xl bg-[#d22864] px-4 py-3 text-sm font-bold text-white hover:bg-[#b01e52] disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
                     >
                       {supervisorInviteLoading
                         ? 'Enviando...'
@@ -678,10 +730,10 @@ export const PracticeDetailPage = () => {
               )}
 
               {/* Sección de Documentos */}
-              <div className="border-t border-gray-100 pt-8 mt-8">
-                <div className="flex items-center gap-2 mb-6">
+              <div className="mt-8 border-t border-gray-100 pt-6 sm:pt-8">
+                <div className="mb-6 flex items-center gap-2">
                   <FileText className="text-ufro-primary" size={24} />
-                  <h3 className="text-xl font-bold text-gray-800">Revisión de Documentos</h3>
+                  <h3 className="text-lg font-bold text-gray-800 sm:text-xl">Revisión de Documentos</h3>
                 </div>
                 <AdminDocumentList
                   documents={documents}
@@ -693,8 +745,8 @@ export const PracticeDetailPage = () => {
               </div>
 
               {/* Historial / Timeline de Seguimiento */}
-              <div className="border-t border-gray-100 pt-8 mt-8">
-                <div className="flex items-center gap-2 mb-6">
+              <div className="mt-8 border-t border-gray-100 pt-6 sm:pt-8">
+                <div className="mb-6 flex items-center gap-2">
                   <History className="w-5 h-5 text-gray-400" />
                   <h3 className="text-lg font-bold text-gray-800">
                     Historial de Seguimiento
@@ -710,7 +762,7 @@ export const PracticeDetailPage = () => {
                     <p className="text-gray-400 text-sm font-medium">No hay registros de seguimiento para esta práctica.</p>
                   </div>
                 ) : (
-                  <div className="relative pl-6 border-l-2 border-gray-100 ml-3 space-y-6">
+                  <div className="relative ml-3 space-y-6 border-l-2 border-gray-100 pl-6">
                     {timelineEntries.map((entry) => {
                       const isLifecycleEntry = Boolean(entry.type);
                       const historyTitle = isLifecycleEntry ? entry.title : buildHistoryTitle(entry);
@@ -729,7 +781,7 @@ export const PracticeDetailPage = () => {
                           {/* Circle on the left line unificado */}
                           <div className={`absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white shadow-sm transition-transform group-hover:scale-110 ${getTimelineCircleColor(historyTitle, entry.status)}`} />
 
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 md:gap-4">
+                          <div className="flex flex-col justify-between gap-1 md:flex-row md:items-center md:gap-4">
                             <span className="font-bold text-gray-800 text-[15px]">
                               {historyTitle}
                             </span>

@@ -37,23 +37,23 @@ const Dashboard = ({
   };
 
   return (
-    <div className="pt-0 px-6 pb-6 space-y-6 w-full">
+    <div className="w-full space-y-6 px-0 pb-6 pt-0 sm:px-6">
       
       {/* Title Section / Bienvenida */}
       <motion.section
-        className="pl-2"
+        className="px-1 sm:pl-2"
         {...getEntryMotion()}
       >
-        <h2 className="text-[#d22864] font-bold text-3xl mb-1 tracking-tight">
+        <h2 className="mb-1 text-2xl font-bold tracking-tight text-[#d22864] sm:text-3xl">
           Panel de Control
         </h2>
-        <p className="text-gray-500 text-lg font-medium tracking-tight">
+        <p className="text-base font-medium tracking-tight text-gray-500 sm:text-lg">
           Bienvenido/a, <span className="font-semibold text-gray-700">{userName}</span> 👋
         </p>
       </motion.section>
 
       {/* Grid de Métricas / StatCards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
         {[
           {
             label: 'Solicitudes totales',
