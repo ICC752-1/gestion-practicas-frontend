@@ -1,4 +1,4 @@
-import { useDeferredValue, useState, useEffect, useMemo } from 'react';
+import { useCallback, useDeferredValue, useState, useEffect, useMemo } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -10,9 +10,9 @@ import {
   FileText,
   History,
   Loader2,
+  Mail,
   RefreshCw,
   Search,
-  Send,
   ShieldAlert,
   UploadCloud,
   Building2,
@@ -52,7 +52,7 @@ const DIRAE_STATUS = {
   in_review: { label: 'En revisión local', className: 'bg-sky-50 text-sky-700' },
   observed: { label: 'Observado para rectificación', className: 'bg-purple-50 text-purple-700' },
   ready: { label: 'Listo para exportar', className: 'bg-emerald-50 text-emerald-700' },
-  exported: { label: 'Expediente exportado a DIRAE', className: 'bg-[#fff0f6] text-[#d22864]' },
+  exported: { label: 'Enviado a DIRAE', className: 'bg-[#fff0f6] text-[#d22864]' },
 };
 
 const PACKAGE_REASONS = {
@@ -65,6 +65,23 @@ const PACKAGE_REASONS = {
 };
 
 const allowedUploadExtensions = ['pdf', 'docx', 'jpg', 'png', 'zip'];
+const SECRETARY_PAGE_SIZE_OPTIONS = [10, 20, 50];
+const DEFAULT_SECRETARY_INBOX_STATS = {
+  total: 0,
+  not_started: 0,
+  in_review: 0,
+  observed: 0,
+  ready: 0,
+  exported: 0,
+};
+const SECRETARY_SORT_OPTIONS = [
+  { value: 'upload_date:desc', label: 'Más recientes' },
+  { value: 'upload_date:asc', label: 'Más antiguos' },
+  { value: 'student_name:asc', label: 'Estudiante A-Z' },
+  { value: 'student_name:desc', label: 'Estudiante Z-A' },
+  { value: 'organization:asc', label: 'Organización A-Z' },
+  { value: 'dirae_status:asc', label: 'Estado DIRAE' },
+];
 
 // --- Constants for evaluations ---
 const SUPERVISOR_CRITERIA_LABELS = {
@@ -137,6 +154,41 @@ const isAdministrativeUploadType = (documentType) => (
   documentType.category === 'Administrativo' && !documentType.is_sensitive
 );
 
+const getDiraeActionErrorMessage = (error, fallback) => {
+  const detail = error.response?.data?.detail;
+  if (Array.isArray(detail)) {
+    const emailError = detail.find((item) => item.loc?.includes('dirae_email'));
+    if (emailError) return 'Ingresa un correo DIRAE válido.';
+  }
+  const internshipErrors = detail?.internships || [];
+  const allReasons = internshipErrors.flatMap((item) => item.reasons || []);
+  const uniqueReasons = [...new Set(allReasons)];
+  const readableReasons = uniqueReasons
+    .map((reason) => PACKAGE_REASONS[reason] || reason)
+    .join(' ');
+
+  return (
+    readableReasons ||
+    (typeof detail?.message === 'string' ? detail.message : null) ||
+    getErrorMessage(error, fallback)
+  );
+};
+
+const getStudentFullName = (student) => {
+  if (!student) return 'Estudiante sin nombre';
+  return `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Estudiante sin nombre';
+};
+
+const getStudentIdentifier = (student) => {
+  if (!student) return 'Sin matrícula';
+  return student.enrollment || student.rut || 'Sin matrícula';
+};
+
+const getStudentIdentifierLabel = (student) => {
+  if (!student) return 'Matrícula';
+  return student.enrollment ? 'Matrícula' : 'RUT';
+};
+
 export const SecretaryDashboardPage = () => {
   const { showToast } = useToast();
   const [internshipIdInput, setInternshipIdInput] = useState('');
@@ -157,7 +209,6 @@ export const SecretaryDashboardPage = () => {
   const [reviewComment, setReviewComment] = useState('');
   const [reviewError, setReviewError] = useState('');
   const [updatingDocumentId, setUpdatingDocumentId] = useState(null);
-  const [deriveComment, setDeriveComment] = useState('');
   const [reopenComment, setReopenComment] = useState('');
   const [diraeActionLoading, setDiraeActionLoading] = useState('');
   const [uploadDocumentTypeId, setUploadDocumentTypeId] = useState('');
@@ -165,6 +216,10 @@ export const SecretaryDashboardPage = () => {
   const [uploadError, setUploadError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [exportError, setExportError] = useState('');
+  const [emailDialog, setEmailDialog] = useState({ open: false, internshipIds: [] });
+  const [diraeEmail, setDiraeEmail] = useState('');
+  const [diraeEmailMessage, setDiraeEmailMessage] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [selfEvaluationForm, setSelfEvaluationForm] = useState(null);
   const [supervisorEvaluation, setSupervisorEvaluation] = useState(null);
   const [activeTab, setActiveTab] = useState('documents');
@@ -174,49 +229,63 @@ export const SecretaryDashboardPage = () => {
   const [globalLoading, setGlobalLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [globalSearch, setGlobalSearch] = useState('');
+  const deferredGlobalSearch = useDeferredValue(globalSearch);
   const [degreeFilter, setDegreeFilter] = useState('all');
   const [diraeStatusFilter, setDiraeStatusFilter] = useState('all');
+  const [globalTotal, setGlobalTotal] = useState(0);
+  const [globalStats, setGlobalStats] = useState(DEFAULT_SECRETARY_INBOX_STATS);
+  const [globalDegrees, setGlobalDegrees] = useState([]);
+  const [globalLimit, setGlobalLimit] = useState(10);
+  const [globalOffset, setGlobalOffset] = useState(0);
+  const [globalSortBy, setGlobalSortBy] = useState('upload_date');
+  const [globalSortDir, setGlobalSortDir] = useState('desc');
 
-  const loadAllInternships = async () => {
+  const loadAllInternships = useCallback(async () => {
     setGlobalLoading(true);
     setPageError('');
     try {
-      const data = await internshipService.getInternships();
-      const filtered = data.filter(item => 
-        item.completion_status === 'finalized' || item.dirae_status !== 'not_started'
-      );
-      setAllInternships(filtered);
+      const response = await internshipService.getSecretaryDiraeInbox({
+        limit: globalLimit,
+        offset: globalOffset,
+        search: deferredGlobalSearch.trim(),
+        degree: degreeFilter === 'all' ? undefined : degreeFilter,
+        dirae_status: diraeStatusFilter === 'all' ? undefined : diraeStatusFilter,
+        sort_by: globalSortBy,
+        sort_dir: globalSortDir,
+      });
+      const nextItems = response.items || [];
+      setAllInternships(nextItems);
+      setGlobalTotal(response.total || 0);
+      setGlobalStats(response.stats || DEFAULT_SECRETARY_INBOX_STATS);
+      setGlobalDegrees(response.degrees || []);
+      setSelectedIds((currentIds) => (
+        currentIds.filter((id) => nextItems.some((item) => item.id === id))
+      ));
     } catch (error) {
       console.error("Failed to load internships for secretary dashboard", error);
       setPageError(getErrorMessage(error, 'No se pudo cargar el listado de expedientes.'));
     } finally {
       setGlobalLoading(false);
     }
-  };
+  }, [
+    deferredGlobalSearch,
+    degreeFilter,
+    diraeStatusFilter,
+    globalLimit,
+    globalOffset,
+    globalSortBy,
+    globalSortDir,
+  ]);
 
   useEffect(() => {
     loadAllInternships();
-  }, []);
+  }, [loadAllInternships]);
 
   const uniqueDegrees = useMemo(() => {
-    return [...new Set(allInternships.map(item => item.student?.degree).filter(Boolean))];
-  }, [allInternships]);
+    return [...new Set(globalDegrees.filter(Boolean))];
+  }, [globalDegrees]);
 
-  const filteredInternships = useMemo(() => {
-    return allInternships.filter(item => {
-      const studentName = item.student ? `${item.student.first_name} ${item.student.last_name}` : '';
-      const matchesSearch = !globalSearch.trim() ||
-        studentName.toLowerCase().includes(globalSearch.toLowerCase()) ||
-        item.student?.rut?.toLowerCase().includes(globalSearch.toLowerCase()) ||
-        String(item.id).includes(globalSearch) ||
-        item.org_name?.toLowerCase().includes(globalSearch.toLowerCase());
-
-      const matchesDegree = degreeFilter === 'all' || item.student?.degree === degreeFilter;
-      const matchesDirae = diraeStatusFilter === 'all' || item.dirae_status === diraeStatusFilter;
-
-      return matchesSearch && matchesDegree && matchesDirae;
-    });
-  }, [allInternships, globalSearch, degreeFilter, diraeStatusFilter]);
+  const filteredInternships = allInternships;
 
   const readyIdsInCurrentFilter = useMemo(() => {
     return filteredInternships.filter(item => item.dirae_status === 'ready').map(item => item.id);
@@ -226,6 +295,18 @@ export const SecretaryDashboardPage = () => {
     if (readyIdsInCurrentFilter.length === 0) return false;
     return readyIdsInCurrentFilter.every(id => selectedIds.includes(id));
   }, [readyIdsInCurrentFilter, selectedIds]);
+
+  const toggleSelectedId = useCallback((id) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(selectedId => selectedId !== id) : [...prev, id]
+    );
+  }, []);
+
+  const pageStart = globalTotal === 0 ? 0 : globalOffset + 1;
+  const pageEnd = Math.min(globalOffset + globalLimit, globalTotal);
+  const currentPage = Math.floor(globalOffset / globalLimit) + 1;
+  const totalPages = Math.max(1, Math.ceil(globalTotal / globalLimit));
+  const selectedSortValue = `${globalSortBy}:${globalSortDir}`;
 
   const activeDiraeStatus = packageData?.dirae_status || internship?.dirae_status || 'not_started';
   const diraeStatus = DIRAE_STATUS[activeDiraeStatus] || DIRAE_STATUS.not_started;
@@ -363,7 +444,7 @@ export const SecretaryDashboardPage = () => {
     }
   };
 
-  const handleExportCsv = async (ids = null) => {
+  const handleExportPdf = async (ids = null) => {
     const idsToExport = ids || (activeInternshipId ? [activeInternshipId] : []);
     if (idsToExport.length === 0) return;
     setDiraeActionLoading('export');
@@ -375,54 +456,90 @@ export const SecretaryDashboardPage = () => {
       showToast({
         type: 'success',
         title: 'Exportación local generada',
-        message: 'El CSV fue generado y el/los expediente(s) marcado(s) como exportado(s) localmente.',
+        message: 'El PDF fue generado y el/los expediente(s) marcado(s) como enviado(s) a DIRAE.',
       });
       setSelectedIds([]);
       await refreshActiveExpediente();
       await loadAllInternships();
     } catch (error) {
-      console.error('Error exporting DIRAE CSV:', error);
-      const detail = error.response?.data?.detail;
-      console.error('Error detail:', detail);
-      // detail = { message: string, internships: [{ internship_id, reasons: string[] }] }
-      const internshipErrors = detail?.internships || [];
-      const allReasons = internshipErrors.flatMap((i) => i.reasons || []);
-      const uniqueReasons = [...new Set(allReasons)];
-      const readableReasons = uniqueReasons
-        .map((reason) => PACKAGE_REASONS[reason] || reason)
-        .join(' ');
-      setExportError(
-        readableReasons ||
-        (typeof detail?.message === 'string' ? detail.message : null) ||
-        getErrorMessage(error, 'No se pudo exportar el expediente.')
-      );
+      console.error('Error exporting DIRAE PDF:', error);
+      setExportError(getDiraeActionErrorMessage(error, 'No se pudo exportar el expediente.'));
     } finally {
       setDiraeActionLoading('');
     }
   };
 
-  const handleDerive = async () => {
-    if (!activeInternshipId) return;
-    const comment = deriveComment.trim();
-    if (!comment) {
-      setExportError('Ingresa un motivo para iniciar la revisión local DIRAE.');
+  const openDiraeEmailDialog = (ids = null) => {
+    const idsToSend = ids?.length ? ids : (activeInternshipId ? [activeInternshipId] : []);
+    if (idsToSend.length === 0) return;
+    setEmailDialog({ open: true, internshipIds: idsToSend });
+    setEmailError('');
+  };
+
+  const closeDiraeEmailDialog = () => {
+    if (diraeActionLoading === 'email') return;
+    setEmailDialog({ open: false, internshipIds: [] });
+    setEmailError('');
+    setDiraeEmailMessage('');
+  };
+
+  const handleEmailDiraePackage = async (event) => {
+    event.preventDefault();
+    const normalizedEmail = diraeEmail.trim();
+    if (!normalizedEmail) {
+      setEmailError('Ingresa el correo de DIRAE para enviar el expediente.');
       return;
     }
 
-    setDiraeActionLoading('derive');
+    setDiraeActionLoading('email');
+    setEmailError('');
     setExportError('');
     try {
-      await internshipService.deriveInternship(activeInternshipId, comment);
-      setDeriveComment('');
+      const result = await documentService.emailDiraeDocumentPackages({
+        internshipIds: emailDialog.internshipIds,
+        diraeEmail: normalizedEmail,
+        message: diraeEmailMessage,
+      });
+      const statusMessage = result.notification_status === 'simulated'
+        ? 'El envío quedó registrado en modo simulado. Configura SMTP real para despacho efectivo.'
+        : result.notification_status === 'sent'
+          ? 'El correo fue enviado a DIRAE con el PDF adjunto.'
+          : 'La notificación quedó registrada, pero el envío SMTP falló. Revisa la configuración de correo.';
+
+      showToast({
+        type: result.notification_status === 'failed' ? 'error' : 'success',
+        title: result.notification_status === 'failed' ? 'Correo no enviado' : 'Expediente enviado',
+        message: statusMessage,
+      });
+      setSelectedIds([]);
+      setEmailDialog({ open: false, internshipIds: [] });
+      setEmailError('');
+      setDiraeEmailMessage('');
+      await refreshActiveExpediente();
+      await loadAllInternships();
+    } catch (error) {
+      setEmailError(getDiraeActionErrorMessage(error, 'No se pudo enviar el expediente por correo.'));
+    } finally {
+      setDiraeActionLoading('');
+    }
+  };
+
+  const handleMarkReady = async () => {
+    if (!activeInternshipId) return;
+
+    setDiraeActionLoading('ready');
+    setExportError('');
+    try {
+      await internshipService.markDiraeReady(activeInternshipId);
       showToast({
         type: 'success',
-        title: 'Revisión DIRAE iniciada',
-        message: 'El estado del expediente DIRAE cambió a revisión local.',
+        title: 'Expediente listo',
+        message: 'El expediente quedó marcado como listo para envío a DIRAE.',
       });
       await refreshActiveExpediente();
       await loadAllInternships();
     } catch (error) {
-      setExportError(getErrorMessage(error, 'No se pudo iniciar la revisión DIRAE.'));
+      setExportError(getErrorMessage(error, 'No se pudo marcar el expediente como listo.'));
     } finally {
       setDiraeActionLoading('');
     }
@@ -497,54 +614,56 @@ export const SecretaryDashboardPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-ufro-bg">
       <UserHeader />
-      <main className="flex-grow container mx-auto max-w-7xl px-4 py-8">
-        <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-xl md:p-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d22864]">
-                <FileSearch size={32} />
+      <main className="flex-grow w-full px-4 py-6 sm:px-6 lg:px-8">
+        {!packageData && (
+          <section className="w-full rounded-3xl border border-gray-100 bg-white p-4 shadow-xl md:p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d22864]">
+                  <FileSearch size={26} />
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wider text-[#d22864]">
+                    Panel Secretaría
+                  </p>
+                  <h1 className="mt-1 text-2xl font-black text-gray-900 md:text-3xl">
+                    Expedientes documentales DIRAE
+                  </h1>
+                  <p className="mt-1 max-w-3xl text-sm font-medium text-gray-500">
+                    Bandeja documental para preparar expedientes, revisar adjuntos,
+                    gestionar rectificaciones y generar archivos de envío a DIRAE sin
+                    aprobar ni rechazar solicitudes académicas.
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-black uppercase tracking-wider text-[#d22864]">
-                  Panel Secretaría
-                </p>
-                <h1 className="mt-2 text-3xl font-black text-gray-900">
-                  Expedientes documentales DIRAE
-                </h1>
-                <p className="mt-2 max-w-3xl text-sm font-medium text-gray-500">
-                  Operación documental por ID de práctica. Secretaría revisa documentos,
-                  gestiona rectificaciones y genera exportaciones locales sin aprobar ni
-                  rechazar solicitudes académicas.
-                </p>
-              </div>
+
+              <form onSubmit={handleSearch} className="flex w-full flex-col gap-3 sm:flex-row lg:max-w-lg">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={internshipIdInput}
+                    onChange={(event) => setInternshipIdInput(event.target.value)}
+                    placeholder="ID de práctica"
+                    className="w-full rounded-2xl border border-gray-100 bg-gray-50 py-2.5 pl-12 pr-4 text-sm font-bold text-gray-800 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-[#d22864]/20 transition hover:opacity-90 disabled:opacity-60"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Consultar
+                </button>
+              </form>
             </div>
 
-            <form onSubmit={handleSearch} className="flex w-full flex-col gap-3 sm:flex-row lg:max-w-lg">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                <input
-                  value={internshipIdInput}
-                  onChange={(event) => setInternshipIdInput(event.target.value)}
-                  placeholder="ID de práctica"
-                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 py-3 pl-12 pr-4 text-sm font-bold text-gray-800 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-5 py-3 text-sm font-black text-white shadow-lg shadow-[#d22864]/20 transition hover:opacity-90 disabled:opacity-60"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                Consultar
-              </button>
-            </form>
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-sky-100 bg-sky-50 p-4 text-sm font-semibold text-sky-800">
-            Bandeja de entrada global para Secretaría de Carrera. Desde aquí puede listar, buscar,
-            filtrar y exportar expedientes a DIRAE en lote.
-          </div>
-        </section>
+            <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50 p-3 text-sm font-semibold text-sky-800">
+              Usa la búsqueda por ID si necesitas abrir un expediente específico.
+              La bandeja inferior permite trabajar con filtros, paginación y exportación en lote.
+            </div>
+          </section>
+        )}
 
         {pageError && (
           <section className="mt-6 rounded-3xl border border-red-100 bg-red-50 p-5 text-sm font-bold text-red-700">
@@ -567,25 +686,27 @@ export const SecretaryDashboardPage = () => {
         )}
 
         {!loading && packageData && (
-          <div className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <section className="mt-8 space-y-4">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveInternshipId(null);
+                setPackageData(null);
+                setInternship(null);
+                setSelectedIds([]);
+                loadAllInternships();
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl border border-gray-100 bg-white px-4 py-2 text-xs font-black text-gray-600 shadow-sm transition hover:border-[#d22864]/20 hover:bg-[#fff0f6] hover:text-[#d22864]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Volver a la bandeja
+            </button>
+
+            <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
             <section className="space-y-6">
               <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveInternshipId(null);
-                        setPackageData(null);
-                        setInternship(null);
-                        setSelectedIds([]);
-                        loadAllInternships();
-                      }}
-                      className="mb-3 inline-flex items-center gap-1 text-xs font-black text-gray-500 hover:text-[#d22864] transition"
-                    >
-                      <ArrowLeft className="h-3 w-3" />
-                      Volver a la bandeja
-                    </button>
                     <p className="text-xs font-black uppercase tracking-widest text-gray-400">
                       Expediente #{activeInternshipId}
                     </p>
@@ -593,7 +714,7 @@ export const SecretaryDashboardPage = () => {
                       {packageData.internship.organization || internship?.org_name || 'Organización no registrada'}
                     </h2>
                     <p className="mt-1 text-sm font-semibold text-gray-500">
-                      {student?.first_name} {student?.last_name} · {student?.rut || 'RUT no disponible'} · {student?.email || 'correo no disponible'}
+                      {getStudentFullName(student)} · {getStudentIdentifierLabel(student)}: {getStudentIdentifier(student)} · {student?.email || 'correo no disponible'}
                     </p>
                   </div>
                   <button
@@ -632,7 +753,7 @@ export const SecretaryDashboardPage = () => {
                       : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  Documentos y Diapositivas
+                  Documentos del expediente
                 </button>
                 <button
                   type="button"
@@ -663,7 +784,7 @@ export const SecretaryDashboardPage = () => {
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
-                        Documentos visibles para Secretaría
+                        Documentos del expediente
                       </p>
                     <h3 className="mt-1 text-xl font-black text-gray-900">
                       Revisión documental
@@ -835,17 +956,17 @@ export const SecretaryDashboardPage = () => {
               {activeTab === 'evaluations' && (
                 <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm space-y-6">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Evaluaciones del Proceso</p>
-                    <h3 className="mt-1 text-xl font-black text-gray-900">Autoevaluación estudiante y evaluación del supervisor a estudiante</h3>
+                    <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Evaluaciones del proceso</p>
+                    <h3 className="mt-1 text-xl font-black text-gray-900">Autoevaluación del estudiante y evaluación del supervisor</h3>
                   </div>
 
                   <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Autoevaluación Alumno */}
+                    {/* Autoevaluación del estudiante */}
                     <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
                       <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <User size={16} className="text-[#d22864]" />
-                          Autoevaluación Alumno
+                          Autoevaluación del estudiante
                         </span>
                         {selfEvaluationForm?.evaluation ? (
                           <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
@@ -968,13 +1089,12 @@ export const SecretaryDashboardPage = () => {
                 packageData={packageData}
                 exportError={exportError}
                 actionLoading={diraeActionLoading}
-                deriveComment={deriveComment}
                 reopenComment={reopenComment}
-                onDeriveCommentChange={setDeriveComment}
                 onReopenCommentChange={setReopenComment}
-                onDerive={handleDerive}
+                onMarkReady={handleMarkReady}
                 onReopen={handleReopen}
-                onExport={handleExportCsv}
+                onExport={handleExportPdf}
+                onEmail={() => openDiraeEmailDialog()}
               />
 
               <AdministrativeUploadPanel
@@ -990,27 +1110,86 @@ export const SecretaryDashboardPage = () => {
 
               <TrackingPanel tracking={diraeTracking} />
             </aside>
-          </div>
+            </div>
+          </section>
         )}
 
         {!loading && !activeInternshipId && (
-          <section className="mt-8 space-y-6">
-            {/* Filtros de la bandeja global */}
-            <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center flex-1">
-                <div className="relative max-w-md w-full">
+          <section className="mt-8 space-y-5">
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+              <SecretaryInboxStatCard label="Resultados" value={globalTotal} helper="según filtros" />
+              <SecretaryInboxStatCard label="En revisión local" value={globalStats.in_review} helper="en preparación" />
+              <SecretaryInboxStatCard label="Observados" value={globalStats.observed} helper="requieren corrección" />
+              <SecretaryInboxStatCard label="Listos DIRAE" value={globalStats.ready} helper="exportables" tone="success" />
+              <SecretaryInboxStatCard label="Enviados DIRAE" value={globalStats.exported} helper="ya enviados" tone="accent" />
+            </div>
+
+            <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+                    Bandeja documental
+                  </p>
+                  <h2 className="mt-1 text-xl font-black text-gray-900">
+                    Preparación para envío a DIRAE
+                  </h2>
+                  <p className="mt-1 text-sm font-semibold text-gray-500">
+                    Mostrando {pageStart}-{pageEnd} de {globalTotal} expedientes.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                  <button
+                    type="button"
+                    onClick={loadAllInternships}
+                    disabled={globalLoading}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-xs font-black text-gray-700 transition hover:bg-white disabled:opacity-60"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${globalLoading ? 'animate-spin' : ''}`} />
+                    Actualizar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExportPdf(selectedIds)}
+                    disabled={selectedIds.length === 0 || diraeActionLoading === 'export'}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-5 py-3 text-xs font-black text-white shadow-md shadow-[#d22864]/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
+                  >
+                    {diraeActionLoading === 'export' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                    Generar PDF DIRAE ({selectedIds.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openDiraeEmailDialog(selectedIds)}
+                    disabled={selectedIds.length === 0 || diraeActionLoading === 'email'}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#d22864]/20 bg-white px-5 py-3 text-xs font-black text-[#d22864] shadow-sm transition hover:bg-[#fff0f6] disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-100 disabled:text-gray-400"
+                  >
+                    {diraeActionLoading === 'email' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
+                    Enviar por email ({selectedIds.length})
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.4fr)_repeat(4,minmax(0,1fr))]">
+                <div className="relative">
                   <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <input
                     value={globalSearch}
-                    onChange={(e) => setGlobalSearch(e.target.value)}
-                    placeholder="Buscar por estudiante, RUT u organización"
+                    onChange={(event) => {
+                      setGlobalSearch(event.target.value);
+                      setGlobalOffset(0);
+                    }}
+                    placeholder="Buscar por estudiante, matrícula, RUT u organización"
                     className="w-full rounded-2xl border border-gray-100 bg-gray-50 py-2.5 pl-10 pr-4 text-xs font-semibold text-gray-800 outline-none focus:border-[#d22864]/30 focus:bg-white transition"
                   />
                 </div>
                 <select
                   value={degreeFilter}
-                  onChange={(e) => setDegreeFilter(e.target.value)}
-                  className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                  onChange={(event) => {
+                    setDegreeFilter(event.target.value);
+                    setGlobalOffset(0);
+                    setSelectedIds([]);
+                  }}
+                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
                 >
                   <option value="all">Todas las carreras</option>
                   {uniqueDegrees.map((deg) => (
@@ -1019,146 +1198,444 @@ export const SecretaryDashboardPage = () => {
                 </select>
                 <select
                   value={diraeStatusFilter}
-                  onChange={(e) => setDiraeStatusFilter(e.target.value)}
-                  className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                  onChange={(event) => {
+                    setDiraeStatusFilter(event.target.value);
+                    setGlobalOffset(0);
+                    setSelectedIds([]);
+                  }}
+                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
                 >
                   <option value="all">Todos los estados DIRAE</option>
                   <option value="not_started">No iniciado</option>
                   <option value="in_review">En revisión local</option>
                   <option value="observed">Observado</option>
                   <option value="ready">Listo para exportar</option>
-                  <option value="exported">Exportado a DIRAE</option>
+                  <option value="exported">Enviado a DIRAE</option>
+                </select>
+                <select
+                  value={selectedSortValue}
+                  onChange={(event) => {
+                    const [nextSortBy, nextSortDir] = event.target.value.split(':');
+                    setGlobalSortBy(nextSortBy);
+                    setGlobalSortDir(nextSortDir);
+                    setGlobalOffset(0);
+                    setSelectedIds([]);
+                  }}
+                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                >
+                  {SECRETARY_SORT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={globalLimit}
+                  onChange={(event) => {
+                    setGlobalLimit(Number(event.target.value));
+                    setGlobalOffset(0);
+                    setSelectedIds([]);
+                  }}
+                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30 md:col-span-2 xl:col-span-1"
+                >
+                  {SECRETARY_PAGE_SIZE_OPTIONS.map((size) => (
+                    <option key={size} value={size}>{size} por página</option>
+                  ))}
                 </select>
               </div>
-
-              {/* Botón de exportación masiva */}
-              <button
-                type="button"
-                onClick={() => handleExportCsv(selectedIds)}
-                disabled={selectedIds.length === 0 || diraeActionLoading === 'export'}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-5 py-3 text-xs font-black text-white shadow-md shadow-[#d22864]/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
-              >
-                {diraeActionLoading === 'export' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                Exportar Lote ({selectedIds.length})
-              </button>
             </div>
 
-            {/* Listado / Tabla */}
-            <div className="rounded-3xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+            <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
               {globalLoading ? (
                 <div className="py-20 text-center">
                   <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#d22864]" />
-                  <p className="mt-3 text-xs font-black uppercase tracking-widest text-gray-400">Cargando bandeja global...</p>
+                  <p className="mt-3 text-xs font-black uppercase tracking-widest text-gray-400">Cargando bandeja documental...</p>
                 </div>
               ) : filteredInternships.length === 0 ? (
                 <div className="py-20 text-center text-gray-400">
                   <FileText className="mx-auto h-12 w-12 text-gray-300" />
                   <p className="mt-4 text-sm font-black uppercase tracking-wider text-gray-500">No se encontraron expedientes</p>
-                  <p className="mt-1 text-xs text-gray-400">Asegúrate de que existan prácticas finalizadas o en revisión local.</p>
+                  <p className="mt-1 text-xs text-gray-400">Ajusta los filtros o revisa si existen prácticas finalizadas o en preparación DIRAE.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-gray-100 bg-gray-50/55 text-[10px] font-black uppercase tracking-wider text-gray-400">
-                        <th className="py-4 px-6 w-12">
-                          <input
-                            type="checkbox"
-                            disabled={readyIdsInCurrentFilter.length === 0}
-                            checked={allReadySelected}
-                            onChange={() => {
-                              if (allReadySelected) {
-                                setSelectedIds(prev => prev.filter(id => !readyIdsInCurrentFilter.includes(id)));
-                              } else {
-                                setSelectedIds(prev => [...new Set([...prev, ...readyIdsInCurrentFilter])]);
-                              }
-                            }}
-                            className="h-4 w-4 rounded border-gray-300 text-[#d22864] focus:ring-[#d22864]"
-                          />
-                        </th>
-                        <th className="py-4 px-6">ID / Estudiante</th>
-                        <th className="py-4 px-6">Carrera</th>
-                        <th className="py-4 px-6">Organización / Tipo</th>
-                        <th className="py-4 px-6">Estado Práctica</th>
-                        <th className="py-4 px-6">Expediente DIRAE</th>
-                        <th className="py-4 px-6 text-center">Acción</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 text-sm">
-                      {filteredInternships.map((item) => {
-                        const diraeStatusInfo = DIRAE_STATUS[item.dirae_status] || DIRAE_STATUS.not_started;
-                        const isSelectable = item.dirae_status === 'ready';
+                <>
+                  <div className="hidden overflow-x-auto lg:block">
+                    <table className="w-full min-w-[980px] text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-100 bg-gray-50/55 text-[10px] font-black uppercase tracking-wider text-gray-400">
+                          <th className="py-4 px-6 w-12">
+                            <SelectionCheckbox
+                              disabled={readyIdsInCurrentFilter.length === 0}
+                              checked={allReadySelected}
+                              onChange={() => {
+                                if (allReadySelected) {
+                                  setSelectedIds(prev => prev.filter(id => !readyIdsInCurrentFilter.includes(id)));
+                                } else {
+                                  setSelectedIds(prev => [...new Set([...prev, ...readyIdsInCurrentFilter])]);
+                                }
+                              }}
+                              ariaLabel="Seleccionar todos los expedientes listos para exportar"
+                            />
+                          </th>
+                          <th className="py-4 px-6">Estudiante</th>
+                          <th className="py-4 px-6">Carrera</th>
+                          <th className="py-4 px-6">Organización / Tipo</th>
+                          <th className="py-4 px-6">Estado práctica</th>
+                          <th className="py-4 px-6">Expediente DIRAE</th>
+                          <th className="py-4 px-6 text-center">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 text-sm">
+                        {filteredInternships.map((item) => {
+                          const diraeStatusInfo = DIRAE_STATUS[item.dirae_status] || DIRAE_STATUS.not_started;
+                          const isSelectable = item.dirae_status === 'ready';
 
-                        return (
-                          <tr key={item.id} className="hover:bg-gray-50/50 transition">
-                            <td className="py-4 px-6">
-                              <input
-                                type="checkbox"
-                                disabled={!isSelectable}
-                                checked={selectedIds.includes(item.id)}
-                                onChange={() => {
-                                  setSelectedIds(prev =>
-                                    prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
-                                  );
-                                }}
-                                className="h-4 w-4 rounded border-gray-300 text-[#d22864] focus:ring-[#d22864] disabled:opacity-40 disabled:cursor-not-allowed"
-                              />
-                            </td>
-                            <td className="py-4 px-6">
-                              <div>
-                                <p className="font-bold text-gray-900">{item.student ? `${item.student.first_name} ${item.student.last_name}` : 'Estudiante sin nombre'}</p>
-                                <p className="text-xs text-gray-400 mt-0.5">ID: #{item.id} · RUT: {item.student?.rut || 'Sin RUT'}</p>
-                              </div>
-                            </td>
-                            <td className="py-4 px-6">
-                              <span className="text-xs text-gray-500 font-semibold">{item.student?.degree || 'Sin carrera'}</span>
-                            </td>
-                            <td className="py-4 px-6">
-                              <div>
-                                <p className="font-bold text-gray-800">{item.org_name}</p>
-                                <p className="text-xs text-gray-400 mt-0.5">{item.internship_type}</p>
-                              </div>
-                            </td>
-                            <td className="py-4 px-6">
-                              <div>
-                                <span className="inline-flex rounded-full bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                                  {COMPLETION_STATUS[item.completion_status] || item.completion_status}
+                          return (
+                            <tr key={item.id} className="hover:bg-gray-50/50 transition">
+                              <td className="py-4 px-6">
+                                <SelectionCheckbox
+                                  disabled={!isSelectable}
+                                  checked={isSelectable && selectedIds.includes(item.id)}
+                                  onChange={() => {
+                                    if (isSelectable) toggleSelectedId(item.id);
+                                  }}
+                                  ariaLabel={`Seleccionar expediente ${item.id}`}
+                                />
+                              </td>
+                              <td className="py-4 px-6">
+                                <div>
+                                  <p className="font-bold text-gray-900">{getStudentFullName(item.student)}</p>
+                                  <p className="mt-0.5 text-xs text-gray-400">
+                                    Expediente #{item.id} · {getStudentIdentifierLabel(item.student)}: {getStudentIdentifier(item.student)}
+                                  </p>
+                                </div>
+                              </td>
+                              <td className="py-4 px-6">
+                                <span className="text-xs text-gray-500 font-semibold">{item.student?.degree || 'Sin carrera'}</span>
+                              </td>
+                              <td className="py-4 px-6">
+                                <div>
+                                  <p className="font-bold text-gray-800">{item.org_name}</p>
+                                  <p className="mt-0.5 text-xs text-gray-400">{item.internship_type}</p>
+                                </div>
+                              </td>
+                              <td className="py-4 px-6">
+                                <div className="flex flex-wrap gap-1.5">
+                                  <span className="inline-flex rounded-full bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                                    {COMPLETION_STATUS[item.completion_status] || item.completion_status}
+                                  </span>
+                                  {item.final_result === 'passed' && (
+                                    <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Aprobada</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-4 px-6">
+                                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${diraeStatusInfo.className}`}>
+                                  {diraeStatusInfo.label}
                                 </span>
-                                {item.final_result === 'passed' && (
-                                  <span className="ml-1 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Aprobada</span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-4 px-6">
-                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${diraeStatusInfo.className}`}>
-                                {diraeStatusInfo.label}
-                              </span>
-                            </td>
-                            <td className="py-4 px-6 text-center">
-                              <button
-                                type="button"
-                                onClick={() => loadExpediente(item.id)}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-gray-50 hover:bg-[#fff0f6] hover:text-[#d22864] px-4 py-2 text-xs font-black text-gray-700 transition"
-                              >
-                                <Eye className="h-3.5 w-3.5" />
-                                Revisar
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                              </td>
+                              <td className="py-4 px-6 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => loadExpediente(item.id)}
+                                  className="inline-flex items-center gap-1.5 rounded-xl bg-gray-50 px-4 py-2 text-xs font-black text-gray-700 transition hover:bg-[#fff0f6] hover:text-[#d22864]"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                  Revisar
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="space-y-3 p-4 lg:hidden">
+                    {filteredInternships.map((item) => {
+                      const isSelectable = item.dirae_status === 'ready';
+                      return (
+                        <SecretaryInboxMobileCard
+                          key={item.id}
+                          internship={item}
+                          selected={selectedIds.includes(item.id)}
+                          selectable={isSelectable}
+                          onToggle={() => {
+                            if (!isSelectable) return;
+                            toggleSelectedId(item.id);
+                          }}
+                          onReview={() => loadExpediente(item.id)}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  <SecretaryPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    pageStart={pageStart}
+                    pageEnd={pageEnd}
+                    total={globalTotal}
+                    onPrevious={() => {
+                      setGlobalOffset(Math.max(0, globalOffset - globalLimit));
+                      setSelectedIds([]);
+                    }}
+                    onNext={() => {
+                      setGlobalOffset(globalOffset + globalLimit);
+                      setSelectedIds([]);
+                    }}
+                    previousDisabled={globalOffset === 0}
+                    nextDisabled={globalOffset + globalLimit >= globalTotal}
+                  />
+                </>
               )}
             </div>
           </section>
         )}
       </main>
+      {emailDialog.open && (
+        <DiraeEmailModal
+          email={diraeEmail}
+          message={diraeEmailMessage}
+          error={emailError}
+          packageCount={emailDialog.internshipIds.length}
+          loading={diraeActionLoading === 'email'}
+          onEmailChange={setDiraeEmail}
+          onMessageChange={setDiraeEmailMessage}
+          onClose={closeDiraeEmailDialog}
+          onSubmit={handleEmailDiraePackage}
+        />
+      )}
       <Footer />
     </div>
   );
 };
+
+const SecretaryInboxStatCard = ({ label, value, helper, tone = 'default' }) => {
+  const toneClass = {
+    default: 'bg-white text-gray-900',
+    success: 'bg-emerald-50 text-emerald-800',
+    accent: 'bg-[#fff0f6] text-[#8B1D46]',
+  }[tone];
+
+  return (
+    <div className={`rounded-3xl border border-gray-100 p-4 shadow-sm ${toneClass}`}>
+      <p className="text-[10px] font-black uppercase tracking-widest opacity-70">{label}</p>
+      <p className="mt-2 text-2xl font-black">{value}</p>
+      <p className="mt-1 text-xs font-bold opacity-70">{helper}</p>
+    </div>
+  );
+};
+
+const SelectionCheckbox = ({
+  checked,
+  disabled = false,
+  onChange,
+  ariaLabel,
+  className = '',
+}) => (
+  <label
+    className={`inline-flex h-5 w-5 items-center justify-center ${disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'} ${className}`}
+  >
+    <input
+      type="checkbox"
+      disabled={disabled}
+      checked={checked}
+      onChange={onChange}
+      aria-label={ariaLabel}
+      className="peer sr-only"
+    />
+    <span className="flex h-5 w-5 items-center justify-center rounded-md border border-gray-300 bg-white text-white shadow-sm transition peer-focus-visible:ring-2 peer-focus-visible:ring-[#d22864]/35 peer-focus-visible:ring-offset-2 peer-checked:border-[#d22864] peer-checked:bg-[#d22864]">
+      {checked && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+    </span>
+  </label>
+);
+
+const SecretaryInboxMobileCard = ({
+  internship,
+  selected,
+  selectable,
+  onToggle,
+  onReview,
+}) => {
+  const diraeStatusInfo = DIRAE_STATUS[internship.dirae_status] || DIRAE_STATUS.not_started;
+  const student = internship.student;
+
+  return (
+    <article className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+            Expediente #{internship.id}
+          </p>
+          <h3 className="mt-1 text-base font-black text-gray-900">{getStudentFullName(student)}</h3>
+          <p className="mt-1 text-xs font-semibold text-gray-500">
+            {getStudentIdentifierLabel(student)}: {getStudentIdentifier(student)}
+          </p>
+        </div>
+        <SelectionCheckbox
+          disabled={!selectable}
+          checked={selectable && selected}
+          onChange={onToggle}
+          ariaLabel={`Seleccionar expediente ${internship.id}`}
+          className="mt-1"
+        />
+      </div>
+
+      <div className="mt-4 grid gap-3 text-sm">
+        <div className="rounded-2xl bg-gray-50 p-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Carrera</p>
+          <p className="mt-1 font-bold text-gray-800">{student?.degree || 'Sin carrera'}</p>
+        </div>
+        <div className="rounded-2xl bg-gray-50 p-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Organización</p>
+          <p className="mt-1 font-bold text-gray-800">{internship.org_name}</p>
+          <p className="mt-0.5 text-xs font-semibold text-gray-500">{internship.internship_type}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600">
+            {COMPLETION_STATUS[internship.completion_status] || internship.completion_status}
+          </span>
+          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${diraeStatusInfo.className}`}>
+            {diraeStatusInfo.label}
+          </span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={onReview}
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-900 px-4 py-3 text-xs font-black text-white transition hover:bg-[#d22864]"
+      >
+        <Eye className="h-4 w-4" />
+        Revisar expediente
+      </button>
+    </article>
+  );
+};
+
+const SecretaryPagination = ({
+  currentPage,
+  totalPages,
+  pageStart,
+  pageEnd,
+  total,
+  onPrevious,
+  onNext,
+  previousDisabled,
+  nextDisabled,
+}) => (
+  <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/70 px-4 py-4 text-xs font-bold text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+    <span>
+      Página {currentPage} de {totalPages} · {pageStart}-{pageEnd} de {total}
+    </span>
+    <div className="flex gap-2">
+      <button
+        type="button"
+        onClick={onPrevious}
+        disabled={previousDisabled}
+        className="rounded-xl border border-gray-200 bg-white px-4 py-2 font-black text-gray-700 transition hover:border-[#d22864]/20 hover:text-[#d22864] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Anterior
+      </button>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={nextDisabled}
+        className="rounded-xl border border-gray-200 bg-white px-4 py-2 font-black text-gray-700 transition hover:border-[#d22864]/20 hover:text-[#d22864] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Siguiente
+      </button>
+    </div>
+  </div>
+);
+
+const DiraeEmailModal = ({
+  email,
+  message,
+  error,
+  packageCount,
+  loading,
+  onEmailChange,
+  onMessageChange,
+  onClose,
+  onSubmit,
+}) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 px-4 py-6 backdrop-blur-sm">
+    <div className="w-full max-w-xl rounded-3xl border border-gray-100 bg-white p-6 shadow-2xl">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+            Envío a DIRAE
+          </p>
+          <h2 className="mt-1 text-2xl font-black text-gray-900">
+            Enviar expediente documental por email
+          </h2>
+          <p className="mt-2 text-sm font-semibold text-gray-500">
+            Se enviarán {packageCount} expediente{packageCount === 1 ? '' : 's'} en un PDF legible para revisión DIRAE.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={loading}
+          className="rounded-2xl bg-gray-50 px-3 py-2 text-xs font-black text-gray-500 transition hover:bg-gray-100 disabled:opacity-50"
+        >
+          Cerrar
+        </button>
+      </div>
+
+      <form onSubmit={onSubmit} className="mt-5 space-y-4">
+        <label className="block">
+          <span className="text-xs font-black uppercase tracking-widest text-gray-500">
+            Correo DIRAE
+          </span>
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => onEmailChange(event.target.value)}
+            placeholder="dirae@ufrontera.cl"
+            className="mt-2 w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-black uppercase tracking-widest text-gray-500">
+            Nota opcional
+          </span>
+          <textarea
+            value={message}
+            onChange={(event) => onMessageChange(event.target.value)}
+            placeholder="Agrega una observación breve para DIRAE si corresponde."
+            className="mt-2 h-28 w-full resize-none rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
+          />
+        </label>
+
+        {error && (
+          <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="inline-flex items-center justify-center rounded-2xl border border-gray-100 bg-white px-5 py-3 text-sm font-black text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-5 py-3 text-sm font-black text-white shadow-lg shadow-[#d22864]/20 transition hover:opacity-90 disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+            Enviar a DIRAE
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+);
 
 const StatusCard = ({ label, value }) => (
   <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
@@ -1280,19 +1757,23 @@ const DiraePackagePanel = ({
   packageData,
   exportError,
   actionLoading,
-  deriveComment,
   reopenComment,
-  onDeriveCommentChange,
   onReopenCommentChange,
-  onDerive,
+  onMarkReady,
   onReopen,
   onExport,
-}) => (
+  onEmail,
+}) => {
+  const canMarkReady = ['in_review', 'observed'].includes(packageData.dirae_status);
+  const isReady = packageData.dirae_status === 'ready';
+  const isExported = packageData.dirae_status === 'exported';
+
+  return (
   <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
     <div className="flex items-start justify-between gap-4">
       <div>
-        <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Paquete DIRAE</p>
-        <h3 className="mt-1 text-xl font-black text-gray-900">Exportabilidad local</h3>
+        <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Expediente DIRAE</p>
+        <h3 className="mt-1 text-xl font-black text-gray-900">Preparación para envío</h3>
       </div>
       <span className={`rounded-full px-3 py-1 text-xs font-black ${packageData.exportable ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
         {packageData.exportable ? 'Exportable' : 'No exportable'}
@@ -1332,18 +1813,39 @@ const DiraePackagePanel = ({
         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:bg-gray-300"
       >
         {actionLoading === 'export' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-        Exportar CSV local
+        Generar PDF para DIRAE
+      </button>
+      <button
+        type="button"
+        onClick={onEmail}
+        disabled={!packageData.exportable || actionLoading === 'email'}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#d22864]/20 bg-white px-4 py-3 text-sm font-black text-[#d22864] transition hover:bg-[#fff0f6] disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-100 disabled:text-gray-400"
+      >
+        {actionLoading === 'email' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+        Enviar expediente por email
       </button>
 
-      <ActionBox
-        label="Iniciar revisión local DIRAE"
-        placeholder="Motivo de derivación"
-        value={deriveComment}
-        loading={actionLoading === 'derive'}
-        onChange={onDeriveCommentChange}
-        onSubmit={onDerive}
-        icon={<Send className="h-4 w-4" />}
-      />
+      <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+        <p className="text-xs font-black uppercase tracking-widest text-gray-500">
+          Preparación DIRAE
+        </p>
+        <p className="mt-2 text-sm font-semibold leading-relaxed text-gray-600">
+          Al abrir el expediente queda en revisión local. Al terminar la revisión, márcalo como listo para habilitar la generación o envío del PDF a DIRAE.
+        </p>
+        <button
+          type="button"
+          onClick={onMarkReady}
+          disabled={!canMarkReady || actionLoading === 'ready'}
+          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-900 px-4 py-3 text-sm font-black text-white transition hover:bg-[#d22864] disabled:cursor-not-allowed disabled:bg-gray-300"
+        >
+          {actionLoading === 'ready' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          {isExported
+            ? 'Expediente enviado a DIRAE'
+            : isReady
+              ? 'Expediente listo para envío'
+              : 'Marcar listo para envío'}
+        </button>
+      </div>
       <ActionBox
         label="Reabrir para rectificación"
         placeholder="Motivo de reapertura"
@@ -1352,10 +1854,12 @@ const DiraePackagePanel = ({
         onChange={onReopenCommentChange}
         onSubmit={onReopen}
         icon={<RefreshCw className="h-4 w-4" />}
+        submitLabel="Reabrir expediente"
       />
     </div>
   </section>
-);
+  );
+};
 
 const PackageItem = ({ item, required = false }) => (
   <div className="flex items-center justify-between rounded-2xl border border-gray-100 bg-gray-50 p-3">
@@ -1377,7 +1881,7 @@ const PackageItem = ({ item, required = false }) => (
   </div>
 );
 
-const ActionBox = ({ label, placeholder, value, loading, onChange, onSubmit, icon }) => (
+const ActionBox = ({ label, placeholder, value, loading, onChange, onSubmit, icon, submitLabel = 'Confirmar acción' }) => (
   <div className="rounded-2xl border border-gray-100 bg-gray-50 p-3">
     <p className="text-xs font-black uppercase tracking-widest text-gray-500">{label}</p>
     <textarea
@@ -1393,7 +1897,7 @@ const ActionBox = ({ label, placeholder, value, loading, onChange, onSubmit, ico
       className="mt-2 inline-flex items-center gap-2 rounded-xl bg-gray-900 px-3 py-2 text-xs font-black text-white disabled:opacity-60"
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
-      Ejecutar
+      {submitLabel}
     </button>
   </div>
 );
@@ -1414,7 +1918,7 @@ const AdministrativeUploadPanel = ({
       <div>
         <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Adjunto administrativo</p>
         <p className="mt-1 text-sm font-semibold text-gray-500">
-          Secretaría solo puede adjuntar tipos administrativos no sensibles.
+          Secretaría solo debería adjuntar documentos administrativos no sensibles.
         </p>
       </div>
     </div>
@@ -1454,14 +1958,23 @@ const AdministrativeUploadPanel = ({
 );
 
 const TrackingPanel = ({ tracking }) => (
-  <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-    <div className="flex items-center gap-3">
-      <History className="h-5 w-5 text-[#d22864]" />
-      <div>
-        <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Historial DIRAE</p>
-        <h3 className="text-lg font-black text-gray-900">Trazabilidad local</h3>
+  <details className="group rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+    <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <History className="h-5 w-5 text-[#d22864]" />
+        <div>
+          <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Historial DIRAE</p>
+          <h3 className="text-base font-black text-gray-900">Trazabilidad técnica</h3>
+        </div>
       </div>
-    </div>
+      <span className="rounded-full bg-gray-50 px-3 py-1 text-xs font-black text-gray-500 transition group-open:bg-[#fff0f6] group-open:text-[#d22864]">
+        Ver historial
+      </span>
+    </summary>
+
+    <p className="mt-3 text-xs font-semibold leading-relaxed text-gray-500">
+      Registro local de cambios del estado DIRAE. La auditoría completa queda centralizada en Superadmin.
+    </p>
 
     <div className="mt-4 space-y-3">
       {tracking.length === 0 && (
@@ -1481,7 +1994,7 @@ const TrackingPanel = ({ tracking }) => (
         </div>
       ))}
     </div>
-  </section>
+  </details>
 );
 
 export default SecretaryDashboardPage;

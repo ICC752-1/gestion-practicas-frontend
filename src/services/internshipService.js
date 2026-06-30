@@ -31,6 +31,14 @@ export const internshipService = {
     return response.data;
   },
 
+  async getSecretaryDiraeInbox(params = {}) {
+    const cleanedParams = Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    );
+    const response = await api.get('/internships/secretary/dirae', { params: cleanedParams });
+    return response.data;
+  },
+
   async getIntershipById(id) {
     const response = await api.get(`/internships/${id}`);
     return response.data;
@@ -98,6 +106,11 @@ export const internshipService = {
 
   async reopenDiraeRectification(internshipId, comment) {
     const response = await api.post(`/internships/${internshipId}/dirae-reopen`, { comment });
+    return response.data;
+  },
+
+  async markDiraeReady(internshipId) {
+    const response = await api.post(`/internships/${internshipId}/dirae-ready`);
     return response.data;
   },
 

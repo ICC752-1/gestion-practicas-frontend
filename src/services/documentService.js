@@ -103,7 +103,7 @@ export const documentService = {
   },
 
   /**
-   * Exporta paquetes documentales DIRAE en CSV.
+   * Exporta paquetes documentales DIRAE en PDF.
    * GET /dirae/document-packages/export
    */
   async exportDiraeDocumentPackages(internshipIds = []) {
@@ -122,7 +122,7 @@ export const documentService = {
 
       return {
         blob: response.data,
-        filename: filenameMatch?.[1] || 'dirae_document_packages.csv',
+        filename: filenameMatch?.[1] || 'dirae_document_packages.pdf',
       };
     } catch (error) {
       if (error.response?.data instanceof Blob) {
@@ -136,6 +136,26 @@ export const documentService = {
 
       throw error;
     }
+  },
+
+  /**
+   * Envía por email el PDF del expediente documental DIRAE.
+   * POST /dirae/document-packages/email
+   */
+  async emailDiraeDocumentPackages({ internshipIds = [], diraeEmail, message = '' }) {
+    const query = new URLSearchParams();
+    internshipIds.forEach((internshipId) => {
+      query.append('internship_ids', internshipId);
+    });
+
+    const path = query.toString()
+      ? `/dirae/document-packages/email?${query.toString()}`
+      : '/dirae/document-packages/email';
+    const response = await api.post(path, {
+      dirae_email: diraeEmail,
+      message: message.trim() || null,
+    });
+    return response.data;
   },
 
   /**

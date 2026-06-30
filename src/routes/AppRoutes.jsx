@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useParams } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import { PrivateRoute } from '../components/PrivateRoute'
 import { Login } from '../components/Login/Login'
 import { LandingPage } from '../pages/Landing/LandingPage'
@@ -43,6 +43,12 @@ const LegacyCoordinatorDetailRedirect = () => {
     const { id } = useParams()
 
     return <Navigate to={`/encargado/practica/${id}`} replace />
+}
+
+const FicaIndexRedirect = () => {
+    const location = useLocation()
+
+    return <Navigate to={{ pathname: '/fica/resumen', search: location.search }} replace />
 }
 
 const LegacyStudentTrackingRedirect = () => {
@@ -306,6 +312,11 @@ export const AppRoutes = () => {
 
           <Route
               path="/fica"
+              element={<FicaIndexRedirect />}
+          />
+
+          <Route
+              path="/fica/*"
               element={
                   <PrivateRoute allowedRoles={FICA_ROLES}>
                       <FicaDashboardPage />
