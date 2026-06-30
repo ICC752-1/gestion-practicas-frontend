@@ -631,11 +631,7 @@ export const StudentDashboardPage = () => {
                       Solo las prácticas aprobadas o finalizadas aprobadas aportan al progreso total.
                     </span>
                   </span>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Prácticas</p>
-                  <span className="font-extrabold text-3xl leading-none text-gray-950">{internships.length}</span>
-                </div>
+                </div>              
               </div>
 
               <div className="flex items-center gap-3">
