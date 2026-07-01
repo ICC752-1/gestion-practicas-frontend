@@ -89,12 +89,26 @@ const formatDateTime = (value) => {
 };
 
 const PRACTICE_PROGRESS_TEMPLATE = [
-  'Práctica de Estudio I',
-  'Práctica de Estudio II',
-  'Práctica Controlada',
-  'Tesis',
-].map((type) => ({
-  type,
+  {
+    stage: 'practice_1',
+    label: 'Práctica de Estudio I',
+    type: 'Práctica de Estudio I',
+    available_types: ['Práctica de Estudio I'],
+  },
+  {
+    stage: 'practice_2',
+    label: 'Práctica de Estudio II',
+    type: 'Práctica de Estudio II',
+    available_types: ['Práctica de Estudio II'],
+  },
+  {
+    stage: 'final_option',
+    label: 'Práctica Controlada o Tesis',
+    type: null,
+    available_types: ['Práctica Controlada', 'Tesis'],
+  },
+].map((item) => ({
+  ...item,
   requirement_status: 'Pendiente',
   display_status: 'Pendiente',
   internship_id: null,
@@ -109,12 +123,21 @@ const PRACTICE_TYPE_SHORT_LABELS = {
   'Práctica de Estudio I': 'Práctica I',
   'Práctica de Estudio II': 'Práctica II',
   'Práctica Controlada': 'Controlada',
+  'Práctica Controlada o Tesis': 'Controlada o Tesis',
   Tesis: 'Tesis',
 };
 
 const STATUS_PILL_STYLES = {
   Aprobada: 'border-emerald-100 bg-emerald-50 text-emerald-700',
   Finalizada: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+  'Práctica completada': 'border-emerald-100 bg-emerald-50 text-emerald-700',
+  'Práctica reprobada': 'border-red-100 bg-red-50 text-red-700',
+  'Finalizada, resultado pendiente': 'border-amber-100 bg-amber-50 text-amber-700',
+  'Solicitud aprobada': 'border-blue-100 bg-blue-50 text-blue-700',
+  'Solicitud pendiente': 'border-gray-200 bg-gray-50 text-gray-600',
+  'Solicitud en revisión': 'border-amber-100 bg-amber-50 text-amber-700',
+  'Solicitud en revisión DIRAE': 'border-amber-100 bg-amber-50 text-amber-700',
+  'Solicitud rechazada': 'border-red-100 bg-red-50 text-red-700',
   'En curso': 'border-blue-100 bg-blue-50 text-blue-700',
   'Pendiente de evaluaciones': 'border-sky-100 bg-sky-50 text-sky-700',
   'Pendiente de presentación': 'border-sky-100 bg-sky-50 text-sky-700',
@@ -154,12 +177,13 @@ const getAcademicProgress = (student) => {
     progress?.completed_count,
     items.filter((item) => item.is_completed).length,
   );
-  const totalCount = normalizeCount(progress?.total_count, items.length || 4);
+  const totalCount = normalizeCount(progress?.total_count, items.length || 3);
 
   return {
     completed_count: completedCount,
     total_count: totalCount,
     current_type: progress?.current_type || null,
+    current_label: progress?.current_label || null,
     current_status: progress?.current_status || null,
     items,
   };
@@ -171,6 +195,12 @@ const getProgressPercent = (progress) => {
     100,
     Math.max(0, Math.round((progress.completed_count / progress.total_count) * 100)),
   );
+};
+
+const getCurrentProgressLabel = (progress) => {
+  if (progress.current_type) return getShortPracticeType(progress.current_type);
+  if (progress.current_label) return getShortPracticeType(progress.current_label);
+  return null;
 };
 
 const SortHeader = ({ label, field, sort, onSort, align = 'left' }) => {
@@ -205,6 +235,7 @@ const StudentAccountMobileCard = ({
 }) => {
   const progress = getAcademicProgress(student);
   const progressPercent = getProgressPercent(progress);
+  const currentProgressLabel = getCurrentProgressLabel(progress);
 
   return (
     <motion.article
@@ -265,8 +296,8 @@ const StudentAccountMobileCard = ({
           />
         </div>
         <p className="mt-2 break-words text-xs font-semibold text-gray-500">
-          {progress.current_type
-            ? `${getShortPracticeType(progress.current_type)} · ${progress.current_status}`
+          {currentProgressLabel
+            ? `${currentProgressLabel} · ${progress.current_status}`
             : 'Sin práctica activa'}
         </p>
       </button>
@@ -679,6 +710,7 @@ export const StudentAccountsPanel = () => {
                   {!loading && students.map((student, index) => {
                     const progress = getAcademicProgress(student);
                     const progressPercent = getProgressPercent(progress);
+                    const currentProgressLabel = getCurrentProgressLabel(progress);
 
                     return (
                       <motion.tr
@@ -715,8 +747,8 @@ export const StudentAccountsPanel = () => {
                               />
                             </div>
                             <p className="mt-1 truncate text-[11px] font-semibold text-gray-500">
-                              {progress.current_type
-                                ? `Actual: ${getShortPracticeType(progress.current_type)}`
+                              {currentProgressLabel
+                                ? `Actual: ${currentProgressLabel}`
                                 : 'Sin práctica activa'}
                             </p>
                           </button>
@@ -870,6 +902,7 @@ export const StudentAccountsPanel = () => {
           {progressStudent && (() => {
             const progress = getAcademicProgress(progressStudent);
             const progressPercent = getProgressPercent(progress);
+            const currentProgressLabel = getCurrentProgressLabel(progress);
 
             return (
               <div className="space-y-5">
@@ -880,8 +913,8 @@ export const StudentAccountsPanel = () => {
                         {progress.completed_count} de {progress.total_count} prácticas completadas
                       </p>
                       <p className="mt-1 text-sm font-semibold text-gray-500">
-                        {progress.current_type
-                          ? `${getShortPracticeType(progress.current_type)} · ${progress.current_status}`
+                        {currentProgressLabel
+                          ? `${currentProgressLabel} · ${progress.current_status}`
                           : 'Sin práctica activa registrada'}
                       </p>
                     </div>
@@ -898,7 +931,7 @@ export const StudentAccountsPanel = () => {
                 <div className="space-y-3">
                   {progress.items.map((item) => (
                     <div
-                      key={item.type}
+                      key={item.stage || item.type}
                       className={`rounded-xl border px-4 py-4 ${
                         item.is_current
                           ? 'border-[#d22864]/40 bg-[#fff0f6]'
@@ -907,10 +940,20 @@ export const StudentAccountsPanel = () => {
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
-                          <p className="font-black text-gray-900">{item.type}</p>
-                          <p className="mt-1 text-sm font-semibold text-gray-500">
-                            Requisito académico: {item.requirement_status}
-                          </p>
+                          <p className="font-black text-gray-900">{item.label || item.type}</p>
+                          {item.stage === 'final_option' && !item.type ? (
+                            <p className="mt-1 text-sm font-semibold text-gray-500">
+                              Alternativas: {(item.available_types || []).join(' o ')}
+                            </p>
+                          ) : item.internship_id ? (
+                            <p className="mt-1 text-sm font-semibold text-gray-500">
+                              Estado de solicitud: {item.request_status || 'No disponible'}
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-sm font-semibold text-gray-500">
+                              Requisito académico: {item.requirement_status}
+                            </p>
+                          )}
                           {item.internship_id && (
                             <p className="mt-1 text-sm font-semibold text-gray-500">
                               Solicitud #{item.internship_id}
