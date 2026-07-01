@@ -1663,9 +1663,13 @@ const DiraeEmailModal = ({
 );
 
 const StatusCard = ({ label, value }) => (
-  <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
-    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</p>
-    <p className="mt-1 text-xs font-black text-gray-900">{value}</p>
+  <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 h-full flex flex-col justify-between min-h-[72px]">
+    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-tight mb-2">
+      {label}
+    </p>
+    <p className="text-xs font-black text-gray-900 mt-auto">
+      {value}
+    </p>
   </div>
 );
 

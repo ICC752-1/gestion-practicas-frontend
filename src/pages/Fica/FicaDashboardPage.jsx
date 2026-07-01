@@ -543,8 +543,8 @@ export const FicaDashboardPage = () => {
                     <section className="mt-6">
                       <div className="mb-3 flex items-end justify-between gap-3">
                         <div>
-                          <p className="text-xs font-bold uppercase text-[#b01e52]">Resumen ejecutivo</p>
-                          <h2 className="mt-1 text-xl font-bold text-gray-950">Estado general de las prácticas</h2>
+                          <p className="text-xs font-bold uppercase text-[#b01e52] px-2">Resumen ejecutivo</p>
+                          <h2 className="mt-1 text-xl font-bold text-gray-950 px-2">Estado general de las prácticas</h2>
                         </div>
                         {loading && <Loader2 className="animate-spin text-[#d22864]" aria-label="Actualizando" size={22} />}
                       </div>
@@ -610,9 +610,9 @@ export const FicaDashboardPage = () => {
                 {activeTab === 'cumplimiento' && (
                   <>
                     <section className="mt-6">
-                      <p className="text-xs font-bold uppercase text-red-700">Atención requerida</p>
-                      <h2 className="mt-1 text-xl font-bold text-gray-950">Alertas prioritarias</h2>
-                      <p className="mt-1 text-sm text-gray-600">Casos que requieren coordinación con Secretaría, Dirección o supervisores.</p>
+                      <p className="text-xs font-bold uppercase text-red-700 px-2">Atención requerida</p>
+                      <h2 className="mt-1 text-xl font-bold text-gray-950 px-2">Alertas prioritarias</h2>
+                      <p className="mt-1 text-sm text-gray-600 px-2">Casos que requieren coordinación con Secretaría, Dirección o supervisores.</p>
                       <div className="mt-3 grid gap-3 lg:grid-cols-3">
                         <AlertItem
                           title="Verano sin seguro o excepción"
@@ -713,9 +713,9 @@ export const FicaDashboardPage = () => {
 
                 {activeTab === 'distribuciones' && (
                   <section className="mt-6">
-                    <p className="text-xs font-bold uppercase text-[#b01e52]">Composición del reporte</p>
-                    <h2 className="mt-1 text-xl font-bold text-gray-950">Distribuciones institucionales</h2>
-                    <p className="mt-1 text-sm text-gray-600">Compara la concentración de prácticas según los filtros aplicados.</p>
+                    <p className="text-xs font-bold uppercase text-[#b01e52] px-2">Composición del reporte</p>
+                    <h2 className="mt-1 text-xl font-bold text-gray-950 px-2">Distribuciones institucionales</h2>
+                    <p className="mt-1 text-sm text-gray-600 px-2">Compara la concentración de prácticas según los filtros aplicados.</p>
                     <div className="mt-3 grid gap-4 lg:grid-cols-2">
                       <DistributionSection title="Por estado" rows={report.by_status} emptyText="No hay estados para los filtros seleccionados." />
                       <DistributionSection title="Por carrera" rows={report.by_career} emptyText="No hay carreras para los filtros seleccionados." />
@@ -728,9 +728,9 @@ export const FicaDashboardPage = () => {
 
                 {activeTab === 'indicadores' && (
                   <section className="mt-6">
-                    <p className="text-xs font-bold uppercase text-[#b01e52]">Desempeño institucional</p>
-                    <h2 className="mt-1 text-xl font-bold text-gray-950">Indicadores y tiempos de tramitación</h2>
-                    <p className="mt-1 text-sm text-gray-600">Revisa tasas administrativas y duración de los principales hitos.</p>
+                    <p className="text-xs font-bold uppercase text-[#b01e52] px-2 ">Desempeño institucional</p>
+                    <h2 className="mt-1 text-xl font-bold text-gray-950 px-2">Indicadores y tiempos de tramitación</h2>
+                    <p className="mt-1 text-sm text-gray-600 px-2">Revisa tasas administrativas y duración de los principales hitos.</p>
                     <div className="mt-3 grid gap-5 lg:grid-cols-2">
                       <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center gap-2">
