@@ -48,11 +48,11 @@ const FINAL_RESULT = {
 };
 
 const DIRAE_STATUS = {
-  not_started: { label: 'No iniciado', className: 'bg-gray-100 text-gray-700' },
-  in_review: { label: 'En revisión local', className: 'bg-sky-50 text-sky-700' },
-  observed: { label: 'Observado para rectificación', className: 'bg-purple-50 text-purple-700' },
-  ready: { label: 'Listo para exportar', className: 'bg-emerald-50 text-emerald-700' },
-  exported: { label: 'Enviado a DIRAE', className: 'bg-[#fff0f6] text-[#d22864]' },
+  not_started: { label: 'No iniciado', className: 'bg-gray-50 text-gray-700 border-gray-200/60' },
+  in_review: { label: 'En revisión local', className: 'bg-sky-50 text-sky-800 border-sky-200/50' },
+  observed: { label: 'Observado para rectificación', className: 'bg-purple-50 text-purple-800 border-purple-200/50' },
+  ready: { label: 'Listo para exportar', className: 'bg-emerald-50 text-emerald-800 border-emerald-200/50' },
+  exported: { label: 'Enviado a DIRAE', className: 'bg-[#fff0f6] text-[#b01a4e] border-[#fcc2d7]/50' },
 };
 
 const PACKAGE_REASONS = {
@@ -616,51 +616,47 @@ export const SecretaryDashboardPage = () => {
       <UserHeader />
       <main className="flex-grow container mx-auto px-4 py-8 max-w-7xl space-y-6">
         {!packageData && (
-          <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff0f6] text-[#d22864]">
-                  <FileSearch size={20} />
-                </div>
-                <div className="space-y-1.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[#d22864]">
-                    Panel Secretaría
-                  </p>
-                  <h1 className="text-xl font-black text-gray-900">
-                    Expedientes documentales DIRAE
-                  </h1>
-                  <p className="text-xs font-semibold text-gray-500">
-                    Bandeja documental para preparar expedientes, revisar adjuntos,
-                    gestionar rectificaciones y generar archivos de envío a DIRAE.
-                  </p>
-                  <p className="text-[10px] font-semibold text-sky-700">
-                    Usa la búsqueda por ID para un expediente específico o la bandeja inferior para filtros y exportación en lote.
-                  </p>
-                </div>
-              </div>
-
-              <form onSubmit={handleSearch} className="flex w-full gap-2 lg:max-w-sm">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  <input
-                    value={internshipIdInput}
-                    onChange={(event) => setInternshipIdInput(event.target.value)}
-                    placeholder="ID de práctica"
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-xs font-bold text-gray-800 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#d22864] px-4 py-2 text-xs font-black text-white shadow-sm transition hover:opacity-90 disabled:opacity-60"
-                >
-                  {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
-                  Consultar
-                </button>
-              </form>
+        <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          {/* CAMBIADO A lg:items-center PARA CENTRAR VERTICALMENTE EL BUSCADOR */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#d22864]">
+                Panel Secretaría
+              </p>
+              <h1 className="text-2xl font-black text-gray-950 tracking-tight">
+                Expedientes documentales DIRAE
+              </h1>
+              <p className="text-sm font-medium text-gray-500 max-w-2xl">
+                Bandeja documental para preparar expedientes, revisar adjuntos, gestionar rectificaciones y generar archivos de envío a DIRAE.
+              </p>
+              <p className="text-xs font-semibold text-sky-700 pt-0.5">
+                Usa la búsqueda por ID para un expediente específico o la bandeja inferior para filtros y exportación en lote.
+              </p>
             </div>
-          </section>
-        )}
+
+            {/* Formulario alineado perfectamente al centro sin márgenes forzados */}
+            <form onSubmit={handleSearch} className="flex w-full gap-2 lg:max-w-md shrink-0">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  value={internshipIdInput}
+                  onChange={(event) => setInternshipIdInput(event.target.value)}
+                  placeholder="ID de práctica"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 px-4 pl-9 text-sm font-bold text-gray-800 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#d22864] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:opacity-60"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                Consultar
+              </button>
+            </form>
+          </div>
+        </section>
+      )}
 
         {pageError && (
           <section className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-xs font-bold text-red-700">
@@ -1100,8 +1096,9 @@ export const SecretaryDashboardPage = () => {
               <SecretaryInboxStatCard label="Enviados DIRAE" value={globalStats.exported} helper="ya enviados" tone="accent" />
             </div>
 
-            <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm space-y-4">
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between border-b border-gray-100 pb-3">
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-5">
+              {/* Encabezado alineado perfectamente en el centro vertical */}
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between border-b border-gray-100 pb-4">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-widest text-[#d22864]">
                     Bandeja documental
@@ -1109,44 +1106,45 @@ export const SecretaryDashboardPage = () => {
                   <h2 className="mt-0.5 text-base font-black text-gray-900">
                     Preparación para envío a DIRAE
                   </h2>
-                  <p className="text-xs font-semibold text-gray-500">
+                  <p className="text-xs font-semibold text-gray-400 mt-0.5">
                     Mostrando {pageStart}-{pageEnd} de {globalTotal} expedientes.
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                {/* Botones laterales */}
+                <div className="flex flex-wrap gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={loadAllInternships}
                     disabled={globalLoading}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-black text-gray-600 transition hover:bg-gray-50 disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 transition hover:bg-gray-50"
                   >
-                    <RefreshCw className={`h-3 w-3 ${globalLoading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-3.5 w-3.5 ${globalLoading ? 'animate-spin' : ''}`} />
                     Actualizar
                   </button>
                   <button
                     type="button"
                     onClick={() => handleExportPdf(selectedIds)}
                     disabled={selectedIds.length === 0 || diraeActionLoading === 'export'}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#d22864] px-3 py-1.5 text-[10px] font-black text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#d22864] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90"
                   >
-                    {diraeActionLoading === 'export' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                    {diraeActionLoading === 'export' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                     PDF DIRAE ({selectedIds.length})
                   </button>
                   <button
                     type="button"
                     onClick={() => openDiraeEmailDialog(selectedIds)}
                     disabled={selectedIds.length === 0 || diraeActionLoading === 'email'}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#d22864]/20 bg-white px-3 py-1.5 text-[10px] font-black text-[#d22864] shadow-sm transition hover:bg-[#fff0f6] disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-100 disabled:text-gray-400"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#d22864]/20 bg-white px-3 py-1.5 text-xs font-bold text-[#d22864] shadow-sm transition hover:bg-[#fff0f6]"
                   >
-                    {diraeActionLoading === 'email' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />}
+                    {diraeActionLoading === 'email' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
                     Email ({selectedIds.length})
                   </button>
                 </div>
               </div>
 
-              {/* Fila de Filtros Optimizada y sin la barra de búsqueda por ID duplicada */}
-              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr_auto]">
+              {/* Grid de Filtros Homogéneos y con Estilo Consistente */}
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-[2fr_1.2fr_1.2fr_1fr_auto]">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
                   <input
@@ -1154,11 +1152,14 @@ export const SecretaryDashboardPage = () => {
                     onChange={(event) => {
                       setGlobalSearch(event.target.value);
                       setGlobalOffset(0);
+                      setSelectedIds([]);
                     }}
                     placeholder="Buscar por estudiante, matrícula, RUT u organización"
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-8 pr-3 text-xs font-semibold text-gray-800 outline-none focus:border-[#d22864]/30 focus:bg-white transition"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50/50 py-2 px-3 pl-8 text-xs font-semibold text-gray-700 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
                   />
                 </div>
+
+                {/* Selects suavizados con font-semibold y color equilibrado */}
                 <select
                   value={degreeFilter}
                   onChange={(event) => {
@@ -1166,13 +1167,14 @@ export const SecretaryDashboardPage = () => {
                     setGlobalOffset(0);
                     setSelectedIds([]);
                   }}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-3 py-2 text-xs font-semibold text-gray-700 outline-none transition focus:bg-white cursor-pointer"
                 >
                   <option value="all">Todas las carreras</option>
                   {uniqueDegrees.map((deg) => (
                     <option key={deg} value={deg}>{deg}</option>
                   ))}
                 </select>
+
                 <select
                   value={diraeStatusFilter}
                   onChange={(event) => {
@@ -1180,7 +1182,7 @@ export const SecretaryDashboardPage = () => {
                     setGlobalOffset(0);
                     setSelectedIds([]);
                   }}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-3 py-2 text-xs font-semibold text-gray-700 outline-none transition focus:bg-white cursor-pointer"
                 >
                   <option value="all">Todos los estados DIRAE</option>
                   <option value="not_started">No iniciado</option>
@@ -1189,6 +1191,7 @@ export const SecretaryDashboardPage = () => {
                   <option value="ready">Listo para exportar</option>
                   <option value="exported">Enviado a DIRAE</option>
                 </select>
+
                 <select
                   value={selectedSortValue}
                   onChange={(event) => {
@@ -1198,12 +1201,13 @@ export const SecretaryDashboardPage = () => {
                     setGlobalOffset(0);
                     setSelectedIds([]);
                   }}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-3 py-2 text-xs font-semibold text-gray-700 outline-none transition focus:bg-white cursor-pointer"
                 >
                   {SECRETARY_SORT_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
+
                 <select
                   value={globalLimit}
                   onChange={(event) => {
@@ -1211,7 +1215,7 @@ export const SecretaryDashboardPage = () => {
                     setGlobalOffset(0);
                     setSelectedIds([]);
                   }}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-3 py-2 text-xs font-semibold text-gray-700 outline-none transition focus:bg-white cursor-pointer"
                 >
                   {SECRETARY_PAGE_SIZE_OPTIONS.map((size) => (
                     <option key={size} value={size}>{size} por pág.</option>
@@ -1234,98 +1238,120 @@ export const SecretaryDashboardPage = () => {
                 </div>
               ) : (
                 <>
-                  <div className="hidden overflow-x-auto lg:block">
-                    <table className="w-full min-w-[980px] text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-gray-100 bg-gray-50/55 text-[10px] font-black uppercase tracking-wider text-gray-400">
-                          <th className="py-3 px-4 w-12">
-                            <SelectionCheckbox
-                              disabled={readyIdsInCurrentFilter.length === 0}
-                              checked={allReadySelected}
-                              onChange={() => {
-                                if (allReadySelected) {
-                                  setSelectedIds(prev => prev.filter(id => !readyIdsInCurrentFilter.includes(id)));
-                                } else {
-                                  setSelectedIds(prev => [...new Set([...prev, ...readyIdsInCurrentFilter])]);
-                                }
-                              }}
-                              ariaLabel="Seleccionar todos los expedientes listos para exportar"
-                            />
-                          </th>
-                          <th className="py-3 px-4">Estudiante</th>
-                          <th className="py-3 px-4">Carrera</th>
-                          <th className="py-3 px-4">Organización / Tipo</th>
-                          <th className="py-3 px-4">Estado práctica</th>
-                          <th className="py-3 px-4">Expediente DIRAE</th>
-                          <th className="py-3 px-4 text-center">Acción</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 text-sm">
-                        {filteredInternships.map((item) => {
-                          const diraeStatusInfo = DIRAE_STATUS[item.dirae_status] || DIRAE_STATUS.not_started;
-                          const isSelectable = item.dirae_status === 'ready';
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="w-full min-w-[1000px] table-fixed border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/60 text-[11px] font-black uppercase tracking-wider text-gray-400">
+                        <th className="py-3.5 px-4 w-12 text-center align-middle">
+                          <SelectionCheckbox
+                            disabled={readyIdsInCurrentFilter.length === 0}
+                            checked={allReadySelected}
+                            onChange={() => {
+                              if (allReadySelected) {
+                                setSelectedIds(prev => prev.filter(id => !readyIdsInCurrentFilter.includes(id)));
+                              } else {
+                                setSelectedIds(prev => [...new Set([...prev, ...readyIdsInCurrentFilter])]);
+                              }
+                            }}
+                            ariaLabel="Seleccionar todos los expedientes listos para exportar"
+                          />
+                        </th>
+                        <th className="py-3.5 px-4 text-left align-middle w-[24%]">Estudiante</th>
+                        <th className="py-3.5 px-4 text-left align-middle w-[18%]">Carrera</th>
+                        <th className="py-3.5 px-4 text-left align-middle w-[22%]">Organización / Tipo</th>
+                        <th className="py-3.5 px-4 text-center align-middle w-[14%]">Estado Práctica</th>
+                        <th className="py-3.5 px-4 text-center align-middle w-[12%]">Expediente DIRAE</th>
+                        <th className="py-3.5 px-4 text-center align-middle w-[10%]">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 bg-white">
+                      {filteredInternships.map((item) => {
+                        const diraeStatusInfo = DIRAE_STATUS[item.dirae_status] || DIRAE_STATUS.not_started;
+                        const isSelectable = item.dirae_status === 'ready';
 
-                          return (
-                            <tr key={item.id} className="hover:bg-gray-50/50 transition">
-                              <td className="py-3 px-4">
-                                <SelectionCheckbox
-                                  disabled={!isSelectable}
-                                  checked={isSelectable && selectedIds.includes(item.id)}
-                                  onChange={() => {
-                                    if (isSelectable) toggleSelectedId(item.id);
-                                  }}
-                                  ariaLabel={`Seleccionar expediente ${item.id}`}
-                                />
-                              </td>
-                              <td className="py-3 px-4">
-                                <div>
-                                  <p className="font-bold text-gray-900 text-sm">{getStudentFullName(item.student)}</p>
-                                  <p className="text-[11px] text-gray-400">
-                                    #{item.id} · {getStudentIdentifierLabel(item.student)}: {getStudentIdentifier(item.student)}
-                                  </p>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <span className="text-xs text-gray-500 font-semibold">{item.student?.degree || 'Sin carrera'}</span>
-                              </td>
-                              <td className="py-3 px-4">
-                                <div>
-                                  <p className="font-bold text-gray-800 text-sm">{item.org_name}</p>
-                                  <p className="text-[11px] text-gray-400">{item.internship_type}</p>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="flex flex-wrap gap-1">
-                                  <span className="inline-flex rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                                    {COMPLETION_STATUS[item.completion_status] || item.completion_status}
-                                  </span>
-                                  {item.final_result === 'passed' && (
-                                    <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Aprobada</span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${diraeStatusInfo.className}`}>
-                                  {diraeStatusInfo.label}
+                        return (
+                          <tr key={item.id} className="hover:bg-gray-50/40 transition-colors group">
+                            {/* Checkbox */}
+                            <td className="py-4 px-4 text-center align-middle">
+                              <SelectionCheckbox
+                                disabled={!isSelectable}
+                                checked={isSelectable && selectedIds.includes(item.id)}
+                                onChange={() => {
+                                  if (isSelectable) toggleSelectedId(item.id);
+                                }}
+                                ariaLabel={`Seleccionar expediente ${item.id}`}
+                              />
+                            </td>
+
+                            {/* Estudiante */}
+                            <td className="py-4 px-4 text-left align-middle">
+                              <div className="space-y-0.5">
+                                <p className="font-bold text-gray-900 text-sm tracking-tight leading-snug">
+                                  {getStudentFullName(item.student)}
+                                </p>
+                                <p className="text-xs font-medium text-gray-400">
+                                  #{item.id} <span className="text-gray-300">·</span> {getStudentIdentifierLabel(item.student)}: {getStudentIdentifier(item.student)}
+                                </p>
+                              </div>
+                            </td>
+
+                            {/* Carrera */}
+                            <td className="py-4 px-4 text-left align-middle">
+                              <span className="text-xs text-gray-600 font-semibold leading-relaxed block">
+                                {item.student?.degree || 'Sin carrera'}
+                              </span>
+                            </td>
+
+                            {/* Organización / Tipo */}
+                            <td className="py-4 px-4 text-left align-middle">
+                              <div className="space-y-0.5">
+                                <p className="font-bold text-gray-800 text-sm tracking-tight leading-snug line-clamp-2">
+                                  {item.org_name}
+                                </p>
+                                <p className="text-xs font-medium text-gray-400">
+                                  {item.internship_type}
+                                </p>
+                              </div>
+                            </td>
+
+                            {/* Estado Práctica */}
+                            <td className="py-4 px-4 text-center align-middle">
+                              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                                <span className="inline-flex items-center rounded-full bg-gray-50 border border-gray-200 px-2.5 py-0.5 text-[11px] font-bold text-gray-600">
+                                  {COMPLETION_STATUS[item.completion_status] || item.completion_status}
                                 </span>
-                              </td>
-                              <td className="py-3 px-4 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => loadExpediente(item.id)}
-                                  className="inline-flex items-center gap-1 rounded-lg bg-gray-50 px-3 py-1.5 text-[10px] font-black text-gray-600 transition hover:bg-[#fff0f6] hover:text-[#d22864]"
-                                >
-                                  <Eye className="h-3 w-3" />
-                                  Revisar
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                                {item.final_result === 'passed' && (
+                                  <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                                    Aprobada
+                                  </span>
+                                )}
+                              </div>
+                            </td>
 
+                            {/* Expediente DIRAE */}
+                            <td className="py-4 px-4 text-center align-middle">
+                              <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold tracking-wide transition-colors ${diraeStatusInfo.className}`}>
+                                {diraeStatusInfo.label}
+                              </span>
+                            </td>
+
+                            {/* Acción */}
+                            <td className="py-4 px-4 text-center align-middle">
+                              <button
+                                type="button"
+                                onClick={() => loadExpediente(item.id)}
+                                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-700 shadow-xs transition-all hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300 active:bg-gray-100"
+                              >
+                                <Eye className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                                Revisar
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
                   <div className="space-y-2 p-3 lg:hidden">
                     {filteredInternships.map((item) => {
                       const isSelectable = item.dirae_status === 'ready';
@@ -1388,16 +1414,38 @@ export const SecretaryDashboardPage = () => {
 
 const SecretaryInboxStatCard = ({ label, value, helper, tone = 'default' }) => {
   const toneClass = {
-    default: 'bg-white text-gray-900',
-    success: 'bg-emerald-50 text-emerald-800',
-    accent: 'bg-[#fff0f6] text-[#8B1D46]',
+    default: {
+      card: 'bg-white text-gray-900 border-gray-200',
+      number: 'text-gray-950',
+      label: 'text-gray-400'
+    },
+    success: {
+      card: 'bg-emerald-50/60 text-emerald-800 border-emerald-100',
+      number: 'text-emerald-700',
+      label: 'text-emerald-600'
+    },
+    accent: {
+      card: 'bg-[#fff0f6] text-[#8B1D46] border-[#fcc2d7]',
+      number: 'text-[#d22864]',
+      label: 'text-[#8B1D46]/80'
+    },
   }[tone];
 
   return (
-    <div className={`rounded-xl border border-gray-100 p-3 shadow-sm ${toneClass}`}>
-      <p className="text-[10px] font-black uppercase tracking-widest opacity-70">{label}</p>
-      <p className="mt-1 text-xl font-black">{value}</p>
-      <p className="text-[10px] font-bold opacity-70">{helper}</p>
+    // Se aumentó a p-4 y se eliminó cualquier altura fija innecesaria
+    <div className={`rounded-xl border p-4 shadow-sm transition-all flex flex-col justify-between ${toneClass.card}`}>
+      <div>
+        <p className={`text-[10px] font-black uppercase tracking-widest ${toneClass.label}`}>
+          {label}
+        </p>
+        {/* El número ahora toma el color protagónico según el estado */}
+        <p className={`mt-1.5 text-2xl font-black tracking-tight ${toneClass.number}`}>
+          {value}
+        </p>
+      </div>
+      <p className="text-[10px] font-bold opacity-60 mt-1">
+        {helper}
+      </p>
     </div>
   );
 };
@@ -1746,95 +1794,96 @@ const DiraePackagePanel = ({
   const isExported = packageData.dirae_status === 'exported';
 
   return (
-  <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Expediente DIRAE</p>
-        <h3 className="mt-1 text-lg font-black text-gray-900">Preparación para envío</h3>
+    <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Expediente DIRAE</p>
+          <h3 className="mt-1 text-lg font-black text-gray-900">Preparación para envío</h3>
+        </div>
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${packageData.exportable ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+          {packageData.exportable ? 'Exportable' : 'No exportable'}
+        </span>
       </div>
-      <span className={`rounded-full px-3 py-1 text-xs font-black ${packageData.exportable ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-        {packageData.exportable ? 'Exportable' : 'No exportable'}
-      </span>
-    </div>
 
-    {packageData.reasons.length > 0 && (
-      <div className="mt-4 space-y-2">
-        {packageData.reasons.map((reason) => (
-          <div key={reason} className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">
-            {PACKAGE_REASONS[reason] || reason}
-          </div>
+      {packageData.reasons.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {packageData.reasons.map((reason) => (
+            <div key={reason} className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">
+              {PACKAGE_REASONS[reason] || reason}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-5 grid gap-3">
+        {/* CORREGIDO: Asegura el mapeo correcto con PackageItem */}
+        {packageData.required_documents.map((item) => (
+          <PackageItem key={item.type_id} item={item} required />
+        ))}
+        {packageData.optional_documents.map((item) => (
+          <PackageItem key={item.type_id} item={item} />
         ))}
       </div>
-    )}
 
-    <div className="mt-5 grid gap-3">
-      {packageData.required_documents.map((item) => (
-        <PackageItem key={item.type_id} item={item} required />
-      ))}
-      {packageData.optional_documents.map((item) => (
-        <PackageItem key={item.type_id} item={item} />
-      ))}
-    </div>
+      {exportError && (
+        <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">
+          {exportError}
+        </div>
+      )}
 
-    {exportError && (
-      <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">
-        {exportError}
-      </div>
-    )}
-
-    <div className="mt-5 space-y-3">
-      <button
-        type="button"
-        onClick={() => onExport()}
-        disabled={!packageData.exportable || actionLoading === 'export'}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:bg-gray-300"
-      >
-        {actionLoading === 'export' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-        Generar PDF para DIRAE
-      </button>
-      <button
-        type="button"
-        onClick={onEmail}
-        disabled={!packageData.exportable || actionLoading === 'email'}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d22864]/20 bg-white px-4 py-3 text-sm font-black text-[#d22864] transition hover:bg-[#fff0f6] disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-100 disabled:text-gray-400"
-      >
-        {actionLoading === 'email' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-        Enviar expediente por email
-      </button>
-
-      <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-        <p className="text-xs font-black uppercase tracking-widest text-gray-500">
-          Preparación DIRAE
-        </p>
-        <p className="mt-2 text-sm font-semibold leading-relaxed text-gray-600">
-          Al abrir el expediente queda en revisión local. Al terminar la revisión, márcalo como listo para habilitar la generación o envío del PDF a DIRAE.
-        </p>
+      <div className="mt-5 space-y-3">
         <button
           type="button"
-          onClick={onMarkReady}
-          disabled={!canMarkReady || actionLoading === 'ready'}
-          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-black text-white transition hover:bg-[#d22864] disabled:cursor-not-allowed disabled:bg-gray-300"
+          onClick={() => onExport()}
+          disabled={!packageData.exportable || actionLoading === 'export'}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:bg-gray-300"
         >
-          {actionLoading === 'ready' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-          {isExported
-            ? 'Expediente enviado a DIRAE'
-            : isReady
-              ? 'Expediente listo para envío'
-              : 'Marcar listo para envío'}
+          {actionLoading === 'export' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          Generar PDF para DIRAE
         </button>
+        <button
+          type="button"
+          onClick={onEmail}
+          disabled={!packageData.exportable || actionLoading === 'email'}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d22864]/20 bg-white px-4 py-3 text-sm font-black text-[#d22864] transition hover:bg-[#fff0f6] disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-100 disabled:text-gray-400"
+        >
+          {actionLoading === 'email' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+          Enviar expediente por email
+        </button>
+
+        <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+          <p className="text-xs font-black uppercase tracking-widest text-gray-500">
+            Preparación DIRAE
+          </p>
+          <p className="mt-2 text-sm font-semibold leading-relaxed text-gray-600">
+            Al abrir el expediente queda en revisión local. Al terminar la revisión, márcalo como listo para habilitar la generación o envío del PDF a DIRAE.
+          </p>
+          <button
+            type="button"
+            onClick={onMarkReady}
+            disabled={!canMarkReady || actionLoading === 'ready'}
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-black text-white transition hover:bg-[#d22864] disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            {actionLoading === 'ready' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            {isExported
+              ? 'Expediente enviado a DIRAE'
+              : isReady
+                ? 'Expediente listo para envío'
+                : 'Marcar listo para envío'}
+          </button>
+        </div>
+        <ActionBox
+          label="Reabrir para rectificación"
+          placeholder="Motivo de reapertura"
+          value={reopenComment}
+          loading={actionLoading === 'reopen'}
+          onChange={onReopenCommentChange}
+          onSubmit={onReopen}
+          icon={<RefreshCw className="h-4 w-4" />}
+          submitLabel="Reabrir expediente"
+        />
       </div>
-      <ActionBox
-        label="Reabrir para rectificación"
-        placeholder="Motivo de reapertura"
-        value={reopenComment}
-        loading={actionLoading === 'reopen'}
-        onChange={onReopenCommentChange}
-        onSubmit={onReopen}
-        icon={<RefreshCw className="h-4 w-4" />}
-        submitLabel="Reabrir expediente"
-      />
-    </div>
-  </section>
+    </section>
   );
 };
 
