@@ -152,7 +152,7 @@ export const StudentTable = ({ students = [] }) => {
   const [degreeFilter, setDegreeFilter] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
   const [practiceTypeFilter, setPracticeTypeFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Práctica Pendiente');
   const [sort, setSort] = useState(initialSort);
   const [offset, setOffset] = useState(0);
   const [openingId, setOpeningId] = useState(null);
