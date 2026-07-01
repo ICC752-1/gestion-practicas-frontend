@@ -626,7 +626,7 @@ export const StudentDashboardPage = () => {
                       <span className="mr-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
                         Progreso total
                       </span>
-                      {overallProgress.completedCount} de {overallProgress.requiredCount} aprobadas
+                      {overallProgress.completedCount} de {overallProgress.requiredCount} completadas
                     </p>
                     <span
                       className="group relative shrink-0"
@@ -639,7 +639,7 @@ export const StudentDashboardPage = () => {
                         role="tooltip"
                         className="pointer-events-none absolute right-0 top-full z-20 mt-2 hidden w-64 rounded-lg bg-gray-900 px-3 py-2 text-xs font-medium leading-5 text-white shadow-lg group-hover:block group-focus:block"
                       >
-                        Solo las prácticas aprobadas o finalizadas aprobadas aportan al progreso total.
+                        Solo las prácticas finalizadas con resultado aprobado aportan al progreso. La etapa final se cumple con Práctica Controlada o Tesis.
                       </span>
                     </span>
                   </div>              

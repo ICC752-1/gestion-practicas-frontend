@@ -1,4 +1,11 @@
-export const REQUIRED_APPROVED_INTERNSHIPS = 4;
+export const REQUIRED_PRACTICE_STAGES = 3;
+
+const PRACTICE_STAGE_BY_TYPE = {
+  'Práctica de Estudio I': 'practice_1',
+  'Práctica de Estudio II': 'practice_2',
+  'Práctica Controlada': 'final_option',
+  Tesis: 'final_option',
+};
 
 const PROGRESS_BY_STATUS = {
   Anulada: {
@@ -115,19 +122,31 @@ export const getInternshipAdministrativeProgress = (internship) => {
 };
 
 export const getOverallInternshipProgress = (internships = []) => {
-  const approvedCount = internships.filter((internship) => {
-    if (internship?.is_cancelled) return false;
-    if (internship?.completion_status === 'finalized') {
-      return internship?.final_result === 'passed';
+  const completedStages = new Set();
+
+  internships.forEach((internship) => {
+    if (
+      internship?.is_cancelled
+      || internship?.completion_status !== 'finalized'
+      || internship?.final_result !== 'passed'
+    ) {
+      return;
     }
-    return internship?.status_id === 4;
-  }).length;
-  const completedCount = Math.min(approvedCount, REQUIRED_APPROVED_INTERNSHIPS);
+
+    const practiceType = internship?.internship_type?.value
+      || internship?.internship_type;
+    const stage = PRACTICE_STAGE_BY_TYPE[practiceType];
+    if (stage) completedStages.add(stage);
+  });
+
+  const completedCount = Math.min(
+    completedStages.size,
+    REQUIRED_PRACTICE_STAGES,
+  );
 
   return {
-    approvedCount,
     completedCount,
-    requiredCount: REQUIRED_APPROVED_INTERNSHIPS,
-    percentage: Math.round((completedCount / REQUIRED_APPROVED_INTERNSHIPS) * 100),
+    requiredCount: REQUIRED_PRACTICE_STAGES,
+    percentage: Math.round((completedCount / REQUIRED_PRACTICE_STAGES) * 100),
   };
 };
