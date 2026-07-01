@@ -65,10 +65,9 @@ const getTabEntryMotion = () => ({
 });
 
 export const CoordinatorDashboardPage = () => {
-  const [statusFilter, setStatusFilter] = useState('submitted');
   const { user } = useAuth();
   const location = useLocation();
-  const { stats, students, loading, error, refreshData } = useCoordinatorDashboard(statusFilter);
+  const { stats, students, loading, error, refreshData } = useCoordinatorDashboard();
 
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
@@ -139,8 +138,6 @@ export const CoordinatorDashboardPage = () => {
       <Dashboard
         stats={stats}
         students={students}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
       />
     );
   };

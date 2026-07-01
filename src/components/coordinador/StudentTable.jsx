@@ -152,6 +152,7 @@ export const StudentTable = ({ students = [] }) => {
   const [degreeFilter, setDegreeFilter] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
   const [practiceTypeFilter, setPracticeTypeFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [sort, setSort] = useState(initialSort);
   const [offset, setOffset] = useState(0);
   const [openingId, setOpeningId] = useState(null);
@@ -182,6 +183,10 @@ export const StudentTable = ({ students = [] }) => {
 
   const uniquePracticeTypes = useMemo(() => {
     return [...new Set(students.map(getPracticeType).filter(Boolean))];
+  }, [students]);
+
+  const uniqueStatuses = useMemo(() => {
+    return [...new Set(students.map(s => getNormalizedStatus(s).value).filter(Boolean))];
   }, [students]);
 
   const filteredStudents = useMemo(() => students.filter(s => {
@@ -217,9 +222,10 @@ export const StudentTable = ({ students = [] }) => {
     const matchesDegree = degreeFilter === '' || getStudentDegree(s) === degreeFilter;
     const matchesCompany = companyFilter === '' || s.org_name === companyFilter;
     const matchesPracticeType = practiceTypeFilter === '' || getPracticeType(s) === practiceTypeFilter;
+    const matchesStatus = statusFilter === '' || getNormalizedStatus(s).value === statusFilter;
 
-    return matchesSearch && matchesDegree && matchesCompany && matchesPracticeType;
-  }), [students, searchTerm, degreeFilter, companyFilter, practiceTypeFilter]);
+    return matchesSearch && matchesDegree && matchesCompany && matchesPracticeType && matchesStatus;
+  }), [students, searchTerm, degreeFilter, companyFilter, practiceTypeFilter, statusFilter]);
 
   const sortedStudents = useMemo(() => {
     const getSortValue = (student) => {
@@ -277,10 +283,16 @@ export const StudentTable = ({ students = [] }) => {
     resetPagination();
   };
 
+  const handleStatusFilterChange = (event) => {
+    setStatusFilter(event.target.value);
+    resetPagination();
+  };
+
   const clearFilters = () => {
     setDegreeFilter('');
     setCompanyFilter('');
     setPracticeTypeFilter('');
+    setStatusFilter('');
     resetPagination();
   };
 
@@ -341,9 +353,15 @@ export const StudentTable = ({ students = [] }) => {
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full"
           {...getEntryMotion(0.04)}
         >
-          <h3 className="text-lg font-bold text-gray-800 flex-shrink-0">Solicitudes de práctica</h3>
-          
-          <div className="relative w-full sm:w-80">
+          <h3 className="text-xl font-bold text-gray-800 flex-shrink-0"> Gestión de solicitudes de práctica</h3>
+        </motion.div>
+
+        <motion.div
+          className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm text-gray-600"
+          {...getEntryMotion(0.1)}
+        >
+          {/* Buscador */}
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
@@ -353,61 +371,67 @@ export const StudentTable = ({ students = [] }) => {
               className="w-full h-10 pl-9 pr-4 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] transition-all"
             />
           </div>
-        </motion.div>
 
-        {/* Fila de Selectores */}
-        <motion.div
-          className="grid w-full gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm text-gray-600 sm:flex sm:flex-wrap sm:items-center"
-          {...getEntryMotion(0.1)}
-        >
-          <div className="flex items-center gap-1.5 font-bold text-gray-500 sm:mr-1 sm:flex-shrink-0">
-            <Filter size={16} />
-            <span>Filtros:</span>
-          </div>
+          {/* Selectores */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 font-bold text-gray-500 flex-shrink-0">
+              <Filter size={16} />
+              <span>Filtros:</span>
+            </div>
 
-          <select 
-            value={degreeFilter}
-            onChange={handleDegreeFilterChange}
-            className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
-          >
-            <option value="">Todas las Carreras</option>
-            {uniqueDegrees.map(degree => (
-              <option key={degree} value={degree}>{degree}</option>
-            ))}
-          </select>
-
-          <select 
-            value={companyFilter}
-            onChange={handleCompanyFilterChange}
-            className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
-          >
-            <option value="">Todas las Empresas</option>
-            {uniqueCompanies.map(company => (
-              <option key={company} value={company}>{company}</option>
-            ))}
-          </select>
-
-          <select
-            value={practiceTypeFilter}
-            onChange={(e) => handlePracticeTypeFilterChange(e.target.value)}
-            className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
-          >
-            <option value="">Todos los tipos</option>
-            {uniquePracticeTypes.map((practiceType) => (
-              <option key={practiceType} value={practiceType}>
-                {practiceType}
-              </option>
-            ))}
-          </select>
-
-          {(degreeFilter || companyFilter || practiceTypeFilter) && (
-            <button 
-              onClick={clearFilters}
-              className="text-left text-xs font-bold text-[#d22864] hover:underline sm:ml-auto sm:flex-shrink-0"
+            <select
+              value={degreeFilter}
+              onChange={handleDegreeFilterChange}
+              className="h-9 flex-1 min-w-[130px] rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
             >
-              Limpiar filtros
-            </button>
-          )}
+              <option value="">Todas las Carreras</option>
+              {uniqueDegrees.map(degree => (
+                <option key={degree} value={degree}>{degree}</option>
+              ))}
+            </select>
+
+            <select
+              value={companyFilter}
+              onChange={handleCompanyFilterChange}
+              className="h-9 flex-1 min-w-[130px] rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
+            >
+              <option value="">Todas las Empresas</option>
+              {uniqueCompanies.map(company => (
+                <option key={company} value={company}>{company}</option>
+              ))}
+            </select>
+
+            <select
+              value={practiceTypeFilter}
+              onChange={(e) => handlePracticeTypeFilterChange(e.target.value)}
+              className="h-9 flex-1 min-w-[130px] rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
+            >
+              <option value="">Todos los tipos</option>
+              {uniquePracticeTypes.map((practiceType) => (
+                <option key={practiceType} value={practiceType}>{practiceType}</option>
+              ))}
+            </select>
+
+            <select
+              value={statusFilter}
+              onChange={handleStatusFilterChange}
+              className="h-9 flex-1 min-w-[130px] rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
+            >
+              <option value="">Todos los estados</option>
+              {uniqueStatuses.map((status) => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+
+            {(degreeFilter || companyFilter || practiceTypeFilter || statusFilter) && (
+              <button
+                onClick={clearFilters}
+                className="text-xs font-bold text-[#d22864] hover:underline flex-shrink-0"
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
         </motion.div>
       </motion.div>
 
