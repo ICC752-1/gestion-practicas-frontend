@@ -386,7 +386,20 @@ export const StudentTable = ({ students = [] }) => {
               <option key={company} value={company}>{company}</option>
             ))}
           </select>
-          
+
+          <select
+            value={practiceTypeFilter}
+            onChange={(e) => handlePracticeTypeFilterChange(e.target.value)}
+            className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
+          >
+            <option value="">Todos los tipos</option>
+            {uniquePracticeTypes.map((practiceType) => (
+              <option key={practiceType} value={practiceType}>
+                {practiceType}
+              </option>
+            ))}
+          </select>
+
           {(degreeFilter || companyFilter || practiceTypeFilter) && (
             <button 
               onClick={clearFilters}
@@ -395,42 +408,6 @@ export const StudentTable = ({ students = [] }) => {
               Limpiar filtros
             </button>
           )}
-        </motion.div>
-
-        <motion.div
-          className="rounded-xl border border-gray-100 bg-white p-3 text-sm text-gray-600"
-          {...getEntryMotion(0.16)}
-        >
-          <span className="block text-xs font-black uppercase tracking-wide text-gray-500 sm:inline sm:mr-2">
-            Tipo de práctica:
-          </span>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-0 sm:inline-flex sm:flex-wrap">
-            <button
-              type="button"
-              onClick={() => handlePracticeTypeFilterChange('')}
-              className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${
-                practiceTypeFilter === ''
-                  ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-[#d22864] hover:text-[#d22864]'
-              }`}
-            >
-              Todas
-            </button>
-            {uniquePracticeTypes.map((practiceType) => (
-            <button
-              key={practiceType}
-              type="button"
-              onClick={() => handlePracticeTypeFilterChange(practiceType)}
-              className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${
-                practiceTypeFilter === practiceType
-                  ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-[#d22864] hover:text-[#d22864]'
-              }`}
-            >
-              {practiceType}
-            </button>
-            ))}
-          </div>
         </motion.div>
       </motion.div>
 
