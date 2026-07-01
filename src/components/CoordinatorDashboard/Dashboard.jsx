@@ -19,8 +19,6 @@ const getEntryMotion = (delay = 0) => ({
 const Dashboard = ({
   students = [],
   stats: apiStats,
-  statusFilter,
-  onStatusFilterChange,
 }) => {
   const { user } = useAuth(); // Extraemos el usuario para obtener su nombre
 
@@ -94,11 +92,7 @@ const Dashboard = ({
         id="management-section"
         {...getEntryMotion(0.36)}
       >
-        <Management
-          students={students}
-          statusFilter={statusFilter}
-          onStatusFilterChange={onStatusFilterChange}
-        />
+        <Management students={students} />
       </motion.div>
     </div>
   );

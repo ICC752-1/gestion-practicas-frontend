@@ -1173,16 +1173,16 @@ export const PresentationLettersPanel = () => {
         className="mb-6"
         {...getPracticeCardEntryMotion()}
       >
-        <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+        <p className="text-xs font-black uppercase tracking-widest text-[#d22864] px-2">
           Carta de presentación
         </p>
-        <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight">
+        <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-gray-950 tracking-tight px-2">
           {isStudent ? 'Mis cartas de presentación' : 'Plantillas de carta de presentación'}
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600">
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600 px-2">
           Si necesitas una carta de presentación emitida por tu Dirección de Carrera para buscar tu Práctica de Estudios, puedes solicitarla acá.
         </p>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600">
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-600 px-2">
           Esta carta es una herramienta clave para tu primer contacto con la organización, ya que incluye información sobre los principales resultados de aprendizaje esperados durante la práctica.
         </p>
       </motion.div>

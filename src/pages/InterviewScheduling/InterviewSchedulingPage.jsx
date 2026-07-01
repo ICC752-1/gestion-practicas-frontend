@@ -943,14 +943,14 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                 )}
                 {/* Headers */}
                 <motion.div
-                    className="mb-8 flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+                    className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between items-start"
                     variants={ENTRY_ITEM_VARIANTS}
                 >
-                    <div>
-                        <h2 className="text-3xl font-black text-slate-900 sm:text-4xl">
+                    <div className="max-w-2xl">
+                        <h2 className="text-3xl font-black text-slate-900 sm:text-4xl px-2">
                             Agendar horas y consultas
                         </h2>
-                        <p className="text-sm text-slate-500 mt-1">
+                        <p className="text-sm text-slate-500 mt-1 px-2">
                             {isAdmin
                                 ? 'Responde solicitudes de agendamiento y califica resultados de presentaciones.'
                                 : 'Solicita horas para consultas generales o presentaciones finales de tus prácticas.'}
@@ -962,7 +962,8 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                                 setDirectFormErrors({});
                                 setShowDirectScheduleModal(true);
                             }}
-                            className="flex items-center gap-2 rounded-2xl bg-[#d22864] hover:bg-[#b01e50] px-5 py-3 font-bold text-white shadow-md shadow-[#d22864]/10 transition"
+                            // CAMBIO: Añadimos 'whitespace-nowrap', 'w-fit' y 'shrink-0' para mantenerlo compacto a la derecha
+                            className="flex items-center gap-2 rounded-2xl bg-[#d22864] hover:bg-[#b01e50] px-5 py-3 font-bold text-white shadow-md shadow-[#d22864]/10 transition whitespace-nowrap w-fit shrink-0 self-start sm:self-center"
                         >
                             <CalendarPlus size={18} />
                             Agendar Presentación Directa
@@ -995,7 +996,7 @@ export const InterviewSchedulingPage = ({ embedded = false }) => {
                             </div>
                         </div>
 
-                        <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-md sm:p-6">
+                        <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-md max-w-[340px] w-full mx-auto xl:mx-0">
                             <CalendarView
                                 selectedDate={selectedDate}
                                 onSelectDate={handleCalendarDateSelect}
