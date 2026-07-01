@@ -683,7 +683,7 @@ export const StudentAccountsPanel = () => {
                     return (
                       <motion.tr
                         key={student.id}
-                        className="align-top"
+                        className="align-middle"
                         {...getEntryMotion(0.3 + index * 0.025)}
                       >
                         <td className="min-w-0 px-3 py-4">

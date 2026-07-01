@@ -152,7 +152,8 @@ export const StudentTable = ({ students = [] }) => {
   const [degreeFilter, setDegreeFilter] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
   const [practiceTypeFilter, setPracticeTypeFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Práctica Pendiente');
+
+  const [statusFilter, setStatusFilter] = useState('Pendiente');
   const [sort, setSort] = useState(initialSort);
   const [offset, setOffset] = useState(0);
   const [openingId, setOpeningId] = useState(null);
@@ -169,7 +170,7 @@ export const StudentTable = ({ students = [] }) => {
     if (statusStr.includes('revisi') || status === 'in_review') return { label: 'En Revisión', color: 'bg-blue-500', value: 'En Revisión' };
     if (statusStr.includes('aprob') || status === 'approved') return { label: 'Solicitud Aprobada', color: 'bg-emerald-500', value: 'Aprobada' };
     if (statusStr.includes('rechaz') || status === 'rejected') return { label: 'Rechazada', color: 'bg-red-500', value: 'Rechazada' };
-    if (!status || statusStr === 'pendiente' || status === 'submitted' || status === 'submited') return { label: 'Pendiente', color: 'bg-amber-500', value: 'Práctica Pendiente' };
+    if (!status || statusStr === 'pendiente' || status === 'submitted' || status === 'submited') return { label: 'Pendiente', color: 'bg-amber-500', value: 'Pendiente' };
     return { label: statusLabel || 'Pendiente', color: 'bg-gray-500', value: statusLabel || 'Pendiente' };
   };
 
@@ -181,12 +182,12 @@ export const StudentTable = ({ students = [] }) => {
     return [...new Set(students.map(s => s.org_name).filter(Boolean))];
   }, [students]);
 
-  const uniquePracticeTypes = useMemo(() => {
-    return [...new Set(students.map(getPracticeType).filter(Boolean))];
-  }, [students]);
-
   const uniqueStatuses = useMemo(() => {
     return [...new Set(students.map(s => getNormalizedStatus(s).value).filter(Boolean))];
+  }, [students]);
+
+  const uniquePracticeTypes = useMemo(() => {
+    return [...new Set(students.map(getPracticeType).filter(Boolean))];
   }, [students]);
 
   const filteredStudents = useMemo(() => students.filter(s => {
@@ -278,21 +279,26 @@ export const StudentTable = ({ students = [] }) => {
     resetPagination();
   };
 
-  const handlePracticeTypeFilterChange = (nextPracticeType) => {
-    setPracticeTypeFilter(nextPracticeType);
+  const handlePracticeTypeFilterChange = (value) => {
+    setPracticeTypeFilter(value);
     resetPagination();
   };
 
-  const handleStatusFilterChange = (event) => {
-    setStatusFilter(event.target.value);
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
     resetPagination();
   };
+
+  const statusOptions = useMemo(() => [
+    { label: 'Todas', value: '' },
+    ...uniqueStatuses.map(s => ({ label: s, value: s })),
+  ], [uniqueStatuses]);
 
   const clearFilters = () => {
     setDegreeFilter('');
     setCompanyFilter('');
     setPracticeTypeFilter('');
-    setStatusFilter('');
+    setStatusFilter('Pendiente');
     resetPagination();
   };
 
@@ -412,18 +418,7 @@ export const StudentTable = ({ students = [] }) => {
               ))}
             </select>
 
-            <select
-              value={statusFilter}
-              onChange={handleStatusFilterChange}
-              className="h-9 flex-1 min-w-[130px] rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
-            >
-              <option value="">Todos los estados</option>
-              {uniqueStatuses.map((status) => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
-
-            {(degreeFilter || companyFilter || practiceTypeFilter || statusFilter) && (
+            {(degreeFilter || companyFilter || practiceTypeFilter) && (
               <button
                 onClick={clearFilters}
                 className="text-xs font-bold text-[#d22864] hover:underline flex-shrink-0"
@@ -431,6 +426,24 @@ export const StudentTable = ({ students = [] }) => {
                 Limpiar filtros
               </button>
             )}
+          </div>
+
+          <div className="w-full border-t border-gray-200/70" />
+
+          <div className="flex flex-wrap items-center gap-1">
+            {statusOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => handleStatusFilterChange(opt.value)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  statusFilter === opt.value
+                    ? 'bg-[#d22864] text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
         </motion.div>
       </motion.div>
