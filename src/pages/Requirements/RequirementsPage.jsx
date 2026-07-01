@@ -75,7 +75,7 @@ export const RequirementsPage = () => {
           <button
             type="button"
             onClick={() => navigate(backPath)}
-            className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-[#d22864] transition hover:underline cursor-pointer"
+            className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-[#d22864] transition hover:underline cursor-pointer py-1"
           >
             <ArrowLeft size={18} />
             Volver
@@ -90,7 +90,7 @@ export const RequirementsPage = () => {
             <p className="text-sm font-black uppercase tracking-wider text-[#d22864]">
               Antes de registrar tu práctica
             </p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight text-gray-950 md:text-5xl">
+            <h1 className="mt-3 text-4xl font-black tracking-tight text-gray-90 md:text-5xl">
               Requisitos e inducción estudiantil
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-gray-600">

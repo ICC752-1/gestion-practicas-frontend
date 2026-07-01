@@ -48,11 +48,11 @@ const FINAL_RESULT = {
 };
 
 const DIRAE_STATUS = {
-  not_started: { label: 'No iniciado', className: 'bg-gray-100 text-gray-700' },
-  in_review: { label: 'En revisión local', className: 'bg-sky-50 text-sky-700' },
-  observed: { label: 'Observado para rectificación', className: 'bg-purple-50 text-purple-700' },
-  ready: { label: 'Listo para exportar', className: 'bg-emerald-50 text-emerald-700' },
-  exported: { label: 'Enviado a DIRAE', className: 'bg-[#fff0f6] text-[#d22864]' },
+  not_started: { label: 'No iniciado', className: 'bg-gray-50 text-gray-700 border-gray-200/60' },
+  in_review: { label: 'En revisión local', className: 'bg-sky-50 text-sky-800 border-sky-200/50' },
+  observed: { label: 'Observado para rectificación', className: 'bg-purple-50 text-purple-800 border-purple-200/50' },
+  ready: { label: 'Listo para exportar', className: 'bg-emerald-50 text-emerald-800 border-emerald-200/50' },
+  exported: { label: 'Enviado a DIRAE', className: 'bg-[#fff0f6] text-[#b01a4e] border-[#fcc2d7]/50' },
 };
 
 const PACKAGE_REASONS = {
@@ -614,71 +614,64 @@ export const SecretaryDashboardPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-ufro-bg">
       <UserHeader />
-      <main className="flex-grow w-full px-4 py-6 sm:px-6 lg:px-8">
+      <main className="flex-grow container mx-auto px-4 py-8 max-w-7xl space-y-6">
         {!packageData && (
-          <section className="w-full rounded-3xl border border-gray-100 bg-white p-4 shadow-xl md:p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d22864]">
-                  <FileSearch size={26} />
-                </div>
-                <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-[#d22864]">
-                    Panel Secretaría
-                  </p>
-                  <h1 className="mt-1 text-2xl font-black text-gray-900 md:text-3xl">
-                    Expedientes documentales DIRAE
-                  </h1>
-                  <p className="mt-1 max-w-3xl text-sm font-medium text-gray-500">
-                    Bandeja documental para preparar expedientes, revisar adjuntos,
-                    gestionar rectificaciones y generar archivos de envío a DIRAE sin
-                    aprobar ni rechazar solicitudes académicas.
-                  </p>
-                </div>
+        <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          {/* CAMBIADO A lg:items-center PARA CENTRAR VERTICALMENTE EL BUSCADOR */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#d22864]">
+                Panel Secretaría
+              </p>
+              <h1 className="text-2xl font-black text-gray-950 tracking-tight">
+                Expedientes documentales DIRAE
+              </h1>
+              <p className="text-sm font-medium text-gray-500 max-w-2xl">
+                Bandeja documental para preparar expedientes, revisar adjuntos, gestionar rectificaciones y generar archivos de envío a DIRAE.
+              </p>
+              <p className="text-xs font-semibold text-sky-700 pt-0.5">
+                Usa la búsqueda por ID para un expediente específico o la bandeja inferior para filtros y exportación en lote.
+              </p>
+            </div>
+
+            {/* Formulario alineado perfectamente al centro sin márgenes forzados */}
+            <form onSubmit={handleSearch} className="flex w-full gap-2 lg:max-w-md shrink-0">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  value={internshipIdInput}
+                  onChange={(event) => setInternshipIdInput(event.target.value)}
+                  placeholder="ID de práctica"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 px-4 pl-9 text-sm font-bold text-gray-800 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
+                />
               </div>
-
-              <form onSubmit={handleSearch} className="flex w-full flex-col gap-3 sm:flex-row lg:max-w-lg">
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                  <input
-                    value={internshipIdInput}
-                    onChange={(event) => setInternshipIdInput(event.target.value)}
-                    placeholder="ID de práctica"
-                    className="w-full rounded-2xl border border-gray-100 bg-gray-50 py-2.5 pl-12 pr-4 text-sm font-bold text-gray-800 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-[#d22864]/20 transition hover:opacity-90 disabled:opacity-60"
-                >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  Consultar
-                </button>
-              </form>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50 p-3 text-sm font-semibold text-sky-800">
-              Usa la búsqueda por ID si necesitas abrir un expediente específico.
-              La bandeja inferior permite trabajar con filtros, paginación y exportación en lote.
-            </div>
-          </section>
-        )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#d22864] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:opacity-60"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                Consultar
+              </button>
+            </form>
+          </div>
+        </section>
+      )}
 
         {pageError && (
-          <section className="mt-6 rounded-3xl border border-red-100 bg-red-50 p-5 text-sm font-bold text-red-700">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="mt-0.5 h-5 w-5" />
+          <section className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-xs font-bold text-red-700">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <p>{pageError}</p>
             </div>
           </section>
         )}
 
         {loading && (
-          <section className="mt-8 flex items-center justify-center rounded-3xl border border-gray-100 bg-white py-20 shadow-sm">
+          <section className="mt-6 flex items-center justify-center rounded-xl border border-gray-100 bg-white py-12 shadow-sm">
             <div className="text-center">
-              <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#d22864]" />
-              <p className="mt-4 text-sm font-black uppercase tracking-widest text-gray-500">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#d22864]" />
+              <p className="mt-3 text-xs font-black uppercase tracking-widest text-gray-500">
                 Cargando expediente
               </p>
             </div>
@@ -686,7 +679,7 @@ export const SecretaryDashboardPage = () => {
         )}
 
         {!loading && packageData && (
-          <section className="mt-8 space-y-4">
+          <section className="space-y-4">
             <button
               type="button"
               onClick={() => {
@@ -696,46 +689,46 @@ export const SecretaryDashboardPage = () => {
                 setSelectedIds([]);
                 loadAllInternships();
               }}
-              className="inline-flex items-center gap-2 rounded-2xl border border-gray-100 bg-white px-4 py-2 text-xs font-black text-gray-600 shadow-sm transition hover:border-[#d22864]/20 hover:bg-[#fff0f6] hover:text-[#d22864]"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-black text-gray-600 transition hover:border-[#d22864]/20 hover:bg-[#fff0f6] hover:text-[#d22864]"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5" />
               Volver a la bandeja
             </button>
 
-            <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <section className="space-y-6">
-              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+            <section className="space-y-4">
+              <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-gray-400">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                       Expediente #{activeInternshipId}
                     </p>
-                    <h2 className="mt-2 text-2xl font-black text-gray-900">
+                    <h2 className="mt-1 text-xl font-black text-gray-900">
                       {packageData.internship.organization || internship?.org_name || 'Organización no registrada'}
                     </h2>
-                    <p className="mt-1 text-sm font-semibold text-gray-500">
+                    <p className="text-xs font-semibold text-gray-500">
                       {getStudentFullName(student)} · {getStudentIdentifierLabel(student)}: {getStudentIdentifier(student)} · {student?.email || 'correo no disponible'}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={refreshActiveExpediente}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm font-black text-gray-700 transition hover:bg-white"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-black text-gray-600 transition hover:bg-gray-50"
                   >
-                    <RefreshCw className="h-4 w-4" />
+                    <RefreshCw className="h-3.5 w-3.5" />
                     Actualizar
                   </button>
                 </div>
 
-                <div className="mt-6 grid gap-3 md:grid-cols-4">
+                <div className="mt-4 grid gap-2 md:grid-cols-4">
                   <StatusCard label="Estado de solicitud" value={packageData.status || getStatusTitle(internship)} />
                   <StatusCard label="Estado de práctica" value={COMPLETION_STATUS[internship?.completion_status] || 'Sin dato'} />
                   <StatusCard label="Resultado final" value={FINAL_RESULT[internship?.final_result] || 'Sin dato'} />
-                  <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                       Expediente DIRAE
                     </p>
-                    <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-black ${diraeStatus.className}`}>
+                    <span className={`mt-2 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black ${diraeStatus.className}`}>
                       {diraeStatus.label}
                     </span>
                   </div>
@@ -743,11 +736,11 @@ export const SecretaryDashboardPage = () => {
               </div>
 
               {/* Tab Navigation */}
-              <div className="mt-6 flex border-b border-gray-200">
+              <div className="flex border-b border-gray-200">
                 <button
                   type="button"
                   onClick={() => setActiveTab('documents')}
-                  className={`px-6 py-3 text-sm font-bold border-b-2 transition ${
+                  className={`px-4 py-2.5 text-xs font-bold border-b-2 transition ${
                     activeTab === 'documents'
                       ? 'border-[#d22864] text-[#d22864]'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -758,7 +751,7 @@ export const SecretaryDashboardPage = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTab('registration')}
-                  className={`px-6 py-3 text-sm font-bold border-b-2 transition ${
+                  className={`px-4 py-2.5 text-xs font-bold border-b-2 transition ${
                     activeTab === 'registration'
                       ? 'border-[#d22864] text-[#d22864]'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -769,7 +762,7 @@ export const SecretaryDashboardPage = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTab('evaluations')}
-                  className={`px-6 py-3 text-sm font-bold border-b-2 transition ${
+                  className={`px-4 py-2.5 text-xs font-bold border-b-2 transition ${
                     activeTab === 'evaluations'
                       ? 'border-[#d22864] text-[#d22864]'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -780,27 +773,27 @@ export const SecretaryDashboardPage = () => {
               </div>
 
               {activeTab === 'documents' && (
-                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[#d22864]">
                         Documentos del expediente
                       </p>
-                    <h3 className="mt-1 text-xl font-black text-gray-900">
+                    <h3 className="text-sm font-black text-gray-900">
                       Revisión documental
                     </h3>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[500px]">
+                  <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[400px]">
                     <input
                       value={documentSearch}
                       onChange={(event) => setDocumentSearch(event.target.value)}
                       placeholder="Buscar documento"
-                      className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm font-semibold outline-none focus:border-[#d22864]/30 sm:col-span-1"
+                      className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold outline-none focus:border-[#d22864]/30 sm:col-span-1"
                     />
                     <select
                       value={documentTypeFilter}
                       onChange={(event) => setDocumentTypeFilter(event.target.value)}
-                      className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm font-bold outline-none focus:border-[#d22864]/30"
+                      className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
                     >
                       <option value="all">Todos los tipos</option>
                       {documentTypes.map((type) => (
@@ -810,7 +803,7 @@ export const SecretaryDashboardPage = () => {
                     <select
                       value={documentStatusFilter}
                       onChange={(event) => setDocumentStatusFilter(event.target.value)}
-                      className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm font-bold outline-none focus:border-[#d22864]/30"
+                      className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
                     >
                       <option value="all">Todos los estados</option>
                       <option value="uploaded">Cargado</option>
@@ -854,94 +847,91 @@ export const SecretaryDashboardPage = () => {
 
               {/* Pestaña 2: Ficha de Inscripción */}
               {activeTab === 'registration' && (
-                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm space-y-6">
+                <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm space-y-4">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Ficha de inscripción</p>
-                    <h3 className="mt-1 text-xl font-black text-gray-900">Datos registrados de la práctica</h3>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#d22864]">Ficha de inscripción</p>
+                    <h3 className="text-sm font-black text-gray-900">Datos registrados de la práctica</h3>
                   </div>
 
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {/* Sección Empresa */}
-                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
-                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center gap-2">
-                        <Building2 size={16} className="text-[#d22864]" />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-3 rounded-xl bg-gray-50/70 p-4 border border-gray-100">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-1.5 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <Building2 size={14} className="text-[#d22864]" />
                         Organización / Empresa
                       </h4>
-                      <div className="space-y-3 text-sm">
+                      <div className="space-y-2 text-xs">
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Nombre</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Nombre</span>
                           <span className="font-semibold text-gray-800">{internship?.org_name || '-'}</span>
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Dirección</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Dirección</span>
                           <span className="font-semibold text-gray-800">{internship?.internship_address || '-'}</span>
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Ciudad</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Ciudad</span>
                           <span className="font-semibold text-gray-800">{internship?.city || '-'}</span>
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Teléfono</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Teléfono</span>
                           <span className="font-semibold text-gray-800">{internship?.org_phone || 'No registrado'}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Sección Supervisor */}
-                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
-                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center gap-2">
-                        <User size={16} className="text-[#d22864]" />
+                    <div className="space-y-3 rounded-xl bg-gray-50/70 p-4 border border-gray-100">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-1.5 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <User size={14} className="text-[#d22864]" />
                         Supervisor/a de Práctica
                       </h4>
-                      <div className="space-y-3 text-sm">
+                      <div className="space-y-2 text-xs">
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Nombre</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Nombre</span>
                           <span className="font-semibold text-gray-800">{internship?.supervisor_name || '-'}</span>
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Correo Electrónico</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Correo Electrónico</span>
                           <span className="font-semibold text-gray-800">{internship?.supervisor_email || '-'}</span>
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Teléfono</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Teléfono</span>
                           <span className="font-semibold text-gray-800">{internship?.supervisor_phone || 'No registrado'}</span>
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Cargo / Función</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Cargo / Función</span>
                           <span className="font-semibold text-gray-800">{internship?.supervisor_role || 'No registrado'}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Sección Detalles de Práctica */}
-                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100 md:col-span-2">
-                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center gap-2">
-                        <FileText size={16} className="text-[#d22864]" />
+                    <div className="space-y-3 rounded-xl bg-gray-50/70 p-4 border border-gray-100 md:col-span-2">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-1.5 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <FileText size={14} className="text-[#d22864]" />
                         Detalles del Proceso
                       </h4>
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-xs">
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Tipo de Práctica</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Tipo de Práctica</span>
                           <span className="font-semibold text-gray-800">{internship?.internship_type || '-'}</span>
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Modalidad</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Modalidad</span>
                           <span className="font-semibold text-gray-800">{internship?.modality || '-'}</span>
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Período</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Período</span>
                           <span className="font-semibold text-gray-800">{internship?.internship_period || '-'}</span>
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Horario de Trabajo</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Horario de Trabajo</span>
                           <span className="font-semibold text-gray-800">{internship?.schedule || '-'}</span>
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Horas Semanales</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Horas Semanales</span>
                           <span className="font-semibold text-gray-800">{internship?.working_hours || '-'} hrs</span>
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-gray-400">Fechas</span>
+                          <span className="block text-[10px] font-bold text-gray-400">Fechas</span>
                           <span className="font-semibold text-gray-800">
                             {internship?.start_date ? formatDate(internship.start_date) : '-'} — {internship?.end_date ? formatDate(internship.end_date) : '-'}
                           </span>
@@ -954,107 +944,91 @@ export const SecretaryDashboardPage = () => {
 
               {/* Pestaña 3: Evaluaciones */}
               {activeTab === 'evaluations' && (
-                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm space-y-6">
+                <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm space-y-4">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Evaluaciones del proceso</p>
-                    <h3 className="mt-1 text-xl font-black text-gray-900">Autoevaluación del estudiante y evaluación del supervisor</h3>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#d22864]">Evaluaciones del proceso</p>
+                    <h3 className="text-sm font-black text-gray-900">Autoevaluación del estudiante y evaluación del supervisor</h3>
                   </div>
 
-                  <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Autoevaluación del estudiante */}
-                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
-                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <User size={16} className="text-[#d22864]" />
-                          Autoevaluación del estudiante
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="space-y-3 rounded-xl bg-gray-50/70 p-4 border border-gray-100">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-1.5 text-xs uppercase tracking-wider flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <User size={14} className="text-[#d22864]" />
+                          Autoevaluación
                         </span>
                         {selfEvaluationForm?.evaluation ? (
-                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
-                            Entregada
-                          </span>
+                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2 py-0.5 font-bold uppercase">Entregada</span>
                         ) : (
-                          <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
-                            Pendiente
-                          </span>
+                          <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5 font-bold uppercase">Pendiente</span>
                         )}
                       </h4>
 
                       {selfEvaluationForm?.evaluation ? (
-                        <div className="space-y-4">
-                          <div className="space-y-3">
+                        <div className="space-y-3">
+                          <div className="space-y-2">
                             {selfEvaluationForm.criteria?.map((criterion) => {
                               const score = selfEvaluationForm.evaluation.responses[criterion.key];
                               return (
-                                <div key={criterion.key} className="bg-white p-3 rounded-xl border border-gray-100 flex items-center justify-between gap-4 text-xs">
+                                <div key={criterion.key} className="bg-white p-2.5 rounded-lg border border-gray-100 flex items-center justify-between gap-3 text-xs">
                                   <div className="min-w-0">
                                     <p className="font-bold text-gray-800">{criterion.label}</p>
                                     <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{criterion.description}</p>
                                   </div>
-                                  <span className="bg-[#fff0f6] text-[#d22864] font-black h-8 w-8 rounded-lg flex items-center justify-center text-sm shadow-xs flex-shrink-0">
-                                    {score || '-'}
-                                  </span>
+                                  <span className="bg-[#fff0f6] text-[#d22864] font-black h-7 w-7 rounded-lg flex items-center justify-center text-xs shadow-xs flex-shrink-0">{score || '-'}</span>
                                 </div>
                               );
                             })}
                           </div>
                           {selfEvaluationForm.evaluation.observations && (
-                            <div className="bg-white p-3 rounded-xl border border-gray-100 text-xs">
-                              <span className="block font-bold text-gray-400 uppercase tracking-wide mb-1">Observaciones / Comentarios:</span>
+                            <div className="bg-white p-2.5 rounded-lg border border-gray-100 text-xs">
+                              <span className="block font-bold text-gray-400 uppercase tracking-wide mb-0.5">Observaciones:</span>
                               <p className="text-gray-600 italic">“{selfEvaluationForm.evaluation.observations}”</p>
                             </div>
                           )}
                           <div className="text-[10px] text-gray-400 font-semibold">
-                            Fecha de envío: {selfEvaluationForm.evaluation.submitted_at ? formatDateTime(selfEvaluationForm.evaluation.submitted_at) : '-'}
+                            Envío: {selfEvaluationForm.evaluation.submitted_at ? formatDateTime(selfEvaluationForm.evaluation.submitted_at) : '-'}
                           </div>
                         </div>
                       ) : (
-                        <p className="text-sm font-semibold text-gray-500 italic text-center py-8">
-                          El estudiante aún no ha completado la autoevaluación.
-                        </p>
+                        <p className="text-xs font-semibold text-gray-500 italic text-center py-6">El estudiante aún no ha completado la autoevaluación.</p>
                       )}
                     </div>
 
-                    {/* Evaluación del supervisor a estudiante */}
-                    <div className="space-y-4 rounded-2xl bg-gray-50/70 p-5 border border-gray-100">
-                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 text-sm uppercase tracking-wider flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <Building2 size={16} className="text-[#d22864]" />
-                          Evaluación del supervisor a estudiante
+                    <div className="space-y-3 rounded-xl bg-gray-50/70 p-4 border border-gray-100">
+                      <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-1.5 text-xs uppercase tracking-wider flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <Building2 size={14} className="text-[#d22864]" />
+                          Evaluación del supervisor
                         </span>
                         {supervisorEvaluation ? (
-                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
-                            Entregada
-                          </span>
+                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2 py-0.5 font-bold uppercase">Entregada</span>
                         ) : (
-                          <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5 font-bold uppercase">
-                            Pendiente
-                          </span>
+                          <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5 font-bold uppercase">Pendiente</span>
                         )}
                       </h4>
 
                       {supervisorEvaluation ? (
-                        <div className="space-y-4">
-                          <div className="space-y-3">
+                        <div className="space-y-3">
+                          <div className="space-y-2">
                             {Object.entries(SUPERVISOR_CRITERIA_LABELS).map(([key, info]) => {
                               const score = supervisorEvaluation.criteria_scores[key];
                               return (
-                                <div key={key} className="bg-white p-3 rounded-xl border border-gray-100 flex items-center justify-between gap-4 text-xs">
+                                <div key={key} className="bg-white p-2.5 rounded-lg border border-gray-100 flex items-center justify-between gap-3 text-xs">
                                   <div className="min-w-0">
                                     <p className="font-bold text-gray-800">{info.label}</p>
                                     <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{info.desc}</p>
                                   </div>
-                                  <span className="bg-[#fff0f6] text-[#d22864] font-black h-8 w-8 rounded-lg flex items-center justify-center text-sm shadow-xs flex-shrink-0">
-                                    {score || '-'}
-                                  </span>
+                                  <span className="bg-[#fff0f6] text-[#d22864] font-black h-7 w-7 rounded-lg flex items-center justify-center text-xs shadow-xs flex-shrink-0">{score || '-'}</span>
                                 </div>
                               );
                             })}
                           </div>
 
-                          <div className="bg-white p-3 rounded-xl border border-gray-100 text-xs space-y-2">
+                          <div className="bg-white p-2.5 rounded-lg border border-gray-100 text-xs space-y-1.5">
                             <div>
-                              <span className="block font-bold text-gray-400 uppercase tracking-wide mb-1">Recomendación:</span>
-                              <span className={`inline-flex rounded-full px-2.5 py-0.5 font-bold ${
+                              <span className="block font-bold text-gray-400 uppercase tracking-wide mb-0.5">Recomendación:</span>
+                              <span className={`inline-flex rounded-full px-2 py-0.5 font-bold text-[10px] ${
                                 supervisorEvaluation.recommendation === 'recommended' ? 'bg-green-50 text-green-700' :
                                 supervisorEvaluation.recommendation === 'recommended_with_observations' ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'
                               }`}>
@@ -1063,20 +1037,18 @@ export const SecretaryDashboardPage = () => {
                             </div>
                             {supervisorEvaluation.observations && (
                               <div>
-                                <span className="block font-bold text-gray-400 uppercase tracking-wide mb-1">Observaciones / Comentarios:</span>
+                                <span className="block font-bold text-gray-400 uppercase tracking-wide mb-0.5">Observaciones:</span>
                                 <p className="text-gray-600 italic">“{supervisorEvaluation.observations}”</p>
                               </div>
                             )}
                           </div>
                           <div className="text-[10px] text-gray-400 font-semibold">
-                            Evaluador: {supervisorEvaluation.supervisor_name_snapshot} ({supervisorEvaluation.supervisor_email_snapshot})<br />
-                            Fecha de envío: {supervisorEvaluation.submitted_at ? formatDateTime(supervisorEvaluation.submitted_at) : '-'}
+                            {supervisorEvaluation.supervisor_name_snapshot} ({supervisorEvaluation.supervisor_email_snapshot})<br />
+                            Envío: {supervisorEvaluation.submitted_at ? formatDateTime(supervisorEvaluation.submitted_at) : '-'}
                           </div>
                         </div>
                       ) : (
-                        <p className="text-sm font-semibold text-gray-500 italic text-center py-8">
-                          El supervisor aún no ha completado la evaluación de la práctica.
-                        </p>
+                        <p className="text-xs font-semibold text-gray-500 italic text-center py-6">El supervisor aún no ha completado la evaluación.</p>
                       )}
                     </div>
                   </div>
@@ -1115,8 +1087,8 @@ export const SecretaryDashboardPage = () => {
         )}
 
         {!loading && !activeInternshipId && (
-          <section className="mt-8 space-y-5">
-            <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+          <section className="space-y-5">
+            <div className="grid grid-cols-2 gap-2 xl:grid-cols-5">
               <SecretaryInboxStatCard label="Resultados" value={globalTotal} helper="según filtros" />
               <SecretaryInboxStatCard label="En revisión local" value={globalStats.in_review} helper="en preparación" />
               <SecretaryInboxStatCard label="Observados" value={globalStats.observed} helper="requieren corrección" />
@@ -1124,64 +1096,70 @@ export const SecretaryDashboardPage = () => {
               <SecretaryInboxStatCard label="Enviados DIRAE" value={globalStats.exported} helper="ya enviados" tone="accent" />
             </div>
 
-            <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-5">
+              {/* Encabezado alineado perfectamente en el centro vertical */}
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between border-b border-gray-100 pb-4">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[#d22864]">
                     Bandeja documental
                   </p>
-                  <h2 className="mt-1 text-xl font-black text-gray-900">
+                  <h2 className="mt-0.5 text-base font-black text-gray-900">
                     Preparación para envío a DIRAE
                   </h2>
-                  <p className="mt-1 text-sm font-semibold text-gray-500">
+                  <p className="text-xs font-semibold text-gray-400 mt-0.5">
                     Mostrando {pageStart}-{pageEnd} de {globalTotal} expedientes.
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                {/* Botones laterales */}
+                <div className="flex flex-wrap gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={loadAllInternships}
                     disabled={globalLoading}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-xs font-black text-gray-700 transition hover:bg-white disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 transition hover:bg-gray-50"
                   >
-                    <RefreshCw className={`h-4 w-4 ${globalLoading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-3.5 w-3.5 ${globalLoading ? 'animate-spin' : ''}`} />
                     Actualizar
                   </button>
                   <button
                     type="button"
                     onClick={() => handleExportPdf(selectedIds)}
                     disabled={selectedIds.length === 0 || diraeActionLoading === 'export'}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-5 py-3 text-xs font-black text-white shadow-md shadow-[#d22864]/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#d22864] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90"
                   >
-                    {diraeActionLoading === 'export' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                    Generar PDF DIRAE ({selectedIds.length})
+                    {diraeActionLoading === 'export' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                    PDF DIRAE ({selectedIds.length})
                   </button>
                   <button
                     type="button"
                     onClick={() => openDiraeEmailDialog(selectedIds)}
                     disabled={selectedIds.length === 0 || diraeActionLoading === 'email'}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#d22864]/20 bg-white px-5 py-3 text-xs font-black text-[#d22864] shadow-sm transition hover:bg-[#fff0f6] disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-100 disabled:text-gray-400"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#d22864]/20 bg-white px-3 py-1.5 text-xs font-bold text-[#d22864] shadow-sm transition hover:bg-[#fff0f6]"
                   >
                     {diraeActionLoading === 'email' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
-                    Enviar por email ({selectedIds.length})
+                    Email ({selectedIds.length})
                   </button>
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.4fr)_repeat(4,minmax(0,1fr))]">
+              {/* Grid de Filtros Homogéneos y con Estilo Consistente */}
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-[2fr_1.2fr_1.2fr_1fr_auto]">
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
                   <input
                     value={globalSearch}
                     onChange={(event) => {
                       setGlobalSearch(event.target.value);
                       setGlobalOffset(0);
+                      setSelectedIds([]);
                     }}
                     placeholder="Buscar por estudiante, matrícula, RUT u organización"
-                    className="w-full rounded-2xl border border-gray-100 bg-gray-50 py-2.5 pl-10 pr-4 text-xs font-semibold text-gray-800 outline-none focus:border-[#d22864]/30 focus:bg-white transition"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50/50 py-2 px-3 pl-8 text-xs font-semibold text-gray-700 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
                   />
                 </div>
+
+                {/* Selects suavizados con font-semibold y color equilibrado */}
                 <select
                   value={degreeFilter}
                   onChange={(event) => {
@@ -1189,13 +1167,14 @@ export const SecretaryDashboardPage = () => {
                     setGlobalOffset(0);
                     setSelectedIds([]);
                   }}
-                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-3 py-2 text-xs font-semibold text-gray-700 outline-none transition focus:bg-white cursor-pointer"
                 >
                   <option value="all">Todas las carreras</option>
                   {uniqueDegrees.map((deg) => (
                     <option key={deg} value={deg}>{deg}</option>
                   ))}
                 </select>
+
                 <select
                   value={diraeStatusFilter}
                   onChange={(event) => {
@@ -1203,7 +1182,7 @@ export const SecretaryDashboardPage = () => {
                     setGlobalOffset(0);
                     setSelectedIds([]);
                   }}
-                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-3 py-2 text-xs font-semibold text-gray-700 outline-none transition focus:bg-white cursor-pointer"
                 >
                   <option value="all">Todos los estados DIRAE</option>
                   <option value="not_started">No iniciado</option>
@@ -1212,6 +1191,7 @@ export const SecretaryDashboardPage = () => {
                   <option value="ready">Listo para exportar</option>
                   <option value="exported">Enviado a DIRAE</option>
                 </select>
+
                 <select
                   value={selectedSortValue}
                   onChange={(event) => {
@@ -1221,12 +1201,13 @@ export const SecretaryDashboardPage = () => {
                     setGlobalOffset(0);
                     setSelectedIds([]);
                   }}
-                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-3 py-2 text-xs font-semibold text-gray-700 outline-none transition focus:bg-white cursor-pointer"
                 >
                   {SECRETARY_SORT_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
+
                 <select
                   value={globalLimit}
                   onChange={(event) => {
@@ -1234,122 +1215,144 @@ export const SecretaryDashboardPage = () => {
                     setGlobalOffset(0);
                     setSelectedIds([]);
                   }}
-                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs font-bold outline-none focus:border-[#d22864]/30 md:col-span-2 xl:col-span-1"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-3 py-2 text-xs font-semibold text-gray-700 outline-none transition focus:bg-white cursor-pointer"
                 >
                   {SECRETARY_PAGE_SIZE_OPTIONS.map((size) => (
-                    <option key={size} value={size}>{size} por página</option>
+                    <option key={size} value={size}>{size} por pág.</option>
                   ))}
                 </select>
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
               {globalLoading ? (
-                <div className="py-20 text-center">
-                  <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#d22864]" />
-                  <p className="mt-3 text-xs font-black uppercase tracking-widest text-gray-400">Cargando bandeja documental...</p>
+                <div className="py-12 text-center">
+                  <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#d22864]" />
+                  <p className="mt-2 text-xs font-black uppercase tracking-widest text-gray-400">Cargando bandeja documental...</p>
                 </div>
               ) : filteredInternships.length === 0 ? (
-                <div className="py-20 text-center text-gray-400">
-                  <FileText className="mx-auto h-12 w-12 text-gray-300" />
-                  <p className="mt-4 text-sm font-black uppercase tracking-wider text-gray-500">No se encontraron expedientes</p>
-                  <p className="mt-1 text-xs text-gray-400">Ajusta los filtros o revisa si existen prácticas finalizadas o en preparación DIRAE.</p>
+                <div className="py-12 text-center text-gray-400">
+                  <FileText className="mx-auto h-8 w-8 text-gray-300" />
+                  <p className="mt-3 text-xs font-black uppercase tracking-wider text-gray-500">No se encontraron expedientes</p>
+                  <p className="mt-1 text-[10px] text-gray-400">Ajusta los filtros o revisa si existen prácticas finalizadas o en preparación DIRAE.</p>
                 </div>
               ) : (
                 <>
-                  <div className="hidden overflow-x-auto lg:block">
-                    <table className="w-full min-w-[980px] text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-gray-100 bg-gray-50/55 text-[10px] font-black uppercase tracking-wider text-gray-400">
-                          <th className="py-4 px-6 w-12">
-                            <SelectionCheckbox
-                              disabled={readyIdsInCurrentFilter.length === 0}
-                              checked={allReadySelected}
-                              onChange={() => {
-                                if (allReadySelected) {
-                                  setSelectedIds(prev => prev.filter(id => !readyIdsInCurrentFilter.includes(id)));
-                                } else {
-                                  setSelectedIds(prev => [...new Set([...prev, ...readyIdsInCurrentFilter])]);
-                                }
-                              }}
-                              ariaLabel="Seleccionar todos los expedientes listos para exportar"
-                            />
-                          </th>
-                          <th className="py-4 px-6">Estudiante</th>
-                          <th className="py-4 px-6">Carrera</th>
-                          <th className="py-4 px-6">Organización / Tipo</th>
-                          <th className="py-4 px-6">Estado práctica</th>
-                          <th className="py-4 px-6">Expediente DIRAE</th>
-                          <th className="py-4 px-6 text-center">Acción</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 text-sm">
-                        {filteredInternships.map((item) => {
-                          const diraeStatusInfo = DIRAE_STATUS[item.dirae_status] || DIRAE_STATUS.not_started;
-                          const isSelectable = item.dirae_status === 'ready';
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="w-full min-w-[1000px] table-fixed border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/60 text-[11px] font-black uppercase tracking-wider text-gray-400">
+                        <th className="py-3.5 px-4 w-12 text-center align-middle">
+                          <SelectionCheckbox
+                            disabled={readyIdsInCurrentFilter.length === 0}
+                            checked={allReadySelected}
+                            onChange={() => {
+                              if (allReadySelected) {
+                                setSelectedIds(prev => prev.filter(id => !readyIdsInCurrentFilter.includes(id)));
+                              } else {
+                                setSelectedIds(prev => [...new Set([...prev, ...readyIdsInCurrentFilter])]);
+                              }
+                            }}
+                            ariaLabel="Seleccionar todos los expedientes listos para exportar"
+                          />
+                        </th>
+                        <th className="py-3.5 px-4 text-left align-middle w-[24%]">Estudiante</th>
+                        <th className="py-3.5 px-4 text-left align-middle w-[18%]">Carrera</th>
+                        <th className="py-3.5 px-4 text-left align-middle w-[22%]">Organización / Tipo</th>
+                        <th className="py-3.5 px-4 text-center align-middle w-[14%]">Estado Práctica</th>
+                        <th className="py-3.5 px-4 text-center align-middle w-[12%]">Expediente DIRAE</th>
+                        <th className="py-3.5 px-4 text-center align-middle w-[10%]">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 bg-white">
+                      {filteredInternships.map((item) => {
+                        const diraeStatusInfo = DIRAE_STATUS[item.dirae_status] || DIRAE_STATUS.not_started;
+                        const isSelectable = item.dirae_status === 'ready';
 
-                          return (
-                            <tr key={item.id} className="hover:bg-gray-50/50 transition">
-                              <td className="py-4 px-6">
-                                <SelectionCheckbox
-                                  disabled={!isSelectable}
-                                  checked={isSelectable && selectedIds.includes(item.id)}
-                                  onChange={() => {
-                                    if (isSelectable) toggleSelectedId(item.id);
-                                  }}
-                                  ariaLabel={`Seleccionar expediente ${item.id}`}
-                                />
-                              </td>
-                              <td className="py-4 px-6">
-                                <div>
-                                  <p className="font-bold text-gray-900">{getStudentFullName(item.student)}</p>
-                                  <p className="mt-0.5 text-xs text-gray-400">
-                                    Expediente #{item.id} · {getStudentIdentifierLabel(item.student)}: {getStudentIdentifier(item.student)}
-                                  </p>
-                                </div>
-                              </td>
-                              <td className="py-4 px-6">
-                                <span className="text-xs text-gray-500 font-semibold">{item.student?.degree || 'Sin carrera'}</span>
-                              </td>
-                              <td className="py-4 px-6">
-                                <div>
-                                  <p className="font-bold text-gray-800">{item.org_name}</p>
-                                  <p className="mt-0.5 text-xs text-gray-400">{item.internship_type}</p>
-                                </div>
-                              </td>
-                              <td className="py-4 px-6">
-                                <div className="flex flex-wrap gap-1.5">
-                                  <span className="inline-flex rounded-full bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                                    {COMPLETION_STATUS[item.completion_status] || item.completion_status}
-                                  </span>
-                                  {item.final_result === 'passed' && (
-                                    <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Aprobada</span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="py-4 px-6">
-                                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${diraeStatusInfo.className}`}>
-                                  {diraeStatusInfo.label}
+                        return (
+                          <tr key={item.id} className="hover:bg-gray-50/40 transition-colors group">
+                            {/* Checkbox */}
+                            <td className="py-4 px-4 text-center align-middle">
+                              <SelectionCheckbox
+                                disabled={!isSelectable}
+                                checked={isSelectable && selectedIds.includes(item.id)}
+                                onChange={() => {
+                                  if (isSelectable) toggleSelectedId(item.id);
+                                }}
+                                ariaLabel={`Seleccionar expediente ${item.id}`}
+                              />
+                            </td>
+
+                            {/* Estudiante */}
+                            <td className="py-4 px-4 text-left align-middle">
+                              <div className="space-y-0.5">
+                                <p className="font-bold text-gray-900 text-sm tracking-tight leading-snug">
+                                  {getStudentFullName(item.student)}
+                                </p>
+                                <p className="text-xs font-medium text-gray-400">
+                                  #{item.id} <span className="text-gray-300">·</span> {getStudentIdentifierLabel(item.student)}: {getStudentIdentifier(item.student)}
+                                </p>
+                              </div>
+                            </td>
+
+                            {/* Carrera */}
+                            <td className="py-4 px-4 text-left align-middle">
+                              <span className="text-xs text-gray-600 font-semibold leading-relaxed block">
+                                {item.student?.degree || 'Sin carrera'}
+                              </span>
+                            </td>
+
+                            {/* Organización / Tipo */}
+                            <td className="py-4 px-4 text-left align-middle">
+                              <div className="space-y-0.5">
+                                <p className="font-bold text-gray-800 text-sm tracking-tight leading-snug line-clamp-2">
+                                  {item.org_name}
+                                </p>
+                                <p className="text-xs font-medium text-gray-400">
+                                  {item.internship_type}
+                                </p>
+                              </div>
+                            </td>
+
+                            {/* Estado Práctica */}
+                            <td className="py-4 px-4 text-center align-middle">
+                              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                                <span className="inline-flex items-center rounded-full bg-gray-50 border border-gray-200 px-2.5 py-0.5 text-[11px] font-bold text-gray-600">
+                                  {COMPLETION_STATUS[item.completion_status] || item.completion_status}
                                 </span>
-                              </td>
-                              <td className="py-4 px-6 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => loadExpediente(item.id)}
-                                  className="inline-flex items-center gap-1.5 rounded-xl bg-gray-50 px-4 py-2 text-xs font-black text-gray-700 transition hover:bg-[#fff0f6] hover:text-[#d22864]"
-                                >
-                                  <Eye className="h-3.5 w-3.5" />
-                                  Revisar
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                                {item.final_result === 'passed' && (
+                                  <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                                    Aprobada
+                                  </span>
+                                )}
+                              </div>
+                            </td>
 
-                  <div className="space-y-3 p-4 lg:hidden">
+                            {/* Expediente DIRAE */}
+                            <td className="py-4 px-4 text-center align-middle">
+                              <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold tracking-wide transition-colors ${diraeStatusInfo.className}`}>
+                                {diraeStatusInfo.label}
+                              </span>
+                            </td>
+
+                            {/* Acción */}
+                            <td className="py-4 px-4 text-center align-middle">
+                              <button
+                                type="button"
+                                onClick={() => loadExpediente(item.id)}
+                                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-bold text-gray-700 shadow-xs transition-all hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300 active:bg-gray-100"
+                              >
+                                <Eye className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                                Revisar
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                  <div className="space-y-2 p-3 lg:hidden">
                     {filteredInternships.map((item) => {
                       const isSelectable = item.dirae_status === 'ready';
                       return (
@@ -1411,16 +1414,38 @@ export const SecretaryDashboardPage = () => {
 
 const SecretaryInboxStatCard = ({ label, value, helper, tone = 'default' }) => {
   const toneClass = {
-    default: 'bg-white text-gray-900',
-    success: 'bg-emerald-50 text-emerald-800',
-    accent: 'bg-[#fff0f6] text-[#8B1D46]',
+    default: {
+      card: 'bg-white text-gray-900 border-gray-200',
+      number: 'text-gray-950',
+      label: 'text-gray-400'
+    },
+    success: {
+      card: 'bg-emerald-50/60 text-emerald-800 border-emerald-100',
+      number: 'text-emerald-700',
+      label: 'text-emerald-600'
+    },
+    accent: {
+      card: 'bg-[#fff0f6] text-[#8B1D46] border-[#fcc2d7]',
+      number: 'text-[#d22864]',
+      label: 'text-[#8B1D46]/80'
+    },
   }[tone];
 
   return (
-    <div className={`rounded-3xl border border-gray-100 p-4 shadow-sm ${toneClass}`}>
-      <p className="text-[10px] font-black uppercase tracking-widest opacity-70">{label}</p>
-      <p className="mt-2 text-2xl font-black">{value}</p>
-      <p className="mt-1 text-xs font-bold opacity-70">{helper}</p>
+    // Se aumentó a p-4 y se eliminó cualquier altura fija innecesaria
+    <div className={`rounded-xl border p-4 shadow-sm transition-all flex flex-col justify-between ${toneClass.card}`}>
+      <div>
+        <p className={`text-[10px] font-black uppercase tracking-widest ${toneClass.label}`}>
+          {label}
+        </p>
+        {/* El número ahora toma el color protagónico según el estado */}
+        <p className={`mt-1.5 text-2xl font-black tracking-tight ${toneClass.number}`}>
+          {value}
+        </p>
+      </div>
+      <p className="text-[10px] font-bold opacity-60 mt-1">
+        {helper}
+      </p>
     </div>
   );
 };
@@ -1460,14 +1485,14 @@ const SecretaryInboxMobileCard = ({
   const student = internship.student;
 
   return (
-    <article className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
+    <article className="rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-            Expediente #{internship.id}
+            #{internship.id}
           </p>
-          <h3 className="mt-1 text-base font-black text-gray-900">{getStudentFullName(student)}</h3>
-          <p className="mt-1 text-xs font-semibold text-gray-500">
+          <h3 className="text-sm font-black text-gray-900">{getStudentFullName(student)}</h3>
+          <p className="text-xs font-semibold text-gray-500">
             {getStudentIdentifierLabel(student)}: {getStudentIdentifier(student)}
           </p>
         </div>
@@ -1480,21 +1505,21 @@ const SecretaryInboxMobileCard = ({
         />
       </div>
 
-      <div className="mt-4 grid gap-3 text-sm">
-        <div className="rounded-2xl bg-gray-50 p-3">
+      <div className="mt-3 grid gap-2 text-xs">
+        <div className="rounded-lg bg-gray-50 p-2">
           <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Carrera</p>
-          <p className="mt-1 font-bold text-gray-800">{student?.degree || 'Sin carrera'}</p>
+          <p className="font-bold text-gray-800">{student?.degree || 'Sin carrera'}</p>
         </div>
-        <div className="rounded-2xl bg-gray-50 p-3">
+        <div className="rounded-lg bg-gray-50 p-2">
           <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Organización</p>
-          <p className="mt-1 font-bold text-gray-800">{internship.org_name}</p>
-          <p className="mt-0.5 text-xs font-semibold text-gray-500">{internship.internship_type}</p>
+          <p className="font-bold text-gray-800">{internship.org_name}</p>
+          <p className="text-[10px] font-semibold text-gray-500">{internship.internship_type}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <span className="inline-flex rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600">
+        <div className="flex flex-wrap gap-1.5">
+          <span className="inline-flex rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-600">
             {COMPLETION_STATUS[internship.completion_status] || internship.completion_status}
           </span>
-          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${diraeStatusInfo.className}`}>
+          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${diraeStatusInfo.className}`}>
             {diraeStatusInfo.label}
           </span>
         </div>
@@ -1503,9 +1528,9 @@ const SecretaryInboxMobileCard = ({
       <button
         type="button"
         onClick={onReview}
-        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-900 px-4 py-3 text-xs font-black text-white transition hover:bg-[#d22864]"
+        className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-[10px] font-black text-white transition hover:bg-[#d22864]"
       >
-        <Eye className="h-4 w-4" />
+        <Eye className="h-3 w-3" />
         Revisar expediente
       </button>
     </article>
@@ -1523,7 +1548,7 @@ const SecretaryPagination = ({
   previousDisabled,
   nextDisabled,
 }) => (
-  <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/70 px-4 py-4 text-xs font-bold text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+  <div className="flex flex-col gap-2 border-t border-gray-100 bg-gray-50/70 px-4 py-3 text-xs font-bold text-gray-500 sm:flex-row sm:items-center sm:justify-between">
     <span>
       Página {currentPage} de {totalPages} · {pageStart}-{pageEnd} de {total}
     </span>
@@ -1532,7 +1557,7 @@ const SecretaryPagination = ({
         type="button"
         onClick={onPrevious}
         disabled={previousDisabled}
-        className="rounded-xl border border-gray-200 bg-white px-4 py-2 font-black text-gray-700 transition hover:border-[#d22864]/20 hover:text-[#d22864] disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-black text-gray-600 transition hover:border-[#d22864]/20 hover:text-[#d22864] disabled:cursor-not-allowed disabled:opacity-40"
       >
         Anterior
       </button>
@@ -1540,7 +1565,7 @@ const SecretaryPagination = ({
         type="button"
         onClick={onNext}
         disabled={nextDisabled}
-        className="rounded-xl border border-gray-200 bg-white px-4 py-2 font-black text-gray-700 transition hover:border-[#d22864]/20 hover:text-[#d22864] disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-black text-gray-600 transition hover:border-[#d22864]/20 hover:text-[#d22864] disabled:cursor-not-allowed disabled:opacity-40"
       >
         Siguiente
       </button>
@@ -1560,32 +1585,32 @@ const DiraeEmailModal = ({
   onSubmit,
 }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 px-4 py-6 backdrop-blur-sm">
-    <div className="w-full max-w-xl rounded-3xl border border-gray-100 bg-white p-6 shadow-2xl">
-      <div className="flex items-start justify-between gap-4">
+    <div className="w-full max-w-lg rounded-xl border border-gray-100 bg-white p-5 shadow-lg">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#d22864]">
             Envío a DIRAE
           </p>
-          <h2 className="mt-1 text-2xl font-black text-gray-900">
-            Enviar expediente documental por email
+          <h2 className="mt-0.5 text-lg font-black text-gray-900">
+            Enviar expediente por email
           </h2>
-          <p className="mt-2 text-sm font-semibold text-gray-500">
-            Se enviarán {packageCount} expediente{packageCount === 1 ? '' : 's'} en un PDF legible para revisión DIRAE.
+          <p className="mt-1 text-xs font-semibold text-gray-500">
+            Se enviarán {packageCount} expediente{packageCount === 1 ? '' : 's'} en PDF.
           </p>
         </div>
         <button
           type="button"
           onClick={onClose}
           disabled={loading}
-          className="rounded-2xl bg-gray-50 px-3 py-2 text-xs font-black text-gray-500 transition hover:bg-gray-100 disabled:opacity-50"
+          className="rounded-lg bg-gray-50 px-2.5 py-1.5 text-[10px] font-black text-gray-500 transition hover:bg-gray-100 disabled:opacity-50"
         >
           Cerrar
         </button>
       </div>
 
-      <form onSubmit={onSubmit} className="mt-5 space-y-4">
+      <form onSubmit={onSubmit} className="mt-4 space-y-3">
         <label className="block">
-          <span className="text-xs font-black uppercase tracking-widest text-gray-500">
+          <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
             Correo DIRAE
           </span>
           <input
@@ -1593,42 +1618,42 @@ const DiraeEmailModal = ({
             value={email}
             onChange={(event) => onEmailChange(event.target.value)}
             placeholder="dirae@ufrontera.cl"
-            className="mt-2 w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
+            className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-800 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
           />
         </label>
         <label className="block">
-          <span className="text-xs font-black uppercase tracking-widest text-gray-500">
+          <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
             Nota opcional
           </span>
           <textarea
             value={message}
             onChange={(event) => onMessageChange(event.target.value)}
             placeholder="Agrega una observación breve para DIRAE si corresponde."
-            className="mt-2 h-28 w-full resize-none rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
+            className="mt-1 h-24 w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-800 outline-none transition focus:border-[#d22864]/30 focus:bg-white"
           />
         </label>
 
         {error && (
-          <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">
+          <div className="rounded-lg border border-red-100 bg-red-50 p-2.5 text-xs font-bold text-red-700">
             {error}
           </div>
         )}
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="inline-flex items-center justify-center rounded-2xl border border-gray-100 bg-white px-5 py-3 text-sm font-black text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-black text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-5 py-3 text-sm font-black text-white shadow-lg shadow-[#d22864]/20 transition hover:opacity-90 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#d22864] px-4 py-2 text-xs font-black text-white shadow-sm transition hover:opacity-90 disabled:opacity-60"
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
             Enviar a DIRAE
           </button>
         </div>
@@ -1638,19 +1663,23 @@ const DiraeEmailModal = ({
 );
 
 const StatusCard = ({ label, value }) => (
-  <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</p>
-    <p className="mt-2 text-sm font-black text-gray-900">{value}</p>
+  <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 h-full flex flex-col justify-between min-h-[72px]">
+    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-tight mb-2">
+      {label}
+    </p>
+    <p className="text-xs font-black text-gray-900 mt-auto">
+      {value}
+    </p>
   </div>
 );
 
 const EmptyState = ({ icon, title, message }) => (
-  <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-400">
-    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
+  <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-gray-400">
+    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm">
       {icon}
     </div>
-    <p className="mt-4 text-sm font-black uppercase tracking-widest text-gray-500">{title}</p>
-    <p className="mt-2 text-xs font-semibold text-gray-400">{message}</p>
+    <p className="mt-3 text-xs font-black uppercase tracking-widest text-gray-500">{title}</p>
+    <p className="mt-1 text-[10px] font-semibold text-gray-400">{message}</p>
   </div>
 );
 
@@ -1670,63 +1699,63 @@ const DocumentCard = ({
   const status = DOCUMENT_STATUS[document.status] || DOCUMENT_STATUS.uploaded;
 
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d22864]">
-            <FileText className="h-6 w-6" />
+    <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="flex gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff0f6] text-[#d22864]">
+            <FileText className="h-5 w-5" />
           </div>
           <div>
-            <h4 className="font-black text-gray-900">{document.document_type?.name || 'Documento'}</h4>
-            <p className="mt-1 text-xs font-semibold text-gray-400">
+            <h4 className="text-sm font-black text-gray-900">{document.document_type?.name || 'Documento'}</h4>
+            <p className="text-xs font-semibold text-gray-400">
               {document.file_name} · {formatDate(document.upload_date)}
             </p>
-            <span className={`mt-3 inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-wider ${status.className}`}>
+            <span className={`mt-2 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${status.className}`}>
               {status.label}
             </span>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           <button
             type="button"
             onClick={onDownload}
-            className="inline-flex items-center gap-2 rounded-2xl bg-gray-50 px-4 py-2 text-sm font-black text-gray-700 transition hover:bg-[#fff0f6] hover:text-[#d22864]"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 px-3 py-1.5 text-[10px] font-black text-gray-600 transition hover:bg-[#fff0f6] hover:text-[#d22864]"
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-3.5 w-3.5" />
             Descargar
           </button>
           <button
             type="button"
             onClick={onOpenReview}
-            className="inline-flex items-center gap-2 rounded-2xl bg-[#d22864] px-4 py-2 text-sm font-black text-white transition hover:opacity-90"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#d22864] px-3 py-1.5 text-[10px] font-black text-white transition hover:opacity-90"
           >
-            <Eye className="h-4 w-4" />
+            <Eye className="h-3.5 w-3.5" />
             Revisar
           </button>
         </div>
       </div>
 
       {document.review_comment && (
-        <div className="mt-4 rounded-2xl bg-gray-50 p-4 text-sm font-semibold text-gray-600">
+        <div className="mt-3 rounded-xl bg-gray-50 p-3 text-xs font-semibold text-gray-600">
           Último comentario: “{document.review_comment}”
         </div>
       )}
 
       {isReviewing && (
-        <div className="mt-4 rounded-2xl border border-gray-100 bg-gray-50 p-4">
-          <div className="grid gap-3 sm:grid-cols-2">
+        <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <div className="grid gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => onReviewStatusChange('approved')}
-              className={`rounded-2xl p-3 text-sm font-black ${reviewStatus === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-white text-emerald-700'}`}
+              className={`rounded-lg p-2 text-xs font-black ${reviewStatus === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-white text-emerald-700'}`}
             >
               Aprobar
             </button>
             <button
               type="button"
               onClick={() => onReviewStatusChange('observed')}
-              className={`rounded-2xl p-3 text-sm font-black ${reviewStatus === 'observed' ? 'bg-purple-100 text-purple-800' : 'bg-white text-purple-700'}`}
+              className={`rounded-lg p-2 text-xs font-black ${reviewStatus === 'observed' ? 'bg-purple-100 text-purple-800' : 'bg-white text-purple-700'}`}
             >
               Observar
             </button>
@@ -1735,16 +1764,16 @@ const DocumentCard = ({
             value={reviewComment}
             onChange={(event) => onReviewCommentChange(event.target.value)}
             placeholder="Comentario de revisión"
-            className="mt-3 h-24 w-full resize-none rounded-2xl border border-gray-100 bg-white p-3 text-sm font-semibold text-gray-800 outline-none focus:border-[#d22864]/30"
+            className="mt-2 h-20 w-full resize-none rounded-lg border border-gray-100 bg-white p-2.5 text-xs font-semibold text-gray-800 outline-none focus:border-[#d22864]/30"
           />
-          {reviewError && <p className="mt-2 text-sm font-bold text-red-600">{reviewError}</p>}
+          {reviewError && <p className="mt-1.5 text-xs font-bold text-red-600">{reviewError}</p>}
           <button
             type="button"
             onClick={onSaveReview}
             disabled={isUpdating}
-            className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-gray-900 px-4 py-2 text-sm font-black text-white disabled:opacity-60"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-black text-white disabled:opacity-60"
           >
-            {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isUpdating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Guardar revisión
           </button>
         </div>
@@ -1769,100 +1798,101 @@ const DiraePackagePanel = ({
   const isExported = packageData.dirae_status === 'exported';
 
   return (
-  <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Expediente DIRAE</p>
-        <h3 className="mt-1 text-xl font-black text-gray-900">Preparación para envío</h3>
+    <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Expediente DIRAE</p>
+          <h3 className="mt-1 text-lg font-black text-gray-900">Preparación para envío</h3>
+        </div>
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${packageData.exportable ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+          {packageData.exportable ? 'Exportable' : 'No exportable'}
+        </span>
       </div>
-      <span className={`rounded-full px-3 py-1 text-xs font-black ${packageData.exportable ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-        {packageData.exportable ? 'Exportable' : 'No exportable'}
-      </span>
-    </div>
 
-    {packageData.reasons.length > 0 && (
-      <div className="mt-4 space-y-2">
-        {packageData.reasons.map((reason) => (
-          <div key={reason} className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">
-            {PACKAGE_REASONS[reason] || reason}
-          </div>
+      {packageData.reasons.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {packageData.reasons.map((reason) => (
+            <div key={reason} className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">
+              {PACKAGE_REASONS[reason] || reason}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-5 grid gap-3">
+        {/* CORREGIDO: Asegura el mapeo correcto con PackageItem */}
+        {packageData.required_documents.map((item) => (
+          <PackageItem key={item.type_id} item={item} required />
+        ))}
+        {packageData.optional_documents.map((item) => (
+          <PackageItem key={item.type_id} item={item} />
         ))}
       </div>
-    )}
 
-    <div className="mt-5 grid gap-3">
-      {packageData.required_documents.map((item) => (
-        <PackageItem key={item.type_id} item={item} required />
-      ))}
-      {packageData.optional_documents.map((item) => (
-        <PackageItem key={item.type_id} item={item} />
-      ))}
-    </div>
+      {exportError && (
+        <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">
+          {exportError}
+        </div>
+      )}
 
-    {exportError && (
-      <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-700">
-        {exportError}
-      </div>
-    )}
-
-    <div className="mt-5 space-y-3">
-      <button
-        type="button"
-        onClick={() => onExport()}
-        disabled={!packageData.exportable || actionLoading === 'export'}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d22864] px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:bg-gray-300"
-      >
-        {actionLoading === 'export' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-        Generar PDF para DIRAE
-      </button>
-      <button
-        type="button"
-        onClick={onEmail}
-        disabled={!packageData.exportable || actionLoading === 'email'}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#d22864]/20 bg-white px-4 py-3 text-sm font-black text-[#d22864] transition hover:bg-[#fff0f6] disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-100 disabled:text-gray-400"
-      >
-        {actionLoading === 'email' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-        Enviar expediente por email
-      </button>
-
-      <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-        <p className="text-xs font-black uppercase tracking-widest text-gray-500">
-          Preparación DIRAE
-        </p>
-        <p className="mt-2 text-sm font-semibold leading-relaxed text-gray-600">
-          Al abrir el expediente queda en revisión local. Al terminar la revisión, márcalo como listo para habilitar la generación o envío del PDF a DIRAE.
-        </p>
+      <div className="mt-5 space-y-3">
         <button
           type="button"
-          onClick={onMarkReady}
-          disabled={!canMarkReady || actionLoading === 'ready'}
-          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-900 px-4 py-3 text-sm font-black text-white transition hover:bg-[#d22864] disabled:cursor-not-allowed disabled:bg-gray-300"
+          onClick={() => onExport()}
+          disabled={!packageData.exportable || actionLoading === 'export'}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#d22864] px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:bg-gray-300"
         >
-          {actionLoading === 'ready' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-          {isExported
-            ? 'Expediente enviado a DIRAE'
-            : isReady
-              ? 'Expediente listo para envío'
-              : 'Marcar listo para envío'}
+          {actionLoading === 'export' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          Generar PDF para DIRAE
         </button>
+        <button
+          type="button"
+          onClick={onEmail}
+          disabled={!packageData.exportable || actionLoading === 'email'}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d22864]/20 bg-white px-4 py-3 text-sm font-black text-[#d22864] transition hover:bg-[#fff0f6] disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-100 disabled:text-gray-400"
+        >
+          {actionLoading === 'email' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+          Enviar expediente por email
+        </button>
+
+        <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+          <p className="text-xs font-black uppercase tracking-widest text-gray-500">
+            Preparación DIRAE
+          </p>
+          <p className="mt-2 text-sm font-semibold leading-relaxed text-gray-600">
+            Al abrir el expediente queda en revisión local. Al terminar la revisión, márcalo como listo para habilitar la generación o envío del PDF a DIRAE.
+          </p>
+          <button
+            type="button"
+            onClick={onMarkReady}
+            disabled={!canMarkReady || actionLoading === 'ready'}
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-black text-white transition hover:bg-[#d22864] disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            {actionLoading === 'ready' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            {isExported
+              ? 'Expediente enviado a DIRAE'
+              : isReady
+                ? 'Expediente listo para envío'
+                : 'Marcar listo para envío'}
+          </button>
+        </div>
+        <ActionBox
+          label="Reabrir para rectificación"
+          placeholder="Motivo de reapertura"
+          value={reopenComment}
+          loading={actionLoading === 'reopen'}
+          onChange={onReopenCommentChange}
+          onSubmit={onReopen}
+          icon={<RefreshCw className="h-4 w-4" />}
+          submitLabel="Reabrir expediente"
+        />
       </div>
-      <ActionBox
-        label="Reabrir para rectificación"
-        placeholder="Motivo de reapertura"
-        value={reopenComment}
-        loading={actionLoading === 'reopen'}
-        onChange={onReopenCommentChange}
-        onSubmit={onReopen}
-        icon={<RefreshCw className="h-4 w-4" />}
-        submitLabel="Reabrir expediente"
-      />
-    </div>
-  </section>
+    </section>
   );
 };
 
 const PackageItem = ({ item, required = false }) => (
-  <div className="flex items-center justify-between rounded-2xl border border-gray-100 bg-gray-50 p-3">
+  <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 p-3">
     <div>
       <p className="text-sm font-black text-gray-800">{item.type_name}</p>
       <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
@@ -1882,7 +1912,7 @@ const PackageItem = ({ item, required = false }) => (
 );
 
 const ActionBox = ({ label, placeholder, value, loading, onChange, onSubmit, icon, submitLabel = 'Confirmar acción' }) => (
-  <div className="rounded-2xl border border-gray-100 bg-gray-50 p-3">
+  <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
     <p className="text-xs font-black uppercase tracking-widest text-gray-500">{label}</p>
     <textarea
       value={value}
@@ -1912,30 +1942,30 @@ const AdministrativeUploadPanel = ({
   onFileChange,
   onSubmit,
 }) => (
-  <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-    <div className="flex gap-3">
-      <ShieldAlert className="mt-1 h-5 w-5 text-[#d22864]" />
+  <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+    <div className="flex gap-2">
+      <ShieldAlert className="mt-0.5 h-4 w-4 text-[#d22864]" />
       <div>
-        <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Adjunto administrativo</p>
-        <p className="mt-1 text-sm font-semibold text-gray-500">
-          Secretaría solo debería adjuntar documentos administrativos no sensibles.
+        <p className="text-[10px] font-black uppercase tracking-widest text-[#d22864]">Adjunto administrativo</p>
+        <p className="text-xs font-semibold text-gray-500">
+          Solo documentos administrativos no sensibles.
         </p>
       </div>
     </div>
 
-    <form onSubmit={onSubmit} className="mt-4 space-y-3">
+    <form onSubmit={onSubmit} className="mt-3 space-y-2">
       <select
         value={selectedTypeId}
         onChange={(event) => onTypeChange(event.target.value)}
-        className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-bold outline-none focus:border-[#d22864]/30"
+        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold outline-none focus:border-[#d22864]/30"
       >
         <option value="">Tipo documental administrativo</option>
         {uploadableTypes.map((type) => (
           <option key={type.id} value={type.id}>{type.name}</option>
         ))}
       </select>
-      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm font-bold text-gray-500 transition hover:bg-white">
-        <UploadCloud className="h-5 w-5" />
+      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-xs font-bold text-gray-500 transition hover:bg-white">
+        <UploadCloud className="h-4 w-4" />
         {uploadFile ? uploadFile.name : 'Seleccionar archivo'}
         <input
           type="file"
@@ -1944,13 +1974,13 @@ const AdministrativeUploadPanel = ({
           onChange={(event) => onFileChange(event.target.files?.[0] || null)}
         />
       </label>
-      {uploadError && <p className="text-sm font-bold text-red-600">{uploadError}</p>}
+      {uploadError && <p className="text-xs font-bold text-red-600">{uploadError}</p>}
       <button
         type="submit"
         disabled={uploading}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-900 px-4 py-3 text-sm font-black text-white disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-xs font-black text-white disabled:opacity-60"
       >
-        {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+        {uploading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
         Adjuntar documento
       </button>
     </form>
@@ -1958,39 +1988,39 @@ const AdministrativeUploadPanel = ({
 );
 
 const TrackingPanel = ({ tracking }) => (
-  <details className="group rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-    <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
-      <div className="flex items-center gap-3">
-        <History className="h-5 w-5 text-[#d22864]" />
+  <details className="group rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+    <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
+        <History className="h-4 w-4 text-[#d22864]" />
         <div>
-          <p className="text-xs font-black uppercase tracking-widest text-[#d22864]">Historial DIRAE</p>
-          <h3 className="text-base font-black text-gray-900">Trazabilidad técnica</h3>
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#d22864]">Historial DIRAE</p>
+          <h3 className="text-sm font-black text-gray-900">Trazabilidad técnica</h3>
         </div>
       </div>
-      <span className="rounded-full bg-gray-50 px-3 py-1 text-xs font-black text-gray-500 transition group-open:bg-[#fff0f6] group-open:text-[#d22864]">
+      <span className="rounded-full bg-gray-50 px-2 py-0.5 text-[10px] font-black text-gray-500 transition group-open:bg-[#fff0f6] group-open:text-[#d22864]">
         Ver historial
       </span>
     </summary>
 
-    <p className="mt-3 text-xs font-semibold leading-relaxed text-gray-500">
+    <p className="mt-2 text-xs font-semibold leading-relaxed text-gray-500">
       Registro local de cambios del estado DIRAE. La auditoría completa queda centralizada en Superadmin.
     </p>
 
-    <div className="mt-4 space-y-3">
+    <div className="mt-3 space-y-2">
       {tracking.length === 0 && (
-        <p className="rounded-2xl bg-gray-50 p-4 text-sm font-bold text-gray-500">
+        <p className="rounded-lg bg-gray-50 p-3 text-xs font-bold text-gray-500">
           Aún no hay cambios registrados en el expediente DIRAE.
         </p>
       )}
       {tracking.map((entry) => (
-        <div key={entry.id} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-          <p className="text-sm font-black text-gray-900">
+        <div key={entry.id} className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+          <p className="text-xs font-black text-gray-900">
             {DIRAE_STATUS[entry.previous_status]?.label || 'Sin estado'} → {DIRAE_STATUS[entry.new_status]?.label || entry.new_status}
           </p>
-          <p className="mt-1 text-xs font-semibold text-gray-500">
+          <p className="mt-1 text-[10px] font-semibold text-gray-500">
             {formatDateTime(entry.changed_at)} · {entry.actor?.email || 'actor no disponible'}
           </p>
-          {entry.reason && <p className="mt-2 text-sm font-semibold text-gray-600">“{entry.reason}”</p>}
+          {entry.reason && <p className="mt-1.5 text-xs font-semibold text-gray-600">“{entry.reason}”</p>}
         </div>
       ))}
     </div>

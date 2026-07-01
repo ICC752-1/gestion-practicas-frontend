@@ -152,6 +152,8 @@ export const StudentTable = ({ students = [] }) => {
   const [degreeFilter, setDegreeFilter] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
   const [practiceTypeFilter, setPracticeTypeFilter] = useState('');
+
+  const [statusFilter, setStatusFilter] = useState('Pendiente');
   const [sort, setSort] = useState(initialSort);
   const [offset, setOffset] = useState(0);
   const [openingId, setOpeningId] = useState(null);
@@ -168,7 +170,7 @@ export const StudentTable = ({ students = [] }) => {
     if (statusStr.includes('revisi') || status === 'in_review') return { label: 'En Revisión', color: 'bg-blue-500', value: 'En Revisión' };
     if (statusStr.includes('aprob') || status === 'approved') return { label: 'Solicitud Aprobada', color: 'bg-emerald-500', value: 'Aprobada' };
     if (statusStr.includes('rechaz') || status === 'rejected') return { label: 'Rechazada', color: 'bg-red-500', value: 'Rechazada' };
-    if (!status || statusStr === 'pendiente' || status === 'submitted' || status === 'submited') return { label: 'Pendiente', color: 'bg-amber-500', value: 'Práctica Pendiente' };
+    if (!status || statusStr === 'pendiente' || status === 'submitted' || status === 'submited') return { label: 'Pendiente', color: 'bg-amber-500', value: 'Pendiente' };
     return { label: statusLabel || 'Pendiente', color: 'bg-gray-500', value: statusLabel || 'Pendiente' };
   };
 
@@ -178,6 +180,10 @@ export const StudentTable = ({ students = [] }) => {
 
   const uniqueCompanies = useMemo(() => {
     return [...new Set(students.map(s => s.org_name).filter(Boolean))];
+  }, [students]);
+
+  const uniqueStatuses = useMemo(() => {
+    return [...new Set(students.map(s => getNormalizedStatus(s).value).filter(Boolean))];
   }, [students]);
 
   const uniquePracticeTypes = useMemo(() => {
@@ -217,9 +223,10 @@ export const StudentTable = ({ students = [] }) => {
     const matchesDegree = degreeFilter === '' || getStudentDegree(s) === degreeFilter;
     const matchesCompany = companyFilter === '' || s.org_name === companyFilter;
     const matchesPracticeType = practiceTypeFilter === '' || getPracticeType(s) === practiceTypeFilter;
+    const matchesStatus = statusFilter === '' || getNormalizedStatus(s).value === statusFilter;
 
-    return matchesSearch && matchesDegree && matchesCompany && matchesPracticeType;
-  }), [students, searchTerm, degreeFilter, companyFilter, practiceTypeFilter]);
+    return matchesSearch && matchesDegree && matchesCompany && matchesPracticeType && matchesStatus;
+  }), [students, searchTerm, degreeFilter, companyFilter, practiceTypeFilter, statusFilter]);
 
   const sortedStudents = useMemo(() => {
     const getSortValue = (student) => {
@@ -272,15 +279,26 @@ export const StudentTable = ({ students = [] }) => {
     resetPagination();
   };
 
-  const handlePracticeTypeFilterChange = (nextPracticeType) => {
-    setPracticeTypeFilter(nextPracticeType);
+  const handlePracticeTypeFilterChange = (value) => {
+    setPracticeTypeFilter(value);
     resetPagination();
   };
+
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
+    resetPagination();
+  };
+
+  const statusOptions = useMemo(() => [
+    { label: 'Todas', value: '' },
+    ...uniqueStatuses.map(s => ({ label: s, value: s })),
+  ], [uniqueStatuses]);
 
   const clearFilters = () => {
     setDegreeFilter('');
     setCompanyFilter('');
     setPracticeTypeFilter('');
+    setStatusFilter('Pendiente');
     resetPagination();
   };
 
@@ -341,9 +359,15 @@ export const StudentTable = ({ students = [] }) => {
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full"
           {...getEntryMotion(0.04)}
         >
-          <h3 className="text-lg font-bold text-gray-800 flex-shrink-0">Solicitudes de práctica</h3>
-          
-          <div className="relative w-full sm:w-80">
+          <h3 className="text-xl font-bold text-gray-800 flex-shrink-0"> Gestión de solicitudes de práctica</h3>
+        </motion.div>
+
+        <motion.div
+          className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm text-gray-600"
+          {...getEntryMotion(0.1)}
+        >
+          {/* Buscador */}
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
@@ -353,82 +377,72 @@ export const StudentTable = ({ students = [] }) => {
               className="w-full h-10 pl-9 pr-4 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-[#d22864] focus:ring-1 focus:ring-[#d22864] transition-all"
             />
           </div>
-        </motion.div>
 
-        {/* Fila de Selectores */}
-        <motion.div
-          className="grid w-full gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm text-gray-600 sm:flex sm:flex-wrap sm:items-center"
-          {...getEntryMotion(0.1)}
-        >
-          <div className="flex items-center gap-1.5 font-bold text-gray-500 sm:mr-1 sm:flex-shrink-0">
-            <Filter size={16} />
-            <span>Filtros:</span>
+          {/* Selectores */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 font-bold text-gray-500 flex-shrink-0">
+              <Filter size={16} />
+              <span>Filtros:</span>
+            </div>
+
+            <select
+              value={degreeFilter}
+              onChange={handleDegreeFilterChange}
+              className="h-9 flex-1 min-w-[130px] rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
+            >
+              <option value="">Todas las Carreras</option>
+              {uniqueDegrees.map(degree => (
+                <option key={degree} value={degree}>{degree}</option>
+              ))}
+            </select>
+
+            <select
+              value={companyFilter}
+              onChange={handleCompanyFilterChange}
+              className="h-9 flex-1 min-w-[130px] rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
+            >
+              <option value="">Todas las Empresas</option>
+              {uniqueCompanies.map(company => (
+                <option key={company} value={company}>{company}</option>
+              ))}
+            </select>
+
+            <select
+              value={practiceTypeFilter}
+              onChange={(e) => handlePracticeTypeFilterChange(e.target.value)}
+              className="h-9 flex-1 min-w-[130px] rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
+            >
+              <option value="">Todos los tipos</option>
+              {uniquePracticeTypes.map((practiceType) => (
+                <option key={practiceType} value={practiceType}>{practiceType}</option>
+              ))}
+            </select>
+
+            {(degreeFilter || companyFilter || practiceTypeFilter) && (
+              <button
+                onClick={clearFilters}
+                className="text-xs font-bold text-[#d22864] hover:underline flex-shrink-0"
+              >
+                Limpiar filtros
+              </button>
+            )}
           </div>
 
-          <select 
-            value={degreeFilter}
-            onChange={handleDegreeFilterChange}
-            className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
-          >
-            <option value="">Todas las Carreras</option>
-            {uniqueDegrees.map(degree => (
-              <option key={degree} value={degree}>{degree}</option>
-            ))}
-          </select>
+          <div className="w-full border-t border-gray-200/70" />
 
-          <select 
-            value={companyFilter}
-            onChange={handleCompanyFilterChange}
-            className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium outline-none focus:border-[#d22864] sm:max-w-[160px]"
-          >
-            <option value="">Todas las Empresas</option>
-            {uniqueCompanies.map(company => (
-              <option key={company} value={company}>{company}</option>
-            ))}
-          </select>
-          
-          {(degreeFilter || companyFilter || practiceTypeFilter) && (
-            <button 
-              onClick={clearFilters}
-              className="text-left text-xs font-bold text-[#d22864] hover:underline sm:ml-auto sm:flex-shrink-0"
-            >
-              Limpiar filtros
-            </button>
-          )}
-        </motion.div>
-
-        <motion.div
-          className="rounded-xl border border-gray-100 bg-white p-3 text-sm text-gray-600"
-          {...getEntryMotion(0.16)}
-        >
-          <span className="block text-xs font-black uppercase tracking-wide text-gray-500 sm:inline sm:mr-1">
-            Tipo de práctica:
-          </span>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-0 sm:inline-flex sm:flex-wrap">
-            <button
-              type="button"
-              onClick={() => handlePracticeTypeFilterChange('')}
-              className={`rounded-lg border px-3 py-2 text-xs font-black transition ${
-                practiceTypeFilter === ''
-                  ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-[#d22864] hover:text-[#d22864]'
-              }`}
-            >
-              Todas
-            </button>
-            {uniquePracticeTypes.map((practiceType) => (
-            <button
-              key={practiceType}
-              type="button"
-              onClick={() => handlePracticeTypeFilterChange(practiceType)}
-              className={`rounded-lg border px-3 py-2 text-xs font-black transition ${
-                practiceTypeFilter === practiceType
-                  ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-[#d22864] hover:text-[#d22864]'
-              }`}
-            >
-              {practiceType}
-            </button>
+          <div className="flex flex-wrap items-center gap-1">
+            {statusOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => handleStatusFilterChange(opt.value)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  statusFilter === opt.value
+                    ? 'bg-[#d22864] text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {opt.label}
+              </button>
             ))}
           </div>
         </motion.div>
@@ -450,7 +464,7 @@ export const StudentTable = ({ students = [] }) => {
           <button
             type="button"
             onClick={() => applyRecentSort('desc')}
-            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold transition ${
               sort.sort_by === 'upload_date' && sort.sort_dir === 'desc'
                 ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
                 : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
@@ -462,7 +476,7 @@ export const StudentTable = ({ students = [] }) => {
           <button
             type="button"
             onClick={() => applyRecentSort('asc')}
-            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition ${
+            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold transition ${
               sort.sort_by === 'upload_date' && sort.sort_dir === 'asc'
                 ? 'border-[#d22864] bg-[#fff0f6] text-[#d22864]'
                 : 'border-gray-200 bg-white text-gray-700 hover:border-[#d22864] hover:text-[#d22864]'
@@ -483,11 +497,11 @@ export const StudentTable = ({ students = [] }) => {
           
           {/* Cabecera de la Tabla */}
           <div className={`${gridLayoutClass} bg-gray-50/70 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider`}>
-            <SortHeader label="Estudiante" field="student" sort={sort} onSort={handleSort} />
-            <SortHeader label="Solicitud" field="upload_date" sort={sort} onSort={handleSort} align="center" />
-            <SortHeader label="Carrera" field="degree" sort={sort} onSort={handleSort} />
-            <SortHeader label="Tipo" field="internship_type" sort={sort} onSort={handleSort} />
-            <SortHeader label="Empresa" field="company" sort={sort} onSort={handleSort} />
+            <SortHeader label="Estudiante" field="student" sort={sort} onSort={handleSort} align="left" />
+            <SortHeader label="Solicitud" field="upload_date" sort={sort} onSort={handleSort} align="left" />
+            <SortHeader label="Carrera" field="degree" sort={sort} onSort={handleSort} align="left" />
+            <SortHeader label="Tipo" field="internship_type" sort={sort} onSort={handleSort} align="left" />
+            <SortHeader label="Empresa" field="company" sort={sort} onSort={handleSort} align="left"/>
             <SortHeader label="Estado" field="status" sort={sort} onSort={handleSort} align="center" />
             <div className="text-center">Acciones</div>
           </div>
@@ -507,7 +521,7 @@ export const StudentTable = ({ students = [] }) => {
                     
                     {/* Estudiante (Con min-w-0 para activar el truncado fluido) */}
                     <div className="flex flex-col min-w-0">
-                      <span className="font-bold text-gray-800 leading-tight text-sm truncate">
+                      <span className="font-bold text-gray-800 leading-tight text-sm ">
                         {student.student ? `${student.student.first_name} ${student.student.last_name}` : 'Estudiante no registrado'}
                       </span>
                       <span className="text-xs text-gray-400 font-medium truncate mt-0.5">{student.student?.email}</span>
@@ -520,27 +534,28 @@ export const StudentTable = ({ students = [] }) => {
 
                     {/* Carrera (Se corrigió la etiqueta td invasiva de develop para mantener la rejilla CSS Grid limpia) */}
                     <div className="min-w-0">
-                      <p className="text-sm text-gray-600 font-medium truncate">
+                      <p className="text-[12px] text-gray-600 font-medium">
                         {student.student?.degree || student.student?.cod_degree || 'N/A'}
                       </p>
                     </div>
 
                     {/* Tipo de práctica */}
                     <div className="min-w-0">
-                      <p className="text-sm text-gray-600 font-medium truncate" title={getPracticeType(student)}>
+                      <p className="text-[12px] text-gray-600 font-medium " 
+                        title={getPracticeType(student)}>
                         {getPracticeType(student) || 'N/A'}
                       </p>
                     </div>
 
                     {/* Empresa */}
                     <div className="min-w-0">
-                      <p className="text-sm text-gray-600 font-medium truncate">{student.org_name || 'N/A'}</p>
+                      <p className="text-[12px] text-gray-600 font-medium ">{student.org_name || 'N/A'}</p>
                     </div>
 
                     {/* Estado */}
                     <div className="flex justify-center min-w-0 w-full">
                       <span className={`
-                        px-2 sm:px-4 py-1.5 rounded-full text-white text-[11px] font-bold text-center w-full max-w-[100px] block shadow-sm truncate
+                        px-2 sm:px-4 py-1.5 rounded-full text-white text-[11px] font-bold text-center w-full max-w-[90px] block shadow-sm truncate
                         ${normalizedStatus.color}
                       `}>
                         {normalizedStatus.label}

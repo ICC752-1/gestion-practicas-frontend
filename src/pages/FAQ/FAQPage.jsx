@@ -111,7 +111,7 @@ export const FAQPage = () => {
           <motion.button
             type="button"
             onClick={() => navigate(backPath)}
-            className="mb-8 inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-brand-medium transition hover:underline"
+            className="mb-8 inline-flex items-center gap-2 text-sm font-black uppercase tracking-wide text-brand-medium transition hover:underline py-1"
             {...getEntryMotion()}
           >
             <ArrowLeft size={18} />

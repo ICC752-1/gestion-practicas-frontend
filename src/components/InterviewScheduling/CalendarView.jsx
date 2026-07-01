@@ -12,14 +12,19 @@ const toDateKey = (year, month, day) =>
     `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
 const getMonthMatrix = (year, month) => {
-    const firstWeekday = new Date(year, month, 1).getDay(); // 0 = Sun
-    const offset = firstWeekday === 0 ? 6 : firstWeekday - 1; // Mon-based
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const offset = firstWeekday === 0 ? 6 : firstWeekday - 1;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     return { offset, daysInMonth };
 };
 
-export const CalendarView = ({ selectedDate, onSelectDate, savedDates }) => {
+export const CalendarView = ({
+    selectedDate,
+    onSelectDate,
+    savedDates,
+}) => {
     const today = new Date();
+
     const [viewYear, setViewYear] = useState(today.getFullYear());
     const [viewMonth, setViewMonth] = useState(today.getMonth());
 
@@ -27,14 +32,20 @@ export const CalendarView = ({ selectedDate, onSelectDate, savedDates }) => {
 
     const prevMonth = () => {
         setViewMonth((m) => {
-            if (m === 0) { setViewYear((y) => y - 1); return 11; }
+            if (m === 0) {
+                setViewYear((y) => y - 1);
+                return 11;
+            }
             return m - 1;
         });
     };
 
     const nextMonth = () => {
         setViewMonth((m) => {
-            if (m === 11) { setViewYear((y) => y + 1); return 0; }
+            if (m === 11) {
+                setViewYear((y) => y + 1);
+                return 0;
+            }
             return m + 1;
         });
     };
@@ -59,50 +70,50 @@ export const CalendarView = ({ selectedDate, onSelectDate, savedDates }) => {
     };
 
     return (
-        <div className="w-full">
-            {/* Month navigation */}
-            <div className="flex items-center justify-between mb-5">
+        <div className="w-full max-w-[380px] mx-auto">
+
+            {/* Navegación */}
+            <div className="flex items-center justify-between mb-2">
                 <button
                     onClick={prevMonth}
-                    className="p-2 rounded-xl hover:bg-gray-100 transition"
-                    aria-label="Mes anterior"
+                    className="p-2 rounded-lg hover:bg-gray-100 transition"
                 >
-                    <ChevronLeft className="w-4 h-4 text-gray-500" />
+                    <ChevronLeft className="w-5 h-5 text-gray-500" />
                 </button>
 
-                <h3 className="font-bold text-base">
+                <h3 className="text-lg font-bold text-slate-900">
                     {MONTHS[viewMonth]} {viewYear}
                 </h3>
 
                 <button
                     onClick={nextMonth}
-                    className="p-2 rounded-xl hover:bg-gray-100 transition"
-                    aria-label="Mes siguiente"
+                    className="p-2 rounded-lg hover:bg-gray-100 transition"
                 >
-                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                    <ChevronRight className="w-5 h-5 text-gray-500" />
                 </button>
             </div>
 
-            {/* Day-of-week headers */}
-            <div className="grid grid-cols-7 gap-1 mb-1">
-                {DAYS_OF_WEEK.map((d) => (
+            {/* Días */}
+            <div className="grid grid-cols-7 gap-1 mb-2">
+                {DAYS_OF_WEEK.map((day) => (
                     <div
-                        key={d}
-                        className="text-center text-xs font-semibold text-gray-400 py-1"
+                        key={day}
+                        className="text-center text-xs font-semibold text-gray-400 py-2"
                     >
-                        {d}
+                        {day}
                     </div>
                 ))}
             </div>
 
-            {/* Day cells */}
+            {/* Calendario */}
             <div className="grid grid-cols-7 gap-1">
-                {/* Empty offset cells */}
                 {Array.from({ length: offset }).map((_, i) => (
-                    <div key={`empty-${i}`} />
+                    <div key={i}></div>
                 ))}
 
-                {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+                {Array.from({ length: daysInMonth }, (_, i) => {
+                    const day = i + 1;
+
                     const past = isPast(day);
                     const selected = isSelected(day);
                     const slots = hasSlots(day);
@@ -114,30 +125,48 @@ export const CalendarView = ({ selectedDate, onSelectDate, savedDates }) => {
                             type="button"
                             disabled={!selectable}
                             onClick={() =>
-                                onSelectDate({ year: viewYear, month: viewMonth, day })
+                                onSelectDate({
+                                    year: viewYear,
+                                    month: viewMonth,
+                                    day,
+                                })
                             }
-                            aria-label={`${day} de ${MONTHS[viewMonth]} de ${viewYear}${slots ? ', con citas registradas' : ''}`}
                             className={[
-                                'relative aspect-square flex items-center justify-center rounded-xl text-sm font-medium transition',
+                                "relative",
+                                "h-10 sm:h-11",
+                                "w-full",
+                                "rounded-xl",
+                                "flex items-center justify-center",
+                                "text-sm",
+                                "font-medium",
+                                "transition-all",
                                 !selectable
-                                    ? 'text-gray-300 cursor-not-allowed'
+                                    ? "text-gray-300 cursor-not-allowed"
                                     : selected
-                                        ? 'bg-brand-medium text-white'
+                                        ? "bg-brand-medium text-white"
                                         : isToday(day)
-                                            ? 'text-brand-medium ring-1 ring-brand-medium hover:bg-brand-medium/10'
+                                            ? "ring-2 ring-brand-medium text-brand-medium hover:bg-brand-medium/10"
                                             : past
-                                                ? 'text-gray-500 hover:bg-gray-100'
-                                                : 'hover:bg-gray-100',
-                            ].join(' ')}
+                                                ? "text-gray-500 hover:bg-gray-100"
+                                                : "hover:bg-gray-100",
+                            ].join(" ")}
                         >
                             {day}
+
                             {slots && (
                                 <span
                                     className={[
-                                        'absolute bottom-1 left-1/2 -translate-x-1/2',
-                                        'w-1 h-1 rounded-full',
-                                        selected ? 'bg-white/70' : 'bg-green-500',
-                                    ].join(' ')}
+                                        "absolute",
+                                        "bottom-1",
+                                        "left-1/2",
+                                        "-translate-x-1/2",
+                                        "w-1.5",
+                                        "h-1.5",
+                                        "rounded-full",
+                                        selected
+                                            ? "bg-white"
+                                            : "bg-green-500",
+                                    ].join(" ")}
                                 />
                             )}
                         </button>
@@ -145,11 +174,11 @@ export const CalendarView = ({ selectedDate, onSelectDate, savedDates }) => {
                 })}
             </div>
 
-            {/* Legend */}
-            <p className="mt-4 text-xs text-gray-400 flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+            <div className="mt-4 flex items-center gap-2 text-xs text-gray-400">
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
                 Día con citas registradas
-            </p>
+            </div>
+
         </div>
     );
 };

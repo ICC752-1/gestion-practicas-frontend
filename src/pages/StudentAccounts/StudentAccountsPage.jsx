@@ -642,23 +642,23 @@ export const StudentAccountsPanel = () => {
                 </colgroup>
                 <thead>
                   <tr className="text-left text-xs font-black uppercase tracking-wide text-gray-500">
-                    <th className="px-3 py-3">
+                    <th className="px-3 py-4">
                       <SortHeader label="Estudiante" field="last_name" sort={sort} onSort={handleSort} />
                     </th>
-                    <th className="hidden px-3 py-3 lg:table-cell">
+                    <th className="hidden px-3 py-4 lg:table-cell">
                       <SortHeader label="Registro" field="created_at" sort={sort} onSort={handleSort} align="center" />
                     </th>
-                    <th className="px-3 py-3">
+                    <th className="px-3 py-4">
                       <SortHeader label="Matrícula" field="enrollment" sort={sort} onSort={handleSort} align="center" />
                     </th>
-                    <th className="hidden px-3 py-3 md:table-cell">
+                    <th className="hidden px-3 py-4 md:table-cell">
                       <SortHeader label="Ingreso" field="admission_year" sort={sort} onSort={handleSort} align="center" />
                     </th>
-                    <th className="px-3 py-3 text-center">Avance</th>
-                    <th className="px-3 py-3">
+                    <th className="px-2 py-4 text-center">Avance</th>
+                    <th className="px-2 py-4">
                       <SortHeader label="Estado" field="is_active" sort={sort} onSort={handleSort} align="center" />
                     </th>
-                    <th className="px-3 py-3">Acciones</th>
+                    <th className="px-2 py-4 text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -683,7 +683,7 @@ export const StudentAccountsPanel = () => {
                     return (
                       <motion.tr
                         key={student.id}
-                        className="align-top"
+                        className="align-middle"
                         {...getEntryMotion(0.3 + index * 0.025)}
                       >
                         <td className="min-w-0 px-3 py-4">
@@ -691,7 +691,7 @@ export const StudentAccountsPanel = () => {
                           <p className="truncate text-gray-500">{student.email}</p>
                         </td>
                         <td className="hidden px-3 py-4 text-center text-xs font-semibold text-gray-500 lg:table-cell">{formatDateTime(student.created_at)}</td>
-                        <td className="break-all px-3 py-4 text-gray-600">{student.enrollment || '-'}</td>
+                        <td className="break-all px-3 py-4 text-center text-gray-600">{student.enrollment || '-'}</td>
                         <td className="hidden px-3 py-4 text-center text-gray-600 md:table-cell">{student.admission_year || '-'}</td>
                         <td className="px-2 py-4">
                           <button
